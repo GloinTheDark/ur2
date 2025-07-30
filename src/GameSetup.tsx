@@ -1,32 +1,100 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { PlayerType } from './PlayerAgent';
 
 export interface GameSetupProps {
     onStartGame: (whitePlayer: PlayerType, blackPlayer: PlayerType, difficulty: 'easy' | 'medium' | 'hard') => void;
 }
 
+type PlayerOption = 'human' | 'easy-computer' | 'medium-computer' | 'hard-computer';
+
+interface GameSetupState {
+    whitePlayerOption: PlayerOption;
+    blackPlayerOption: PlayerOption;
+}
+
+const STORAGE_KEY = 'ur-game-setup';
+
 const GameSetup: React.FC<GameSetupProps> = ({ onStartGame }) => {
-    const [whitePlayer, setWhitePlayer] = useState<PlayerType>('human');
-    const [blackPlayer, setBlackPlayer] = useState<PlayerType>('human');
-    const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
+    const [whitePlayerOption, setWhitePlayerOption] = useState<PlayerOption>('human');
+    const [blackPlayerOption, setBlackPlayerOption] = useState<PlayerOption>('human');
+
+    // Load settings from localStorage on component mount
+    useEffect(() => {
+        try {
+            const savedSetup = localStorage.getItem(STORAGE_KEY);
+            if (savedSetup) {
+                const parsedSetup: GameSetupState = JSON.parse(savedSetup);
+                setWhitePlayerOption(parsedSetup.whitePlayerOption || 'human');
+                setBlackPlayerOption(parsedSetup.blackPlayerOption || 'human');
+            }
+        } catch (error) {
+            console.warn('Failed to load game setup from localStorage:', error);
+        }
+    }, []);
+
+    // Save settings to localStorage whenever they change
+    useEffect(() => {
+        try {
+            const setupState: GameSetupState = {
+                whitePlayerOption,
+                blackPlayerOption
+            };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(setupState));
+        } catch (error) {
+            console.warn('Failed to save game setup to localStorage:', error);
+        }
+    }, [whitePlayerOption, blackPlayerOption]);
 
     const handleStartGame = () => {
-        onStartGame(whitePlayer, blackPlayer, difficulty);
+        const { type: whiteType, difficulty: whiteDifficulty } = parsePlayerOption(whitePlayerOption);
+        const { type: blackType, difficulty: blackDifficulty } = parsePlayerOption(blackPlayerOption);
+
+        // Use the highest difficulty if both players are computers
+        const finalDifficulty = whiteDifficulty || blackDifficulty || 'medium';
+
+        onStartGame(whiteType, blackType, finalDifficulty);
     };
 
-    const getGameModeDescription = () => {
-        if (whitePlayer === 'human' && blackPlayer === 'human') {
+    const parsePlayerOption = (option: PlayerOption): { type: PlayerType; difficulty: 'easy' | 'medium' | 'hard' | null } => {
+        switch (option) {
+            case 'human':
+                return { type: 'human', difficulty: null };
+            case 'easy-computer':
+                return { type: 'computer', difficulty: 'easy' };
+            case 'medium-computer':
+                return { type: 'computer', difficulty: 'medium' };
+            case 'hard-computer':
+                return { type: 'computer', difficulty: 'hard' };
+            default:
+                return { type: 'human', difficulty: null };
+        }
+    };
+
+    const getGameModeDescription = (): string => {
+        const whiteType = parsePlayerOption(whitePlayerOption).type;
+        const blackType = parsePlayerOption(blackPlayerOption).type;
+
+        if (whiteType === 'human' && blackType === 'human') {
             return 'Two players taking turns on the same device';
-        } else if (whitePlayer === 'human' && blackPlayer === 'computer') {
+        } else if (whiteType === 'human' && blackType === 'computer') {
             return 'You play as White against the computer';
-        } else if (whitePlayer === 'computer' && blackPlayer === 'human') {
+        } else if (whiteType === 'computer' && blackType === 'human') {
             return 'You play as Black against the computer';
         } else {
             return 'Watch two computer players compete';
         }
     };
 
-    const showDifficultySelector = whitePlayer === 'computer' || blackPlayer === 'computer';
+    const selectStyle = {
+        width: '100%',
+        padding: '8px 12px',
+        fontSize: '1rem',
+        borderRadius: '4px',
+        border: '2px solid var(--border-color, #ddd)',
+        backgroundColor: 'var(--input-bg, #fff)',
+        color: 'var(--text-color, #333)',
+        cursor: 'pointer'
+    };
 
     return (
         <div style={{
@@ -43,86 +111,31 @@ const GameSetup: React.FC<GameSetupProps> = ({ onStartGame }) => {
 
             <div style={{ marginBottom: '20px' }}>
                 <h3 style={{ marginBottom: '10px', color: 'var(--text-color, #333)' }}>White Player</h3>
-                <div style={{ display: 'flex', gap: '10px' }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '5px', color: 'var(--text-color, #333)' }}>
-                        <input
-                            type="radio"
-                            value="human"
-                            checked={whitePlayer === 'human'}
-                            onChange={(e) => setWhitePlayer(e.target.value as PlayerType)}
-                        />
-                        Human
-                    </label>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '5px', color: 'var(--text-color, #333)' }}>
-                        <input
-                            type="radio"
-                            value="computer"
-                            checked={whitePlayer === 'computer'}
-                            onChange={(e) => setWhitePlayer(e.target.value as PlayerType)}
-                        />
-                        Computer
-                    </label>
-                </div>
+                <select
+                    value={whitePlayerOption}
+                    onChange={(e) => setWhitePlayerOption(e.target.value as PlayerOption)}
+                    style={selectStyle}
+                >
+                    <option value="human">Human</option>
+                    <option value="easy-computer">Easy Computer</option>
+                    <option value="medium-computer">Medium Computer</option>
+                    <option value="hard-computer">Hard Computer</option>
+                </select>
             </div>
 
             <div style={{ marginBottom: '20px' }}>
                 <h3 style={{ marginBottom: '10px', color: 'var(--text-color, #333)' }}>Black Player</h3>
-                <div style={{ display: 'flex', gap: '10px' }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '5px', color: 'var(--text-color, #333)' }}>
-                        <input
-                            type="radio"
-                            value="human"
-                            checked={blackPlayer === 'human'}
-                            onChange={(e) => setBlackPlayer(e.target.value as PlayerType)}
-                        />
-                        Human
-                    </label>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '5px', color: 'var(--text-color, #333)' }}>
-                        <input
-                            type="radio"
-                            value="computer"
-                            checked={blackPlayer === 'computer'}
-                            onChange={(e) => setBlackPlayer(e.target.value as PlayerType)}
-                        />
-                        Computer
-                    </label>
-                </div>
+                <select
+                    value={blackPlayerOption}
+                    onChange={(e) => setBlackPlayerOption(e.target.value as PlayerOption)}
+                    style={selectStyle}
+                >
+                    <option value="human">Human</option>
+                    <option value="easy-computer">Easy Computer</option>
+                    <option value="medium-computer">Medium Computer</option>
+                    <option value="hard-computer">Hard Computer</option>
+                </select>
             </div>
-
-            {showDifficultySelector && (
-                <div style={{ marginBottom: '20px' }}>
-                    <h3 style={{ marginBottom: '10px', color: 'var(--text-color, #333)' }}>Computer Difficulty</h3>
-                    <div style={{ display: 'flex', gap: '10px' }}>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '5px', color: 'var(--text-color, #333)' }}>
-                            <input
-                                type="radio"
-                                value="easy"
-                                checked={difficulty === 'easy'}
-                                onChange={(e) => setDifficulty(e.target.value as 'easy' | 'medium' | 'hard')}
-                            />
-                            Easy
-                        </label>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '5px', color: 'var(--text-color, #333)' }}>
-                            <input
-                                type="radio"
-                                value="medium"
-                                checked={difficulty === 'medium'}
-                                onChange={(e) => setDifficulty(e.target.value as 'easy' | 'medium' | 'hard')}
-                            />
-                            Medium
-                        </label>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '5px', color: 'var(--text-color, #333)' }}>
-                            <input
-                                type="radio"
-                                value="hard"
-                                checked={difficulty === 'hard'}
-                                onChange={(e) => setDifficulty(e.target.value as 'easy' | 'medium' | 'hard')}
-                            />
-                            Hard
-                        </label>
-                    </div>
-                </div>
-            )}
 
             <div style={{
                 padding: '15px',
