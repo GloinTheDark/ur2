@@ -90,10 +90,11 @@ const GameSettings: React.FC<GameSettingsProps> = ({
                                 onChange={(e) => onSettingsChange({ houseBonus: e.target.checked })}
                                 style={{ transform: 'scale(1.2)' }}
                             />
-                            <div style={{ 
-                                backgroundColor: '#F5E6A3', 
-                                padding: '2px', 
+                            <div style={{
+                                backgroundColor: '#F5E6A3',
+                                padding: '2px',
                                 borderRadius: '3px',
+                                border: '2px solid #00f',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center'
@@ -109,10 +110,11 @@ const GameSettings: React.FC<GameSettingsProps> = ({
                                 onChange={(e) => onSettingsChange({ templeBlessings: e.target.checked })}
                                 style={{ transform: 'scale(1.2)' }}
                             />
-                            <div style={{ 
-                                backgroundColor: '#F5E6A3', 
-                                padding: '2px', 
+                            <div style={{
+                                backgroundColor: '#F5E6A3',
+                                padding: '2px',
                                 borderRadius: '3px',
+                                border: '2px solid #00f',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center'
@@ -128,10 +130,11 @@ const GameSettings: React.FC<GameSettingsProps> = ({
                                 onChange={(e) => onSettingsChange({ gateKeeper: e.target.checked })}
                                 style={{ transform: 'scale(1.2)' }}
                             />
-                            <div style={{ 
-                                backgroundColor: '#F5E6A3', 
-                                padding: '2px', 
+                            <div style={{
+                                backgroundColor: '#F5E6A3',
+                                padding: '2px',
                                 borderRadius: '3px',
+                                border: '2px solid #00f',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center'
@@ -147,10 +150,11 @@ const GameSettings: React.FC<GameSettingsProps> = ({
                                 onChange={(e) => onSettingsChange({ safeMarkets: e.target.checked })}
                                 style={{ transform: 'scale(1.2)' }}
                             />
-                            <div style={{ 
-                                backgroundColor: '#F5E6A3', 
-                                padding: '2px', 
+                            <div style={{
+                                backgroundColor: '#F5E6A3',
+                                padding: '2px',
                                 borderRadius: '3px',
+                                border: '2px solid #00f',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center'
