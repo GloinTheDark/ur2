@@ -6,8 +6,7 @@ import {
     HOUSE_SQUARES,
     WHITE_PATH,
     BLACK_PATH,
-    WHITE_TRANSFORMATION_SQUARE,
-    BLACK_TRANSFORMATION_SQUARE
+    TREASURY_SQUARES
 } from './BoardLayout';
 
 export interface GameSettings {
@@ -216,9 +215,9 @@ export class GameState {
                         landedOnRosette = true;
                     }
 
-                    // Check if piece lands on or passes through square 8 and change to spots
+                    // Check if piece lands on or passes through a treasury square and change to spots
                     for (let i = 0; i < diceRoll; i++) {
-                        if (this.whitePath[i] === WHITE_TRANSFORMATION_SQUARE) {
+                        if (TREASURY_SQUARES.includes(this.whitePath[i] as any)) {
                             this.data.whitePieces[pieceIndex] = 'spots';
                             break;
                         }
@@ -246,9 +245,9 @@ export class GameState {
                         landedOnRosette = true;
                     }
 
-                    // Check if piece lands on or passes through square 8 and change to spots
+                    // Check if piece lands on or passes through a treasury square and change to spots
                     for (let i = currentIndex + 1; i <= newIndex; i++) {
-                        if (this.whitePath[i] === WHITE_TRANSFORMATION_SQUARE) {
+                        if (TREASURY_SQUARES.includes(this.whitePath[i] as any)) {
                             this.data.whitePieces[pieceIndex] = 'spots';
                             break;
                         }
@@ -279,7 +278,7 @@ export class GameState {
                     }
 
                     for (let i = 0; i < diceRoll; i++) {
-                        if (this.blackPath[i] === BLACK_TRANSFORMATION_SQUARE) {
+                        if (TREASURY_SQUARES.includes(this.blackPath[i] as any)) {
                             this.data.blackPieces[pieceIndex] = 'spots';
                             break;
                         }
@@ -304,7 +303,7 @@ export class GameState {
                     }
 
                     for (let i = currentIndex + 1; i <= newIndex; i++) {
-                        if (this.blackPath[i] === BLACK_TRANSFORMATION_SQUARE) {
+                        if (TREASURY_SQUARES.includes(this.blackPath[i] as any)) {
                             this.data.blackPieces[pieceIndex] = 'spots';
                             break;
                         }

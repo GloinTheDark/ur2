@@ -20,10 +20,6 @@ export const BLACKED_OUT_SQUARES = [5, 6, 21, 22] as const;
 export const WHITE_PATH = [4, 3, 2, 1, 9, 10, 11, 12, 13, 14, 15, 7, 8, 16, 24, 23, 15, 14, 13, 12, 11, 10, 9];
 export const BLACK_PATH = [20, 19, 18, 17, 9, 10, 11, 12, 13, 14, 15, 23, 24, 16, 8, 7, 15, 14, 13, 12, 11, 10, 9];
 
-// Special transformation squares (where pieces change from blank to spots)
-export const WHITE_TRANSFORMATION_SQUARE = 8 as const;
-export const BLACK_TRANSFORMATION_SQUARE = 24 as const;
-
 /**
  * Type guards and utility functions for board squares
  */
