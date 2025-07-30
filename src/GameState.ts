@@ -1,3 +1,15 @@
+import {
+    ROSETTE_SQUARES,
+    GATE_SQUARE,
+    MARKET_SQUARES,
+    TEMPLE_SQUARES,
+    HOUSE_SQUARES,
+    WHITE_PATH,
+    BLACK_PATH,
+    WHITE_TRANSFORMATION_SQUARE,
+    BLACK_TRANSFORMATION_SQUARE
+} from './BoardLayout';
+
 export interface GameSettings {
     piecesPerPlayer: number;
     houseBonus: boolean;
@@ -27,8 +39,8 @@ export class GameState {
     private listeners: Set<() => void> = new Set();
 
     // Game paths
-    private readonly whitePath = [4, 3, 2, 1, 9, 10, 11, 12, 13, 14, 15, 7, 8, 16, 24, 23, 15, 14, 13, 12, 11, 10, 9];
-    private readonly blackPath = [20, 19, 18, 17, 9, 10, 11, 12, 13, 14, 15, 23, 24, 16, 8, 7, 15, 14, 13, 12, 11, 10, 9];
+    private readonly whitePath = [...WHITE_PATH];
+    private readonly blackPath = [...BLACK_PATH];
 
     constructor(settings: GameSettings) {
         this.settings = settings;
@@ -200,13 +212,13 @@ export class GameState {
                     this.data.whitePiecePositions[pieceIndex] = destinationSquare;
 
                     // Check if piece landed on a rosette square
-                    if ([1, 7, 12, 17, 23].includes(destinationSquare)) {
+                    if (ROSETTE_SQUARES.includes(destinationSquare as any)) {
                         landedOnRosette = true;
                     }
 
                     // Check if piece lands on or passes through square 8 and change to spots
                     for (let i = 0; i < diceRoll; i++) {
-                        if (this.whitePath[i] === 8) {
+                        if (this.whitePath[i] === WHITE_TRANSFORMATION_SQUARE) {
                             this.data.whitePieces[pieceIndex] = 'spots';
                             break;
                         }
@@ -219,7 +231,7 @@ export class GameState {
 
                 if (newIndex >= this.whitePath.length) {
                     // Check if gate square (9) is occupied by opponent piece (only if gate keeper rule is enabled)
-                    const isGateBlocked = this.settings.gateKeeper && this.data.blackPiecePositions.some(pos => pos === 9);
+                    const isGateBlocked = this.settings.gateKeeper && this.data.blackPiecePositions.some(pos => pos === GATE_SQUARE);
                     if (!isGateBlocked) {
                         // Piece completes the circuit and returns to start
                         this.data.whitePiecePositions[pieceIndex] = 'start';
@@ -230,13 +242,13 @@ export class GameState {
                     this.data.whitePiecePositions[pieceIndex] = destinationSquare;
 
                     // Check if piece landed on a rosette square
-                    if ([1, 7, 12, 17, 23].includes(destinationSquare)) {
+                    if (ROSETTE_SQUARES.includes(destinationSquare as any)) {
                         landedOnRosette = true;
                     }
 
                     // Check if piece lands on or passes through square 8 and change to spots
                     for (let i = currentIndex + 1; i <= newIndex; i++) {
-                        if (this.whitePath[i] === 8) {
+                        if (this.whitePath[i] === WHITE_TRANSFORMATION_SQUARE) {
                             this.data.whitePieces[pieceIndex] = 'spots';
                             break;
                         }
@@ -262,12 +274,12 @@ export class GameState {
                     destinationSquare = this.blackPath[diceRoll - 1];
                     this.data.blackPiecePositions[pieceIndex] = destinationSquare;
 
-                    if ([1, 7, 12, 17, 23].includes(destinationSquare)) {
+                    if (ROSETTE_SQUARES.includes(destinationSquare as any)) {
                         landedOnRosette = true;
                     }
 
                     for (let i = 0; i < diceRoll; i++) {
-                        if (this.blackPath[i] === 24) {
+                        if (this.blackPath[i] === BLACK_TRANSFORMATION_SQUARE) {
                             this.data.blackPieces[pieceIndex] = 'spots';
                             break;
                         }
@@ -278,7 +290,7 @@ export class GameState {
                 const newIndex = currentIndex + diceRoll;
 
                 if (newIndex >= this.blackPath.length) {
-                    const isGateBlocked = this.settings.gateKeeper && this.data.whitePiecePositions.some(pos => pos === 9);
+                    const isGateBlocked = this.settings.gateKeeper && this.data.whitePiecePositions.some(pos => pos === GATE_SQUARE);
                     if (!isGateBlocked) {
                         this.data.blackPiecePositions[pieceIndex] = 'start';
                         this.data.blackPieces[pieceIndex] = 'spots';
@@ -287,12 +299,12 @@ export class GameState {
                     destinationSquare = this.blackPath[newIndex];
                     this.data.blackPiecePositions[pieceIndex] = destinationSquare;
 
-                    if ([1, 7, 12, 17, 23].includes(destinationSquare)) {
+                    if (ROSETTE_SQUARES.includes(destinationSquare as any)) {
                         landedOnRosette = true;
                     }
 
                     for (let i = currentIndex + 1; i <= newIndex; i++) {
-                        if (this.blackPath[i] === 24) {
+                        if (this.blackPath[i] === BLACK_TRANSFORMATION_SQUARE) {
                             this.data.blackPieces[pieceIndex] = 'spots';
                             break;
                         }
@@ -383,7 +395,7 @@ export class GameState {
             if (newIndex >= currentPlayerPath.length) {
                 // Check if gate square (9) is occupied by opponent piece (only if gate keeper rule is enabled)
                 const opponentPositions = currentPlayer === 'white' ? this.data.blackPiecePositions : this.data.whitePiecePositions;
-                const isGateBlocked = this.settings.gateKeeper && opponentPositions.some(pos => pos === 9);
+                const isGateBlocked = this.settings.gateKeeper && opponentPositions.some(pos => pos === GATE_SQUARE);
                 if (isGateBlocked) {
                     return false; // Cannot complete path if gate is blocked
                 }
@@ -400,7 +412,7 @@ export class GameState {
 
         // Check if destination is a market square occupied by opponent piece (safe square)
         const opponentPositions = currentPlayer === 'white' ? this.data.blackPiecePositions : this.data.whitePiecePositions;
-        const isMarketSquareBlocked = this.settings.safeMarkets && [11, 14].includes(destinationSquare) &&
+        const isMarketSquareBlocked = this.settings.safeMarkets && MARKET_SQUARES.includes(destinationSquare as any) &&
             opponentPositions.some(pos => pos === destinationSquare);
 
         return !isSameColorBlocking && !isMarketSquareBlocked;
@@ -436,11 +448,10 @@ export class GameState {
 
     // Calculate house control for house bonus rule
     calculateHouseControl(): { whiteHouses: number, blackHouses: number } {
-        const houseSquares = [3, 10, 13, 16, 19];
         let whiteHouses = 0;
         let blackHouses = 0;
 
-        houseSquares.forEach(square => {
+        HOUSE_SQUARES.forEach(square => {
             const whiteOnSquare = this.data.whitePiecePositions.some(pos => pos === square);
             const blackOnSquare = this.data.blackPiecePositions.some(pos => pos === square);
 
@@ -453,11 +464,10 @@ export class GameState {
 
     // Calculate temple control for temple blessings rule
     calculateTempleControl(): { whiteTemples: number, blackTemples: number } {
-        const templeSquares = [2, 4, 15, 18, 20];
         let whiteTemples = 0;
         let blackTemples = 0;
 
-        templeSquares.forEach(square => {
+        TEMPLE_SQUARES.forEach(square => {
             const whiteOnSquare = this.data.whitePiecePositions.some(pos => pos === square);
             const blackOnSquare = this.data.blackPiecePositions.some(pos => pos === square);
 
@@ -498,21 +508,6 @@ export class GameState {
         if (whiteWon) return 'white';
         if (blackWon) return 'black';
         return null;
-    }
-
-    // Path getters for PlayerAgent
-    getWhitePath(): number[] {
-        return [...this.whitePath];
-    }
-
-    getBlackPath(): number[] {
-        return [...this.blackPath];
-    }
-
-    // Check if a square is a rosette square
-    isRosetteSquare(square: number): boolean {
-        const rosetteSquares = [1, 7, 12, 17, 23];
-        return rosetteSquares.includes(square);
     }
 
     // Turn management

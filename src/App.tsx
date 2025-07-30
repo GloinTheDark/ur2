@@ -6,6 +6,7 @@ import GameSetup from './GameSetup'
 import GameSettings from './GameSettings'
 import { PlayerManager } from './PlayerManager'
 import type { PlayerType } from './PlayerAgent'
+import { BoardUtils } from './BoardLayout'
 import rosetteSquare from './assets/RosetteSquare.svg'
 import gateSquare from './assets/GateSquare.svg'
 import marketSquare from './assets/MarketSquare.svg'
@@ -420,13 +421,13 @@ function App() {
         }}>
           {Array.from({ length: 24 }).map((_, idx) => {
             const squareNumber = idx + 1;
-            const isRosetteSquare = [1, 7, 12, 17, 23].includes(squareNumber);
-            const isGateSquare = squareNumber === 9;
-            const isMarketSquare = [11, 14].includes(squareNumber);
-            const isTempleSquare = [2, 4, 15, 18, 20].includes(squareNumber);
-            const isHouseSquare = [3, 10, 13, 16, 19].includes(squareNumber);
-            const isTreasurySquare = [8, 24].includes(squareNumber);
-            const isBlackedOut = [5, 6, 21, 22].includes(squareNumber);
+            const isRosetteSquare = BoardUtils.isRosetteSquare(squareNumber);
+            const isGateSquare = BoardUtils.isGateSquare(squareNumber);
+            const isMarketSquare = BoardUtils.isMarketSquare(squareNumber);
+            const isTempleSquare = BoardUtils.isTempleSquare(squareNumber);
+            const isHouseSquare = BoardUtils.isHouseSquare(squareNumber);
+            const isTreasurySquare = BoardUtils.isTreasurySquare(squareNumber);
+            const isBlackedOut = BoardUtils.isBlackedOutSquare(squareNumber);
 
             // Check if this square is the destination for the selected piece
             const destinationSquare = gameState.getDestinationSquare();

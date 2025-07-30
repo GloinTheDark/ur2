@@ -1,4 +1,5 @@
 import { GameState } from './GameState';
+import { WHITE_PATH, BLACK_PATH, BoardUtils } from './BoardLayout';
 
 export type PlayerType = 'human' | 'computer';
 
@@ -156,7 +157,7 @@ export class ComputerPlayerAgent implements PlayerAgent {
         const opponentPositions = this.color === 'white' ? gameState.state.blackPiecePositions : gameState.state.whitePiecePositions;
 
         for (const pieceIndex of eligiblePieces) {
-            const evaluation = this.evaluateMove(gameState, pieceIndex, diceTotal, myPositions, opponentPositions);
+            const evaluation = this.evaluateMove(pieceIndex, diceTotal, myPositions, opponentPositions);
             moves.push(evaluation);
         }
 
@@ -165,7 +166,6 @@ export class ComputerPlayerAgent implements PlayerAgent {
     }
 
     private evaluateMove(
-        gameState: GameState,
         pieceIndex: number,
         diceTotal: number,
         myPositions: (number | 'start')[],
@@ -176,7 +176,7 @@ export class ComputerPlayerAgent implements PlayerAgent {
         const currentPosition = myPositions[pieceIndex];
 
         // Get the path for this player
-        const path = this.color === 'white' ? gameState.getWhitePath() : gameState.getBlackPath();
+        const path = this.color === 'white' ? WHITE_PATH : BLACK_PATH;
 
         // Calculate destination position
         let destinationSquare: number | undefined;
@@ -204,20 +204,20 @@ export class ComputerPlayerAgent implements PlayerAgent {
 
         if (destinationSquare !== undefined) {
             // Check if landing on rosette square
-            if (gameState.isRosetteSquare(destinationSquare)) {
+            if (BoardUtils.isRosetteSquare(destinationSquare)) {
                 score += 15;
                 reasons.push('Landing on rosette (extra turn)');
             }
 
             // Check if capturing opponent piece
             const canCapture = opponentPositions.some(pos => pos === destinationSquare);
-            if (canCapture && !gameState.isRosetteSquare(destinationSquare)) {
+            if (canCapture && !BoardUtils.isRosetteSquare(destinationSquare)) {
                 score += 25;
                 reasons.push('Capturing opponent piece');
             }
 
             // Check if moving to safety (rosette squares are safe)
-            if (gameState.isRosetteSquare(destinationSquare)) {
+            if (BoardUtils.isRosetteSquare(destinationSquare)) {
                 score += 8;
                 reasons.push('Moving to safe square');
             }
@@ -232,7 +232,7 @@ export class ComputerPlayerAgent implements PlayerAgent {
             // Avoid moves that put piece in danger (near opponent pieces)
             const isDangerous = opponentPositions.some(pos => {
                 if (pos === 'start' || pos === destinationSquare) return false;
-                const opponentPath = this.color === 'white' ? gameState.getBlackPath() : gameState.getWhitePath();
+                const opponentPath = this.color === 'white' ? BLACK_PATH : WHITE_PATH;
                 const opponentIndex = opponentPath.indexOf(pos);
                 if (opponentIndex === -1) return false;
 
@@ -240,7 +240,7 @@ export class ComputerPlayerAgent implements PlayerAgent {
                 for (let roll = 1; roll <= 4; roll++) {
                     if (opponentIndex + roll < opponentPath.length) {
                         const opponentDestination = opponentPath[opponentIndex + roll];
-                        if (opponentDestination === destinationSquare && !gameState.isRosetteSquare(destinationSquare)) {
+                        if (opponentDestination === destinationSquare && !BoardUtils.isRosetteSquare(destinationSquare)) {
                             return true;
                         }
                     }
