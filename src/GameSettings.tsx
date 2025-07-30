@@ -1,4 +1,8 @@
 import React from 'react';
+import HouseSquareIcon from './assets/HouseSquare.svg';
+import TempleSquareIcon from './assets/TempleSquare.svg';
+import GateSquareIcon from './assets/GateSquare.svg';
+import MarketSquareIcon from './assets/MarketSquare.svg';
 
 interface GameSettingsProps {
     isOpen: boolean;
@@ -86,6 +90,16 @@ const GameSettings: React.FC<GameSettingsProps> = ({
                                 onChange={(e) => onSettingsChange({ houseBonus: e.target.checked })}
                                 style={{ transform: 'scale(1.2)' }}
                             />
+                            <div style={{ 
+                                backgroundColor: '#F5E6A3', 
+                                padding: '2px', 
+                                borderRadius: '3px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                            }}>
+                                <img src={HouseSquareIcon} alt="House Square" style={{ width: '20px', height: '20px', display: 'block' }} />
+                            </div>
                             <span>House Bonus (+1 dice for controlling most house squares)</span>
                         </label>
                         <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1rem', color: 'var(--text-color, #333)' }}>
@@ -95,6 +109,16 @@ const GameSettings: React.FC<GameSettingsProps> = ({
                                 onChange={(e) => onSettingsChange({ templeBlessings: e.target.checked })}
                                 style={{ transform: 'scale(1.2)' }}
                             />
+                            <div style={{ 
+                                backgroundColor: '#F5E6A3', 
+                                padding: '2px', 
+                                borderRadius: '3px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                            }}>
+                                <img src={TempleSquareIcon} alt="Temple Square" style={{ width: '20px', height: '20px', display: 'block' }} />
+                            </div>
                             <span>Temple Blessings (0 roll becomes 4 when controlling most temples)</span>
                         </label>
                         <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1rem', color: 'var(--text-color, #333)' }}>
@@ -104,6 +128,16 @@ const GameSettings: React.FC<GameSettingsProps> = ({
                                 onChange={(e) => onSettingsChange({ gateKeeper: e.target.checked })}
                                 style={{ transform: 'scale(1.2)' }}
                             />
+                            <div style={{ 
+                                backgroundColor: '#F5E6A3', 
+                                padding: '2px', 
+                                borderRadius: '3px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                            }}>
+                                <img src={GateSquareIcon} alt="Gate Square" style={{ width: '20px', height: '20px', display: 'block' }} />
+                            </div>
                             <span>Gate Keeper (opponent on gate square blocks path completion)</span>
                         </label>
                         <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1rem', color: 'var(--text-color, #333)' }}>
@@ -113,14 +147,24 @@ const GameSettings: React.FC<GameSettingsProps> = ({
                                 onChange={(e) => onSettingsChange({ safeMarkets: e.target.checked })}
                                 style={{ transform: 'scale(1.2)' }}
                             />
+                            <div style={{ 
+                                backgroundColor: '#F5E6A3', 
+                                padding: '2px', 
+                                borderRadius: '3px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                            }}>
+                                <img src={MarketSquareIcon} alt="Market Square" style={{ width: '20px', height: '20px', display: 'block' }} />
+                            </div>
                             <span>Safe Markets (pieces on market squares cannot be captured)</span>
                         </label>
                     </div>
                     <div style={{ marginTop: '8px', fontSize: '0.8rem', color: 'var(--text-color, #666)' }}>
                         {settings.houseBonus && <div>House Bonus: Player controlling the most house squares gets +1 to dice rolls</div>}
                         {settings.templeBlessings && <div>Temple Blessings: Player controlling the most temple squares gets 4 instead of 0 on dice rolls</div>}
-                        {settings.gateKeeper && <div>Gate Keeper: Pieces cannot complete their path if an opponent piece is on the gate square (9)</div>}
-                        {settings.safeMarkets && <div>Safe Markets: Pieces on market squares (11, 14) cannot be captured by opponents</div>}
+                        {settings.gateKeeper && <div>Gate Keeper: Pieces cannot complete their path if an opponent piece is on the gate square</div>}
+                        {settings.safeMarkets && <div>Safe Markets: Pieces on market squares cannot be captured by opponents</div>}
                     </div>
                 </div>
 
