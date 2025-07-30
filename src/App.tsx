@@ -7,7 +7,8 @@ import GameSettings from './GameSettings'
 import PlayerHome from './PlayerHome'
 import { PlayerManager } from './PlayerManager'
 import type { PlayerType } from './PlayerAgent'
-import { BoardUtils } from './BoardLayout'
+import { BoardUtils, BOARD_COLUMNS, BOARD_ROWS, TOTAL_SQUARES } from './BoardLayout'
+import { SQUARE_BACKGROUND_COLOR, PIECE_SIZE, HIGHLIGHT_CIRCLE_SIZE, SQUARE_SIZE, BOARD_GAP } from './UIConstants'
 import rosetteSquare from './assets/RosetteSquare.svg'
 import gateSquare from './assets/GateSquare.svg'
 import marketSquare from './assets/MarketSquare.svg'
@@ -22,10 +23,6 @@ import blackBlank from './assets/BlackBlank.svg'
 import blackSpots from './assets/BlackSpots.svg'
 
 function App() {
-  // Game configuration constants
-  const SQUARE_BACKGROUND_COLOR = '#f8e8caff'; // Light tan color
-  const PIECE_SIZE = 32; // Size in pixels for game pieces
-
   // Load settings from localStorage or use defaults
   const loadSettings = () => {
     const saved = localStorage.getItem('royalGameSettings');
@@ -48,9 +45,6 @@ function App() {
   const [showPath, setShowPath] = useState<boolean>(false);
   const [playerManager, setPlayerManager] = useState<PlayerManager | null>(null);
   const [showGameSetup, setShowGameSetup] = useState<boolean>(false);
-
-  // Highlight circle size for eligible pieces
-  const HIGHLIGHT_CIRCLE_SIZE = '39px';
 
   const winner = gameState.checkWinCondition();
 
@@ -300,21 +294,18 @@ function App() {
         getDestinationSquare={() => gameState.getDestinationSquare()}
         onPieceClick={handlePieceClick}
         onDestinationClick={handleDestinationClick}
-        highlightCircleSize={HIGHLIGHT_CIRCLE_SIZE}
-        pieceSize={PIECE_SIZE}
-        squareBackgroundColor={SQUARE_BACKGROUND_COLOR}
       />
 
       {/* Main Game Board */}
       <div style={{ position: 'relative', marginTop: '16px' }}>
         <div className="gameboard" style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(8, 40px)',
-          gridTemplateRows: 'repeat(3, 40px)',
-          gap: '4px',
+          gridTemplateColumns: `repeat(${BOARD_COLUMNS}, ${SQUARE_SIZE}px)`,
+          gridTemplateRows: `repeat(${BOARD_ROWS}, ${SQUARE_SIZE}px)`,
+          gap: `${BOARD_GAP}px`,
           justifyContent: 'center'
         }}>
-          {Array.from({ length: 24 }).map((_, idx) => {
+          {Array.from({ length: TOTAL_SQUARES }).map((_, idx) => {
             const squareNumber = idx + 1;
             const isRosetteSquare = BoardUtils.isRosetteSquare(squareNumber);
             const isGateSquare = BoardUtils.isGateSquare(squareNumber);
@@ -347,8 +338,8 @@ function App() {
               <div
                 key={idx}
                 style={{
-                  width: 40,
-                  height: 40,
+                  width: SQUARE_SIZE,
+                  height: SQUARE_SIZE,
                   background: isBlackedOut ? 'transparent' : SQUARE_BACKGROUND_COLOR,
                   border: isBlackedOut ? 'none' : '3px solid #33f',
                   display: 'flex',
@@ -476,8 +467,8 @@ function App() {
                         className="highlight-circle"
                         style={{
                           position: 'absolute',
-                          width: HIGHLIGHT_CIRCLE_SIZE,
-                          height: HIGHLIGHT_CIRCLE_SIZE,
+                          width: `${HIGHLIGHT_CIRCLE_SIZE}px`,
+                          height: `${HIGHLIGHT_CIRCLE_SIZE}px`,
                           borderRadius: '50%',
                           zIndex: 1
                         }}
@@ -505,8 +496,8 @@ function App() {
                               className="selected-circle"
                               style={{
                                 position: 'absolute',
-                                width: HIGHLIGHT_CIRCLE_SIZE,
-                                height: HIGHLIGHT_CIRCLE_SIZE,
+                                width: `${HIGHLIGHT_CIRCLE_SIZE}px`,
+                                height: `${HIGHLIGHT_CIRCLE_SIZE}px`,
                                 borderRadius: '50%',
                                 top: '50%',
                                 left: '50%',
@@ -554,8 +545,8 @@ function App() {
                               className="selected-circle"
                               style={{
                                 position: 'absolute',
-                                width: HIGHLIGHT_CIRCLE_SIZE,
-                                height: HIGHLIGHT_CIRCLE_SIZE,
+                                width: `${HIGHLIGHT_CIRCLE_SIZE}px`,
+                                height: `${HIGHLIGHT_CIRCLE_SIZE}px`,
                                 borderRadius: '50%',
                                 top: '50%',
                                 left: '50%',
@@ -616,9 +607,6 @@ function App() {
         getDestinationSquare={() => gameState.getDestinationSquare()}
         onPieceClick={handlePieceClick}
         onDestinationClick={handleDestinationClick}
-        highlightCircleSize={HIGHLIGHT_CIRCLE_SIZE}
-        pieceSize={PIECE_SIZE}
-        squareBackgroundColor={SQUARE_BACKGROUND_COLOR}
       />
 
       {state.gameStarted && !winner && (

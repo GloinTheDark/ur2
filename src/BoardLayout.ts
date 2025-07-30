@@ -5,6 +5,11 @@
  * This eliminates magic numbers and provides a single source of truth for board configuration.
  */
 
+// Board dimensions and layout
+export const BOARD_COLUMNS = 8; // Number of columns in the game board
+export const BOARD_ROWS = 3; // Number of rows in the game board
+export const TOTAL_SQUARES = 24; // Total number of squares on the board
+
 // Special square types
 export const ROSETTE_SQUARES = [1, 7, 12, 17, 23] as const;
 export const GATE_SQUARE = 9 as const;

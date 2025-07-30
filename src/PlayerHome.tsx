@@ -1,5 +1,6 @@
 import React from 'react';
 import type { GameStateData, GameSettings } from './GameState';
+import { SQUARE_BACKGROUND_COLOR, PIECE_SIZE, HIGHLIGHT_CIRCLE_SIZE, SQUARE_SIZE } from './UIConstants';
 import whiteBlank from './assets/WhiteBlank.svg';
 import whiteSpots from './assets/WhiteSpots.svg';
 import blackBlank from './assets/BlackBlank.svg';
@@ -14,9 +15,6 @@ interface PlayerHomeProps {
     getDestinationSquare: () => number | 'complete' | null;
     onPieceClick: (pieceIndex: number) => void;
     onDestinationClick: (pieceIndex: number) => void;
-    highlightCircleSize: string;
-    pieceSize: number;
-    squareBackgroundColor: string;
 }
 
 const PlayerHome: React.FC<PlayerHomeProps> = ({
@@ -26,10 +24,7 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
     winner,
     getDestinationSquare,
     onPieceClick,
-    onDestinationClick,
-    highlightCircleSize,
-    pieceSize,
-    squareBackgroundColor
+    onDestinationClick
 }) => {
     const isWhite = player === 'white';
     const pieces = isWhite ? state.whitePieces : state.blackPieces;
@@ -68,8 +63,8 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
             </h3>
             <div style={{
                 display: 'grid',
-                gridTemplateColumns: `repeat(${settings.piecesPerPlayer}, 40px)`,
-                gridTemplateRows: 'repeat(1, 40px)',
+                gridTemplateColumns: `repeat(${settings.piecesPerPlayer}, ${SQUARE_SIZE}px)`,
+                gridTemplateRows: `repeat(1, ${SQUARE_SIZE}px)`,
                 gap: '4px',
                 justifyContent: 'center',
                 padding: '8px',
@@ -93,9 +88,9 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
                         <div
                             key={`${player}-${idx}`}
                             style={{
-                                width: 40,
-                                height: 40,
-                                background: squareBackgroundColor,
+                                width: SQUARE_SIZE,
+                                height: SQUARE_SIZE,
+                                background: SQUARE_BACKGROUND_COLOR,
                                 border: '1px solid #999',
                                 display: 'flex',
                                 alignItems: 'center',
@@ -118,8 +113,8 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
                                     className="selected-circle"
                                     style={{
                                         position: 'absolute',
-                                        width: highlightCircleSize,
-                                        height: highlightCircleSize,
+                                        width: `${HIGHLIGHT_CIRCLE_SIZE}px`,
+                                        height: `${HIGHLIGHT_CIRCLE_SIZE}px`,
                                         borderRadius: '50%',
                                         zIndex: 1
                                     }}
@@ -131,8 +126,8 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
                                     className="highlight-circle"
                                     style={{
                                         position: 'absolute',
-                                        width: highlightCircleSize,
-                                        height: highlightCircleSize,
+                                        width: `${HIGHLIGHT_CIRCLE_SIZE}px`,
+                                        height: `${HIGHLIGHT_CIRCLE_SIZE}px`,
                                         borderRadius: '50%',
                                         zIndex: 1
                                     }}
@@ -143,8 +138,8 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
                                     src={pieces[idx] === 'blank' ? blankIcon : spotsIcon}
                                     alt={`${isWhite ? 'White' : 'Black'} piece ${idx + 1} - ${pieces[idx]}`}
                                     style={{
-                                        width: `${pieceSize}px`,
-                                        height: `${pieceSize}px`,
+                                        width: `${PIECE_SIZE}px`,
+                                        height: `${PIECE_SIZE}px`,
                                         borderRadius: 4,
                                         position: 'relative',
                                         zIndex: 2

@@ -1,4 +1,5 @@
 import React from 'react';
+import { SQUARE_BACKGROUND_COLOR } from './UIConstants';
 import HouseSquareIcon from './assets/HouseSquare.svg';
 import TempleSquareIcon from './assets/TempleSquare.svg';
 import GateSquareIcon from './assets/GateSquare.svg';
@@ -91,7 +92,7 @@ const GameSettings: React.FC<GameSettingsProps> = ({
                                 style={{ transform: 'scale(1.2)' }}
                             />
                             <div style={{
-                                backgroundColor: '#F5E6A3',
+                                backgroundColor: SQUARE_BACKGROUND_COLOR,
                                 padding: '2px',
                                 borderRadius: '3px',
                                 border: '2px solid #00f',
@@ -111,7 +112,7 @@ const GameSettings: React.FC<GameSettingsProps> = ({
                                 style={{ transform: 'scale(1.2)' }}
                             />
                             <div style={{
-                                backgroundColor: '#F5E6A3',
+                                backgroundColor: SQUARE_BACKGROUND_COLOR,
                                 padding: '2px',
                                 borderRadius: '3px',
                                 border: '2px solid #00f',
@@ -131,7 +132,7 @@ const GameSettings: React.FC<GameSettingsProps> = ({
                                 style={{ transform: 'scale(1.2)' }}
                             />
                             <div style={{
-                                backgroundColor: '#F5E6A3',
+                                backgroundColor: SQUARE_BACKGROUND_COLOR,
                                 padding: '2px',
                                 borderRadius: '3px',
                                 border: '2px solid #00f',
@@ -151,7 +152,7 @@ const GameSettings: React.FC<GameSettingsProps> = ({
                                 style={{ transform: 'scale(1.2)' }}
                             />
                             <div style={{
-                                backgroundColor: '#F5E6A3',
+                                backgroundColor: SQUARE_BACKGROUND_COLOR,
                                 padding: '2px',
                                 borderRadius: '3px',
                                 border: '2px solid #00f',
