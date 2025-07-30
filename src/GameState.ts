@@ -83,19 +83,13 @@ export class GameState {
     rollForFirstPlayer(): void {
         const roll = this.rollSingleDie();
 
-        console.log('Initial roll result:', roll); // Debug log
-
         this.data.initialRollResult = roll;
 
         // 1 = white goes first, 0 = black goes first
         this.data.currentPlayer = roll === 1 ? 'white' : 'black';
 
-        console.log('Current player set to:', this.data.currentPlayer); // Debug log
-
         this.notify();
-    }
-
-    proceedToGame(): void {
+    } proceedToGame(): void {
         this.data.gamePhase = 'playing';
         this.data.initialRollResult = null;
         this.notify();
@@ -175,11 +169,19 @@ export class GameState {
 
         const landedOnRosette = this.executeMove(this.data.currentPlayer, pieceIndex, this.data.diceTotal);
 
-        this.resetDice();
+        // Reset dice state
+        this.data.diceRolls = [];
+        this.data.diceTotal = 0;
+        this.data.eligiblePieces = [];
+        this.data.selectedPiece = null;
 
+        // Switch player if didn't land on rosette
         if (!landedOnRosette) {
-            this.switchPlayer();
+            this.data.currentPlayer = this.data.currentPlayer === 'white' ? 'black' : 'white';
         }
+
+        // Single notification after all state changes are complete
+        this.notify();
 
         return landedOnRosette;
     }
@@ -325,11 +327,6 @@ export class GameState {
             // This square appears only once
             return path.indexOf(square);
         }
-    }
-
-    private switchPlayer(): void {
-        this.data.currentPlayer = this.data.currentPlayer === 'white' ? 'black' : 'white';
-        this.notify();
     }
 
     // Calculate eligible pieces
@@ -510,7 +507,14 @@ export class GameState {
     }
 
     passTurn(): void {
-        this.resetDice();
-        this.switchPlayer();
+        // Reset dice state and switch player in one atomic operation
+        this.data.diceRolls = [];
+        this.data.diceTotal = 0;
+        this.data.eligiblePieces = [];
+        this.data.selectedPiece = null;
+        this.data.currentPlayer = this.data.currentPlayer === 'white' ? 'black' : 'white';
+
+        // Single notification after all state changes are complete
+        this.notify();
     }
 }

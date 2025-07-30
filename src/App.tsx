@@ -1,7 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import './App.css'
 import { useGameState } from './useGameState'
 import DiceRoller from './DiceRoller'
+import GameSetup from './GameSetup'
+import { PlayerManager } from './PlayerManager'
+import type { PlayerType } from './PlayerAgent'
 import rosetteSquare from './assets/RosetteSquare.svg'
 import gateSquare from './assets/GateSquare.svg'
 import marketSquare from './assets/MarketSquare.svg'
@@ -40,11 +43,45 @@ function App() {
 
   const [showSettings, setShowSettings] = useState<boolean>(false);
   const [showPath, setShowPath] = useState<boolean>(false);
+  const [playerManager, setPlayerManager] = useState<PlayerManager | null>(null);
+  const [showGameSetup, setShowGameSetup] = useState<boolean>(false);
 
   // Highlight circle size for eligible pieces
   const HIGHLIGHT_CIRCLE_SIZE = '39px';
 
   const winner = gameState.checkWinCondition();
+
+  // Handle game setup completion
+  const handleGameSetup = async (whitePlayer: PlayerType, blackPlayer: PlayerType, difficulty: 'easy' | 'medium' | 'hard') => {
+    // Clean up any existing player manager
+    if (playerManager) {
+      playerManager.cleanup();
+      setPlayerManager(null);
+    }
+
+    setShowGameSetup(false); // Close the setup modal
+
+    // Start the game directly - no intermediate welcome screen
+    gameState.startNewGame();    // Only create player manager if there are computer players
+    if (whitePlayer === 'computer' || blackPlayer === 'computer') {
+      // Create new player manager with selected configuration
+      const newPlayerManager = new PlayerManager(gameState, {
+        white: whitePlayer,
+        black: blackPlayer,
+        computerDifficulty: difficulty
+      });
+
+      setPlayerManager(newPlayerManager);
+      await newPlayerManager.start();
+    }
+  };  // Cleanup player manager on unmount
+  useEffect(() => {
+    return () => {
+      if (playerManager) {
+        playerManager.cleanup();
+      }
+    };
+  }, [playerManager]);
 
   // Save settings to localStorage
   const saveSettings = (newSettings: any) => {
@@ -71,7 +108,7 @@ function App() {
       padding: '20px 0',
       boxSizing: 'border-box'
     }}>
-      {!state.gameStarted && (
+      {!state.gameStarted && !showGameSetup && (
         <div style={{
           marginTop: '50px',
           textAlign: 'center'
@@ -84,44 +121,125 @@ function App() {
           }}>
             Royal Game of Ur
           </h1>
-          <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', alignItems: 'center' }}>
+          <p style={{
+            fontSize: '1.2rem',
+            marginBottom: '40px',
+            color: '#666',
+            maxWidth: '600px',
+            margin: '0 auto 40px auto'
+          }}>
+            Experience the ancient Mesopotamian board game that predates chess by over 1,500 years!
+          </p>
+          <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap' }}>
             <button
-              onClick={() => gameState.startNewGame()}
+              onClick={() => setShowGameSetup(true)}
               style={{
-                padding: '12px 24px',
-                fontSize: '1.2rem',
-                borderRadius: 8,
-                cursor: 'pointer',
-                backgroundColor: '#4CAF50',
-                color: '#fff',
-                border: 'none',
-                fontWeight: 'bold'
-              }}
-            >
-              Start New Game
-            </button>
-            <button
-              onClick={() => setShowSettings(true)}
-              style={{
-                padding: '12px 20px',
-                fontSize: '1rem',
+                padding: '16px 32px',
+                fontSize: '1.3rem',
+                fontWeight: 'bold',
                 borderRadius: 8,
                 cursor: 'pointer',
                 backgroundColor: '#646cff',
                 color: '#fff',
                 border: 'none',
-                fontWeight: 'bold'
+                boxShadow: '0 4px 12px rgba(100, 108, 255, 0.3)',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.backgroundColor = '#5a67ff';
+                e.currentTarget.style.transform = 'translateY(-2px)';
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.backgroundColor = '#646cff';
+                e.currentTarget.style.transform = 'translateY(0)';
               }}
             >
-              ⚙️ Settings
+              Start Game
+            </button>
+            <button
+              onClick={() => setShowSettings(true)}
+              style={{
+                padding: '16px 32px',
+                fontSize: '1.1rem',
+                fontWeight: 'bold',
+                borderRadius: 8,
+                cursor: 'pointer',
+                backgroundColor: '#f0f0f0',
+                color: '#333',
+                border: '2px solid #ddd',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.backgroundColor = '#e0e0e0';
+                e.currentTarget.style.borderColor = '#bbb';
+                e.currentTarget.style.transform = 'translateY(-2px)';
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.backgroundColor = '#f0f0f0';
+                e.currentTarget.style.borderColor = '#ddd';
+                e.currentTarget.style.transform = 'translateY(0)';
+              }}
+            >
+              Game Settings
             </button>
           </div>
-          <div style={{ marginTop: '12px', fontSize: '0.9rem', color: 'var(--text-color, #666)' }}>
-            Current setup: {settings.piecesPerPlayer} pieces per player
-            {settings.houseBonus && <span style={{ display: 'block' }}>House Bonus: Enabled</span>}
-            {settings.templeBlessings && <span style={{ display: 'block' }}>Temple Blessings: Enabled</span>}
-            {settings.gateKeeper && <span style={{ display: 'block' }}>Gate Keeper: Enabled</span>}
-            {settings.safeMarkets && <span style={{ display: 'block' }}>Safe Markets: Enabled</span>}
+        </div>
+      )}
+
+      {showGameSetup && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            padding: '0',
+            maxWidth: '500px',
+            width: '90%',
+            maxHeight: '90vh',
+            overflow: 'auto',
+            position: 'relative',
+            boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3)'
+          }}>
+            <button
+              onClick={() => setShowGameSetup(false)}
+              style={{
+                position: 'absolute',
+                top: '15px',
+                right: '15px',
+                background: 'none',
+                border: 'none',
+                fontSize: '1.5rem',
+                cursor: 'pointer',
+                color: '#999',
+                width: '30px',
+                height: '30px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: '50%'
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.backgroundColor = '#f0f0f0';
+                e.currentTarget.style.color = '#333';
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.color = '#999';
+              }}
+            >
+              ×
+            </button>
+            <GameSetup onStartGame={handleGameSetup} />
           </div>
         </div>
       )}
@@ -875,7 +993,26 @@ function App() {
               })()}
             </div>
           )}
-          <DiceRoller gameState={gameState} />
+
+          {/* Player Type Indicator */}
+          {playerManager && (
+            <div style={{
+              marginBottom: '12px',
+              padding: '8px 16px',
+              backgroundColor: '#f0f0f0',
+              borderRadius: '6px',
+              fontSize: '0.9rem',
+              color: '#666',
+              textAlign: 'center'
+            }}>
+              {playerManager ? playerManager.getGameModeDescription() : 'Human vs Human'}
+              {playerManager && playerManager.isCurrentPlayerComputer() && (
+                <span style={{ color: '#646cff', fontWeight: 'bold', marginLeft: '8px' }}>
+                  (Computer thinking...)
+                </span>
+              )}
+            </div>
+          )}          <DiceRoller gameState={gameState} />
 
           {/* Show Path Button */}
           <button
