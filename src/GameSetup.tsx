@@ -30,12 +30,13 @@ const GameSetup: React.FC<GameSetupProps> = ({ onStartGame }) => {
 
     return (
         <div style={{
-            padding: '20px',
+            padding: '24px',
+            backgroundColor: 'var(--modal-bg, #f9f9f9)',
+            borderRadius: '12px',
+            border: '2px solid var(--border-color, #ddd)',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
             maxWidth: '500px',
             margin: '0 auto',
-            backgroundColor: 'var(--modal-bg, #f9f9f9)',
-            borderRadius: '8px',
-            border: '1px solid var(--border-color, #ddd)',
             color: 'var(--text-color, #333)'
         }}>
             <h2 style={{ textAlign: 'center', marginBottom: '20px', color: 'var(--title-color, #333)' }}>Game Setup</h2>
