@@ -1,0 +1,125 @@
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+  padding: 2rem;
+}
+
+.app h1 {
+  color: #646cff;
+  font-size: 3.2em;
+  line-height: 1.1;
+  margin-bottom: 1rem;
+}
+
+.app h2 {
+  color: #61dafb;
+  font-size: 2em;
+  margin: 0;
+}
+
+.input-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.input-section label {
+  font-size: 1.1em;
+  color: #888;
+}
+
+.input-section input {
+  padding: 0.5rem;
+  font-size: 1rem;
+  border: 2px solid #646cff;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  text-align: center;
+  min-width: 200px;
+}
+
+/* Highlight circle animation */
+@keyframes highlight-pulse {
+  0% {
+    background-color: rgba(71, 115, 71, 0.6);
+  }
+
+  50% {
+    background-color: rgba(17, 226, 27, 0.8);
+  }
+
+  100% {
+    background-color: rgba(71, 115, 71, 0.6);
+  }
+}
+
+.highlight-circle {
+  animation: highlight-pulse 1.5s ease-in-out infinite;
+}
+
+/* Selected piece circle animation */
+@keyframes selected-pulse {
+  0% {
+    background-color: rgba(100, 108, 255, 0.3);
+  }
+
+  50% {
+    background-color: rgba(21, 12, 79, 0.5);
+  }
+
+  100% {
+    background-color: rgba(100, 108, 255, 0.3);
+  }
+}
+
+.selected-circle {
+  animation: selected-pulse 1.5s ease-in-out infinite;
+}
+
+.input-section input:focus {
+  outline: none;
+  border-color: #61dafb;
+  box-shadow: 0 0 0 2px rgba(97, 218, 251, 0.3);
+}
+
+.info {
+  color: #888;
+  font-size: 1em;
+  line-height: 1.6;
+  max-width: 600px;
+  margin-top: 2rem;
+}
+
+/* Dark mode support for text readability */
+:root {
+  --title-color: #333;
+  --text-color: #333;
+  --modal-bg: #fff;
+  --button-bg: #f0f0f0;
+  --info-box-bg: #f0f8ff;
+  --temple-box-bg: #f5f0ff;
+  --dark-mode-filter: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --title-color: #f0f0f0;
+    --text-color: #e0e0e0;
+    --modal-bg: #2a2a2a;
+    --button-bg: #444;
+    --info-box-bg: #1a2332;
+    --temple-box-bg: #2a1f32;
+    --dark-mode-filter: brightness(1.2);
+  }
+}

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generator: Adobe Illustrator 23.0.3, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+<svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+	 viewBox="0 0 48 48" style="enable-background:new 0 0 48 48;" xml:space="preserve">
+<style type="text/css">
+	.st0{fill:#EDEDED;}
+	.st1{fill:#808080;}
+	.st2{fill:#2064A8;}
+</style>
+<title>BlackBlank</title>
+<g>
+	<circle class="st0" cx="24" cy="24" r="23.5"/>
+	<path class="st1" d="M24,1c12.7,0,23,10.3,23,23S36.7,47,24,47S1,36.7,1,24S11.3,1,24,1 M24,0C10.7,0,0,10.7,0,24s10.7,24,24,24
+		s24-10.7,24-24S37.3,0,24,0L24,0z"/>
+</g>
+<circle class="st2" cx="24" cy="24" r="5"/>
+<circle class="st2" cx="34.6" cy="13.4" r="5"/>
+<circle class="st2" cx="34.6" cy="34.6" r="5"/>
+<circle class="st2" cx="13.4" cy="13.4" r="5"/>
+<circle class="st2" cx="13.4" cy="34.6" r="5"/>
+</svg>

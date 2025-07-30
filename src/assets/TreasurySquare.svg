@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Generator: Adobe Illustrator 23.0.3, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
+
+<svg
+   version="1.1"
+   id="Layer_1"
+   x="0px"
+   y="0px"
+   viewBox="0 0 72 72"
+   style="enable-background:new 0 0 72 72;"
+   xml:space="preserve"
+   sodipodi:docname="TreasurySquare.svg"
+   inkscape:version="1.4 (86a8ad7, 2024-10-11)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"><defs
+   id="defs9" /><sodipodi:namedview
+   id="namedview9"
+   pagecolor="#ffffff"
+   bordercolor="#999999"
+   borderopacity="1"
+   inkscape:showpageshadow="2"
+   inkscape:pageopacity="0"
+   inkscape:pagecheckerboard="true"
+   inkscape:deskcolor="#d1d1d1"
+   inkscape:zoom="24.069444"
+   inkscape:cx="35.979227"
+   inkscape:cy="36"
+   inkscape:window-width="3840"
+   inkscape:window-height="2036"
+   inkscape:window-x="-12"
+   inkscape:window-y="-12"
+   inkscape:window-maximized="1"
+   inkscape:current-layer="Layer_1" />
+<style
+   type="text/css"
+   id="style1">
+	.st0{fill:#FFFFFF;}
+	.st1{fill:#0000FF;}
+	.st2{fill:none;stroke:#000000;stroke-miterlimit:10;}
+</style>
+<g
+   id="g9">
+	<rect
+   class="st0"
+   width="72"
+   height="72"
+   id="rect1"
+   style="fill:none" />
+	<g
+   id="g2">
+		<polygon
+   points="11.3,54.4 2,45.3 11.3,36 2,26.7 11.3,17.6 2,8.3 8.3,2 17.6,11.3 26.7,2 36,11.3 45.3,2 54.4,11.3 63.7,2     70,8.3 60.7,17.6 70,26.7 60.7,36 70,45.3 60.7,54.4 70,63.7 63.7,70 54.4,60.7 45.3,70 36,60.7 26.7,70 17.6,60.7 8.3,70 2,63.7       "
+   id="polygon1" />
+		<polygon
+   class="st0"
+   points="12.6,54.4 3.3,45.3 12.6,36 3.3,26.7 12.6,17.6 3.3,8.3 8.3,3.3 17.6,12.6 26.7,3.3 36,12.6     45.3,3.3 54.4,12.6 63.7,3.3 68.7,8.3 59.4,17.6 68.7,26.7 59.4,36 68.7,45.3 59.4,54.4 68.7,63.7 63.7,68.7 54.4,59.4 45.3,68.7     36,59.4 26.7,68.7 17.6,59.4 8.3,68.7 3.3,63.7   "
+   id="polygon2" />
+	</g>
+	<g
+   id="g8">
+		<polygon
+   points="49.5,18 54,22.5 49.5,27 54,31.5 49.5,36 54,40.5 49.5,45 54,49.5 49.5,54 45,49.5 40.5,54 36,49.5 31.5,54     27,49.5 22.5,54 18,49.5 22.5,45 18,40.5 22.5,36 18,31.5 22.5,27 18,22.5 22.5,18 27,22.5 31.5,18 36,22.5 40.5,18 45,22.5   "
+   id="polygon3" />
+		<polygon
+   class="st0"
+   points="23.9,45 19.4,40.5 23.9,36 19.4,31.5 23.9,27 19.4,22.5 22.5,19.4 27,23.9 31.5,19.4 36,23.9     40.5,19.4 45,23.9 49.5,19.4 52.6,22.5 48.1,27 52.6,31.5 48.1,36 52.6,40.5 48.1,45 52.6,49.5 49.5,52.6 45,48.1 40.5,52.6     36,48.1 31.5,52.6 27,48.1 22.5,52.6 19.4,49.5   "
+   id="polygon4" />
+		<circle
+   class="st1"
+   cx="42.8"
+   cy="29.3"
+   r="3.4"
+   id="circle4" />
+		<circle
+   class="st1"
+   cx="42.8"
+   cy="42.8"
+   r="3.4"
+   id="circle5" />
+		<circle
+   class="st1"
+   cx="29.3"
+   cy="29.3"
+   r="3.4"
+   id="circle6" />
+		<circle
+   class="st1"
+   cx="29.3"
+   cy="42.8"
+   r="3.4"
+   id="circle7" />
+		<circle
+   class="st1"
+   cx="36"
+   cy="36"
+   r="3.4"
+   id="circle8" />
+	</g>
+	<rect
+   x="2"
+   y="2"
+   class="st2"
+   width="68"
+   height="68"
+   id="rect8" />
+</g>
+</svg>
