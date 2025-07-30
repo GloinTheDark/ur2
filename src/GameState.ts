@@ -500,6 +500,21 @@ export class GameState {
         return null;
     }
 
+    // Path getters for PlayerAgent
+    getWhitePath(): number[] {
+        return [...this.whitePath];
+    }
+
+    getBlackPath(): number[] {
+        return [...this.blackPath];
+    }
+
+    // Check if a square is a rosette square
+    isRosetteSquare(square: number): boolean {
+        const rosetteSquares = [1, 7, 12, 17, 23];
+        return rosetteSquares.includes(square);
+    }
+
     // Turn management
     shouldShowPassButton(): boolean {
         // Show pass button when dice have been rolled but no pieces can move

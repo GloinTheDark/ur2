@@ -17,33 +17,41 @@ const STORAGE_KEY = 'ur-game-setup';
 const GameSetup: React.FC<GameSetupProps> = ({ onStartGame }) => {
     const [whitePlayerOption, setWhitePlayerOption] = useState<PlayerOption>('human');
     const [blackPlayerOption, setBlackPlayerOption] = useState<PlayerOption>('human');
+    const [isLoaded, setIsLoaded] = useState(false);
 
     // Load settings from localStorage on component mount
     useEffect(() => {
         try {
             const savedSetup = localStorage.getItem(STORAGE_KEY);
+            console.log('Loading game setup from localStorage:', savedSetup);
             if (savedSetup) {
                 const parsedSetup: GameSetupState = JSON.parse(savedSetup);
+                console.log('Parsed setup:', parsedSetup);
                 setWhitePlayerOption(parsedSetup.whitePlayerOption || 'human');
                 setBlackPlayerOption(parsedSetup.blackPlayerOption || 'human');
             }
+            setIsLoaded(true);
         } catch (error) {
             console.warn('Failed to load game setup from localStorage:', error);
+            setIsLoaded(true);
         }
     }, []);
 
-    // Save settings to localStorage whenever they change
+    // Save settings to localStorage whenever they change (but only after initial load)
     useEffect(() => {
+        if (!isLoaded) return; // Don't save during initial load
+
         try {
             const setupState: GameSetupState = {
                 whitePlayerOption,
                 blackPlayerOption
             };
+            console.log('Saving game setup to localStorage:', setupState);
             localStorage.setItem(STORAGE_KEY, JSON.stringify(setupState));
         } catch (error) {
             console.warn('Failed to save game setup to localStorage:', error);
         }
-    }, [whitePlayerOption, blackPlayerOption]);
+    }, [whitePlayerOption, blackPlayerOption, isLoaded]);
 
     const handleStartGame = () => {
         const { type: whiteType, difficulty: whiteDifficulty } = parsePlayerOption(whitePlayerOption);
