@@ -17,6 +17,14 @@ const DiceRoller: React.FC<DiceRollerProps> = ({ gameState }) => {
         gameState.rollDice();
     };
 
+    const handleInitialRoll = () => {
+        gameState.rollForFirstPlayer();
+    };
+
+    const handleProceedToGame = () => {
+        gameState.proceedToGame();
+    };
+
     const currentPlayer = state.currentPlayer;
     const rolls = state.diceRolls;
     const diceTotal = state.diceTotal;
@@ -27,6 +35,80 @@ const DiceRoller: React.FC<DiceRollerProps> = ({ gameState }) => {
 
     const currentPositions = currentPlayer === 'white' ? state.whitePiecePositions : state.blackPiecePositions;
 
+    // Initial roll phase
+    if (state.gamePhase === 'initial-roll') {
+        return (
+            <div>
+                <div style={{ marginBottom: '20px', fontSize: '1.2rem', fontWeight: 'bold', textAlign: 'center' }}>
+                    Roll a die to see who goes first!
+                </div>
+
+                {state.initialRollResult === null ? (
+                    <div style={{ textAlign: 'center' }}>
+                        <button
+                            onClick={handleInitialRoll}
+                            style={{
+                                padding: '12px 24px',
+                                fontSize: '1.1rem',
+                                borderRadius: 6,
+                                cursor: 'pointer',
+                                backgroundColor: '#646cff',
+                                color: '#fff',
+                                border: 'none',
+                                fontWeight: 'bold'
+                            }}
+                        >
+                            Roll Die
+                        </button>
+                    </div>
+                ) : (
+                    <div style={{ textAlign: 'center' }}>
+                        <div style={{ marginBottom: '16px', fontSize: '1.1rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+                            <div>
+                                <strong>Roll result:</strong>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'center' }}>
+                                <img
+                                    src={state.initialRollResult === 0 ? dieB1 : dieW1}
+                                    alt={`Die result: ${state.initialRollResult}`}
+                                    style={{
+                                        width: '50px',
+                                        height: '50px',
+                                        borderRadius: '4px'
+                                    }}
+                                />
+                            </div>
+                            <div style={{
+                                fontSize: '1.2rem',
+                                fontWeight: 'bold',
+                                color: currentPlayer === 'white' ? '#666' : '#333'
+                            }}>
+                                {currentPlayer.charAt(0).toUpperCase() + currentPlayer.slice(1)} goes first!
+                            </div>
+                        </div>
+
+                        <button
+                            onClick={handleProceedToGame}
+                            style={{
+                                padding: '12px 24px',
+                                fontSize: '1.1rem',
+                                borderRadius: 6,
+                                cursor: 'pointer',
+                                backgroundColor: '#4CAF50',
+                                color: '#fff',
+                                border: 'none',
+                                fontWeight: 'bold'
+                            }}
+                        >
+                            Start Game
+                        </button>
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    // Playing phase - normal game
     return (
         <div>
             <div style={{ marginBottom: '12px', fontSize: '1.1rem', fontWeight: 'bold' }}>
@@ -53,7 +135,7 @@ const DiceRoller: React.FC<DiceRollerProps> = ({ gameState }) => {
             )}
 
             {rolls.length > 0 && (
-                <div style={{ marginTop: '12px', fontSize: '1.5rem', fontWeight: 600, display: 'flex', gap: '12px', alignItems: 'center' }}>
+                <div style={{ marginTop: '12px', fontSize: '1.5rem', fontWeight: 600, display: 'flex', gap: '12px', alignItems: 'center', justifyContent: 'center' }}>
                     {rolls.map((roll, i) => {
                         // Get random die image for the roll value
                         const diceImages = roll === 0 ? [dieB1, dieB2, dieB3] : [dieW1, dieW2, dieW3];

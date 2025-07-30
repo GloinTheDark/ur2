@@ -14,6 +14,8 @@ export interface GameStateData {
     blackPiecePositions: (number | 'start')[];
     selectedPiece: { player: 'white' | 'black', index: number } | null;
     gameStarted: boolean;
+    gamePhase: 'initial-roll' | 'playing';
+    initialRollResult: number | null;
     diceRolls: number[];
     diceTotal: number;
     eligiblePieces: number[];
@@ -42,6 +44,8 @@ export class GameState {
             blackPiecePositions: Array(this.settings.piecesPerPlayer).fill('start'),
             selectedPiece: null,
             gameStarted: false,
+            gamePhase: 'initial-roll',
+            initialRollResult: null,
             diceRolls: [],
             diceTotal: 0,
             eligiblePieces: []
@@ -71,7 +75,35 @@ export class GameState {
     startNewGame(): void {
         this.data = this.createInitialState();
         this.data.gameStarted = true;
+        this.data.gamePhase = 'initial-roll';
         this.notify();
+    }
+
+    // Initial roll to determine first player
+    rollForFirstPlayer(): void {
+        const roll = this.rollSingleDie();
+
+        console.log('Initial roll result:', roll); // Debug log
+
+        this.data.initialRollResult = roll;
+
+        // 1 = white goes first, 0 = black goes first
+        this.data.currentPlayer = roll === 1 ? 'white' : 'black';
+
+        console.log('Current player set to:', this.data.currentPlayer); // Debug log
+
+        this.notify();
+    }
+
+    proceedToGame(): void {
+        this.data.gamePhase = 'playing';
+        this.data.initialRollResult = null;
+        this.notify();
+    }
+
+    private rollSingleDie(): number {
+        // Roll a single binary die (0 or 1)
+        return Math.floor(Math.random() * 2);
     }
 
     resetGame(): void {
@@ -95,6 +127,11 @@ export class GameState {
 
     // Dice rolling
     rollDice(): void {
+        // Only allow dice rolling during the playing phase
+        if (this.data.gamePhase !== 'playing') {
+            return;
+        }
+
         // Generate 4 independent dice rolls, each die can roll a 0 or a 1
         const newRolls = Array.from({ length: 4 }, () => Math.floor(Math.random() * 2));
         const baseTotal = newRolls.reduce((sum, roll) => sum + roll, 0);
