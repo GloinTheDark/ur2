@@ -4,6 +4,7 @@ import { useGameState } from './useGameState'
 import DiceRoller from './DiceRoller'
 import GameSetup from './GameSetup'
 import GameSettings from './GameSettings'
+import PlayerHome from './PlayerHome'
 import { PlayerManager } from './PlayerManager'
 import type { PlayerType } from './PlayerAgent'
 import { BoardUtils } from './BoardLayout'
@@ -291,124 +292,18 @@ function App() {
       )}
 
       {/* White Player's Home */}
-      <div style={{ marginTop: '24px' }}>
-        <h3 style={{ textAlign: 'center', margin: '0 0 8px 0', color: 'var(--text-color, #666)', filter: 'var(--dark-mode-filter, none)' }}>
-          White's Home
-          <span style={{ fontSize: '0.8rem', fontWeight: 'normal', marginLeft: '8px' }}>
-            (Completed: {state.whitePieces.filter((piece, idx) => piece === 'spots' && state.whitePiecePositions[idx] === 'start').length}/{settings.piecesPerPlayer})
-          </span>
-        </h3>
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: `repeat(${settings.piecesPerPlayer}, 40px)`,
-          gridTemplateRows: 'repeat(1, 40px)',
-          gap: '4px',
-          justifyContent: 'center',
-          padding: '8px',
-          backgroundColor: '#f8f8f8ff',
-          borderRadius: '8px',
-          border: '2px solid #ccc',
-          width: 'fit-content',
-          margin: '0 auto'
-        }}>
-          {Array.from({ length: settings.piecesPerPlayer }).map((_, idx) => {
-            const isPieceInStart = state.whitePiecePositions[idx] === 'start';
-            const isEligible = state.gameStarted && !winner && state.currentPlayer === 'white' && state.eligiblePieces.includes(idx);
-            const isSelected = state.selectedPiece !== null && state.selectedPiece.player === 'white' && state.selectedPiece.index === idx && isPieceInStart;
-
-            // Check if this home slot is the destination for a piece completing the path
-            const destinationSquare = gameState.getDestinationSquare();
-            const isDestinationHome = destinationSquare === 'complete' && state.selectedPiece?.player === 'white' &&
-              state.selectedPiece?.index === idx && !isPieceInStart;
-
-            return (
-              <div
-                key={`white-${idx}`}
-                style={{
-                  width: 40,
-                  height: 40,
-                  background: SQUARE_BACKGROUND_COLOR,
-                  border: '1px solid #999',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontWeight: 500,
-                  borderRadius: 4,
-                  position: 'relative',
-                  cursor: isPieceInStart && isEligible ? 'pointer' : 'default'
-                }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (isPieceInStart && isEligible) {
-                    handlePieceClick(idx);
-                  }
-                }}
-              >
-                {/* Selected piece circle takes priority over eligible highlight */}
-                {isPieceInStart && isSelected && (
-                  <div
-                    className="selected-circle"
-                    style={{
-                      position: 'absolute',
-                      width: HIGHLIGHT_CIRCLE_SIZE,
-                      height: HIGHLIGHT_CIRCLE_SIZE,
-                      borderRadius: '50%',
-                      zIndex: 1
-                    }}
-                  />
-                )}
-                {/* Green highlight circle for eligible pieces (only if not selected) */}
-                {isPieceInStart && isEligible && !isSelected && (
-                  <div
-                    className="highlight-circle"
-                    style={{
-                      position: 'absolute',
-                      width: HIGHLIGHT_CIRCLE_SIZE,
-                      height: HIGHLIGHT_CIRCLE_SIZE,
-                      borderRadius: '50%',
-                      zIndex: 1
-                    }}
-                  />
-                )}
-                {isPieceInStart && (
-                  <img
-                    src={state.whitePieces[idx] === 'blank' ? whiteBlank : whiteSpots}
-                    alt={`White piece ${idx + 1} - ${state.whitePieces[idx]}`}
-                    style={{
-                      width: `${PIECE_SIZE}px`,
-                      height: `${PIECE_SIZE}px`,
-                      borderRadius: 4,
-                      position: 'relative',
-                      zIndex: 2
-                    }}
-                  />
-                )}
-                {/* GoTo indicator for pieces completing the path */}
-                {isDestinationHome && (
-                  <img
-                    src={goToSquare}
-                    alt="Go To Home"
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      borderRadius: 4,
-                      zIndex: 3,
-                      cursor: 'pointer'
-                    }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDestinationClick(idx);
-                    }}
-                  />
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
+      <PlayerHome
+        player="white"
+        state={state}
+        settings={settings}
+        winner={winner}
+        getDestinationSquare={() => gameState.getDestinationSquare()}
+        onPieceClick={handlePieceClick}
+        onDestinationClick={handleDestinationClick}
+        highlightCircleSize={HIGHLIGHT_CIRCLE_SIZE}
+        pieceSize={PIECE_SIZE}
+        squareBackgroundColor={SQUARE_BACKGROUND_COLOR}
+      />
 
       {/* Main Game Board */}
       <div style={{ position: 'relative', marginTop: '16px' }}>
@@ -713,124 +608,18 @@ function App() {
       </div>
 
       {/* Black Player's Home */}
-      <div style={{ marginTop: '16px' }}>
-        <h3 style={{ textAlign: 'center', margin: '0 0 8px 0', color: 'var(--text-color, #333)', filter: 'var(--dark-mode-filter, none)' }}>
-          Black's Home
-          <span style={{ fontSize: '0.8rem', fontWeight: 'normal', marginLeft: '8px' }}>
-            (Completed: {state.blackPieces.filter((piece, idx) => piece === 'spots' && state.blackPiecePositions[idx] === 'start').length}/{settings.piecesPerPlayer})
-          </span>
-        </h3>
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: `repeat(${settings.piecesPerPlayer}, 40px)`,
-          gridTemplateRows: 'repeat(1, 40px)',
-          gap: '4px',
-          justifyContent: 'center',
-          padding: '8px',
-          backgroundColor: '#2a2a2a',
-          borderRadius: '8px',
-          border: '2px solid #555',
-          width: 'fit-content',
-          margin: '0 auto'
-        }}>
-          {Array.from({ length: settings.piecesPerPlayer }).map((_, idx) => {
-            const isPieceInStart = state.blackPiecePositions[idx] === 'start';
-            const isEligible = state.gameStarted && !winner && state.currentPlayer === 'black' && state.eligiblePieces.includes(idx);
-            const isSelected = state.selectedPiece !== null && state.selectedPiece.player === 'black' && state.selectedPiece.index === idx && isPieceInStart;
-
-            // Check if this home slot is the destination for a piece completing the path
-            const destinationSquare = gameState.getDestinationSquare();
-            const isDestinationHome = destinationSquare === 'complete' && state.selectedPiece?.player === 'black' &&
-              state.selectedPiece?.index === idx && !isPieceInStart;
-
-            return (
-              <div
-                key={`black-${idx}`}
-                style={{
-                  width: 40,
-                  height: 40,
-                  background: SQUARE_BACKGROUND_COLOR,
-                  border: '1px solid #999',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontWeight: 500,
-                  borderRadius: 4,
-                  position: 'relative',
-                  cursor: isPieceInStart && isEligible ? 'pointer' : 'default'
-                }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (isPieceInStart && isEligible) {
-                    handlePieceClick(idx);
-                  }
-                }}
-              >
-                {/* Selected piece circle takes priority over eligible highlight */}
-                {isPieceInStart && isSelected && (
-                  <div
-                    className="selected-circle"
-                    style={{
-                      position: 'absolute',
-                      width: HIGHLIGHT_CIRCLE_SIZE,
-                      height: HIGHLIGHT_CIRCLE_SIZE,
-                      borderRadius: '50%',
-                      zIndex: 1
-                    }}
-                  />
-                )}
-                {/* Green highlight circle for eligible pieces (only if not selected) */}
-                {isPieceInStart && isEligible && !isSelected && (
-                  <div
-                    className="highlight-circle"
-                    style={{
-                      position: 'absolute',
-                      width: HIGHLIGHT_CIRCLE_SIZE,
-                      height: HIGHLIGHT_CIRCLE_SIZE,
-                      borderRadius: '50%',
-                      zIndex: 1
-                    }}
-                  />
-                )}
-                {isPieceInStart && (
-                  <img
-                    src={state.blackPieces[idx] === 'blank' ? blackBlank : blackSpots}
-                    alt={`Black piece ${idx + 1} - ${state.blackPieces[idx]}`}
-                    style={{
-                      width: `${PIECE_SIZE}px`,
-                      height: `${PIECE_SIZE}px`,
-                      borderRadius: 4,
-                      position: 'relative',
-                      zIndex: 2
-                    }}
-                  />
-                )}
-                {/* GoTo indicator for pieces completing the path */}
-                {isDestinationHome && (
-                  <img
-                    src={goToSquare}
-                    alt="Go To Home"
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      borderRadius: 4,
-                      zIndex: 3,
-                      cursor: 'pointer'
-                    }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDestinationClick(idx);
-                    }}
-                  />
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
+      <PlayerHome
+        player="black"
+        state={state}
+        settings={settings}
+        winner={winner}
+        getDestinationSquare={() => gameState.getDestinationSquare()}
+        onPieceClick={handlePieceClick}
+        onDestinationClick={handleDestinationClick}
+        highlightCircleSize={HIGHLIGHT_CIRCLE_SIZE}
+        pieceSize={PIECE_SIZE}
+        squareBackgroundColor={SQUARE_BACKGROUND_COLOR}
+      />
 
       {state.gameStarted && !winner && (
         <div style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>

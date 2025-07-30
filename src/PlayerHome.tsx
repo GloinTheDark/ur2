@@ -1,0 +1,183 @@
+import React from 'react';
+import type { GameStateData, GameSettings } from './GameState';
+import whiteBlank from './assets/WhiteBlank.svg';
+import whiteSpots from './assets/WhiteSpots.svg';
+import blackBlank from './assets/BlackBlank.svg';
+import blackSpots from './assets/BlackSpots.svg';
+import goToSquare from './assets/GoTo.svg';
+
+interface PlayerHomeProps {
+    player: 'white' | 'black';
+    state: GameStateData;
+    settings: GameSettings;
+    winner: 'white' | 'black' | null;
+    getDestinationSquare: () => number | 'complete' | null;
+    onPieceClick: (pieceIndex: number) => void;
+    onDestinationClick: (pieceIndex: number) => void;
+    highlightCircleSize: string;
+    pieceSize: number;
+    squareBackgroundColor: string;
+}
+
+const PlayerHome: React.FC<PlayerHomeProps> = ({
+    player,
+    state,
+    settings,
+    winner,
+    getDestinationSquare,
+    onPieceClick,
+    onDestinationClick,
+    highlightCircleSize,
+    pieceSize,
+    squareBackgroundColor
+}) => {
+    const isWhite = player === 'white';
+    const pieces = isWhite ? state.whitePieces : state.blackPieces;
+    const positions = isWhite ? state.whitePiecePositions : state.blackPiecePositions;
+    const blankIcon = isWhite ? whiteBlank : blackBlank;
+    const spotsIcon = isWhite ? whiteSpots : blackSpots;
+
+    const completedCount = pieces.filter((piece, idx) =>
+        piece === 'spots' && positions[idx] === 'start'
+    ).length;
+
+    const homeStyle = isWhite ? {
+        backgroundColor: '#f8f8f8ff',
+        borderColor: '#ccc'
+    } : {
+        backgroundColor: '#2a2a2a',
+        borderColor: '#555'
+    };
+
+    const titleColor = isWhite ?
+        'var(--text-color, #666)' :
+        'var(--text-color, #333)';
+
+    return (
+        <div style={{ marginTop: isWhite ? '24px' : '16px' }}>
+            <h3 style={{
+                textAlign: 'center',
+                margin: '0 0 8px 0',
+                color: titleColor,
+                filter: 'var(--dark-mode-filter, none)'
+            }}>
+                {isWhite ? "White's Home" : "Black's Home"}
+                <span style={{ fontSize: '0.8rem', fontWeight: 'normal', marginLeft: '8px' }}>
+                    (Completed: {completedCount}/{settings.piecesPerPlayer})
+                </span>
+            </h3>
+            <div style={{
+                display: 'grid',
+                gridTemplateColumns: `repeat(${settings.piecesPerPlayer}, 40px)`,
+                gridTemplateRows: 'repeat(1, 40px)',
+                gap: '4px',
+                justifyContent: 'center',
+                padding: '8px',
+                backgroundColor: homeStyle.backgroundColor,
+                borderRadius: '8px',
+                border: `2px solid ${homeStyle.borderColor}`,
+                width: 'fit-content',
+                margin: '0 auto'
+            }}>
+                {Array.from({ length: settings.piecesPerPlayer }).map((_, idx) => {
+                    const isPieceInStart = positions[idx] === 'start';
+                    const isEligible = state.gameStarted && !winner && state.currentPlayer === player && state.eligiblePieces.includes(idx);
+                    const isSelected = state.selectedPiece !== null && state.selectedPiece.player === player && state.selectedPiece.index === idx && isPieceInStart;
+
+                    // Check if this home slot is the destination for a piece completing the path
+                    const destinationSquare = getDestinationSquare();
+                    const isDestinationHome = destinationSquare === 'complete' && state.selectedPiece?.player === player &&
+                        state.selectedPiece?.index === idx && !isPieceInStart;
+
+                    return (
+                        <div
+                            key={`${player}-${idx}`}
+                            style={{
+                                width: 40,
+                                height: 40,
+                                background: squareBackgroundColor,
+                                border: '1px solid #999',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontWeight: 500,
+                                borderRadius: 4,
+                                position: 'relative',
+                                cursor: isPieceInStart && isEligible ? 'pointer' : 'default'
+                            }}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                if (isPieceInStart && isEligible) {
+                                    onPieceClick(idx);
+                                }
+                            }}
+                        >
+                            {/* Selected piece circle takes priority over eligible highlight */}
+                            {isPieceInStart && isSelected && (
+                                <div
+                                    className="selected-circle"
+                                    style={{
+                                        position: 'absolute',
+                                        width: highlightCircleSize,
+                                        height: highlightCircleSize,
+                                        borderRadius: '50%',
+                                        zIndex: 1
+                                    }}
+                                />
+                            )}
+                            {/* Green highlight circle for eligible pieces (only if not selected) */}
+                            {isPieceInStart && isEligible && !isSelected && (
+                                <div
+                                    className="highlight-circle"
+                                    style={{
+                                        position: 'absolute',
+                                        width: highlightCircleSize,
+                                        height: highlightCircleSize,
+                                        borderRadius: '50%',
+                                        zIndex: 1
+                                    }}
+                                />
+                            )}
+                            {isPieceInStart && (
+                                <img
+                                    src={pieces[idx] === 'blank' ? blankIcon : spotsIcon}
+                                    alt={`${isWhite ? 'White' : 'Black'} piece ${idx + 1} - ${pieces[idx]}`}
+                                    style={{
+                                        width: `${pieceSize}px`,
+                                        height: `${pieceSize}px`,
+                                        borderRadius: 4,
+                                        position: 'relative',
+                                        zIndex: 2
+                                    }}
+                                />
+                            )}
+                            {/* GoTo indicator for pieces completing the path */}
+                            {isDestinationHome && (
+                                <img
+                                    src={goToSquare}
+                                    alt="Go To Home"
+                                    style={{
+                                        width: '100%',
+                                        height: '100%',
+                                        position: 'absolute',
+                                        top: 0,
+                                        left: 0,
+                                        borderRadius: 4,
+                                        zIndex: 3,
+                                        cursor: 'pointer'
+                                    }}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onDestinationClick(idx);
+                                    }}
+                                />
+                            )}
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+};
+
+export default PlayerHome;
