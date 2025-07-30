@@ -23,10 +23,8 @@ const GameSetup: React.FC<GameSetupProps> = ({ onStartGame }) => {
     useEffect(() => {
         try {
             const savedSetup = localStorage.getItem(STORAGE_KEY);
-            console.log('Loading game setup from localStorage:', savedSetup);
             if (savedSetup) {
                 const parsedSetup: GameSetupState = JSON.parse(savedSetup);
-                console.log('Parsed setup:', parsedSetup);
                 setWhitePlayerOption(parsedSetup.whitePlayerOption || 'human');
                 setBlackPlayerOption(parsedSetup.blackPlayerOption || 'human');
             }
@@ -46,7 +44,6 @@ const GameSetup: React.FC<GameSetupProps> = ({ onStartGame }) => {
                 whitePlayerOption,
                 blackPlayerOption
             };
-            console.log('Saving game setup to localStorage:', setupState);
             localStorage.setItem(STORAGE_KEY, JSON.stringify(setupState));
         } catch (error) {
             console.warn('Failed to save game setup to localStorage:', error);
