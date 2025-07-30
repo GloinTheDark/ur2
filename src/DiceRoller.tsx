@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { GameState } from './GameState';
 import dieB1 from './assets/DieB1.svg';
 import dieB2 from './assets/DieB2.svg';
@@ -13,16 +12,6 @@ interface DiceRollerProps {
 
 const DiceRoller: React.FC<DiceRollerProps> = ({ gameState }) => {
     const state = gameState.state;
-
-    // Auto-end turn effect
-    useEffect(() => {
-        if (gameState.shouldAutoEndTurn()) {
-            const timer = setTimeout(() => {
-                gameState.autoEndTurn();
-            }, 1500);
-            return () => clearTimeout(timer);
-        }
-    }, [gameState, state.diceRolls.length, state.diceTotal, state.eligiblePieces.length]);
 
     const handleRoll = () => {
         gameState.rollDice();
@@ -102,15 +91,26 @@ const DiceRoller: React.FC<DiceRollerProps> = ({ gameState }) => {
                 </div>
             )}
 
-            {rolls.length > 0 && diceTotal === 0 && (
-                <div style={{ marginTop: '12px', fontSize: '1rem', fontWeight: 'bold', color: '#ff6b6b' }}>
-                    No movement possible - turn will end automatically
-                </div>
-            )}
-
-            {rolls.length > 0 && diceTotal > 0 && eligiblePieces.length === 0 && (
-                <div style={{ marginTop: '12px', fontSize: '1rem', fontWeight: 'bold', color: '#ff6b6b' }}>
-                    No valid moves available - turn will end automatically
+            {gameState.shouldShowPassButton() && (
+                <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ fontSize: '1rem', fontWeight: 'bold', color: '#ff6b6b' }}>
+                        {diceTotal === 0 ? 'No movement possible' : 'No valid moves available'}
+                    </div>
+                    <button
+                        onClick={() => gameState.passTurn()}
+                        style={{
+                            padding: '8px 16px',
+                            fontSize: '1rem',
+                            borderRadius: 6,
+                            cursor: 'pointer',
+                            backgroundColor: '#ff6b6b',
+                            color: '#fff',
+                            border: 'none',
+                            fontWeight: 'bold'
+                        }}
+                    >
+                        Pass Turn
+                    </button>
                 </div>
             )}
 

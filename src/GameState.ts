@@ -466,13 +466,13 @@ export class GameState {
         return null;
     }
 
-    // Auto-end turn helpers
-    shouldAutoEndTurn(): boolean {
-        return this.data.diceRolls.length > 0 &&
-            (this.data.diceTotal === 0 || (this.data.diceTotal > 0 && this.data.eligiblePieces.length === 0));
+    // Turn management
+    shouldShowPassButton(): boolean {
+        // Show pass button when dice have been rolled but no pieces can move
+        return this.data.diceRolls.length > 0 && this.data.eligiblePieces.length === 0;
     }
 
-    autoEndTurn(): void {
+    passTurn(): void {
         this.resetDice();
         this.switchPlayer();
     }
