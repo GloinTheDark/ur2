@@ -283,10 +283,73 @@ export class GameState {
             return false;
         }
 
-        const { player, index, originalDiceRoll } = this.data.animatingPiece;
+        // Clear selected piece immediately to prevent UI from showing destination marker
+        this.data.selectedPiece = null;
 
-        // Execute the actual move using the original dice roll
-        const landedOnRosette = this.executeMove(player, index, originalDiceRoll);
+        const { player, index, fromPosition, toPosition, originalDiceRoll } = this.data.animatingPiece;
+        const playerPath = player === 'white' ? this.whitePath : this.blackPath;
+        const currentPieces = player === 'white' ? this.data.whitePieces : this.data.blackPieces;
+        let landedOnRosette = false;
+
+        // Set the piece to its final position
+        if (player === 'white') {
+            this.data.whitePiecePositions[index] = toPosition;
+        } else {
+            this.data.blackPiecePositions[index] = toPosition;
+        }
+
+        // Handle piece type changes (blank to spots when passing treasury)
+        if (fromPosition === 'start' && toPosition !== 'start') {
+            // Moving from start - check if we pass through any treasury squares
+            for (let i = 0; i < originalDiceRoll; i++) {
+                if (TREASURY_SQUARES.includes(playerPath[i] as any)) {
+                    if (player === 'white') {
+                        this.data.whitePieces[index] = 'spots';
+                    } else {
+                        this.data.blackPieces[index] = 'spots';
+                    }
+                    break;
+                }
+            }
+        } else if (fromPosition !== 'start' && toPosition !== 'start') {
+            // Moving along the path - check if we pass through any treasury squares
+            const fromIndex = this.findPieceIndexInPath(fromPosition as number, currentPieces[index], playerPath);
+            const toIndex = this.findPieceIndexInPath(toPosition as number, currentPieces[index], playerPath);
+            for (let i = fromIndex + 1; i <= toIndex; i++) {
+                if (TREASURY_SQUARES.includes(playerPath[i] as any)) {
+                    if (player === 'white') {
+                        this.data.whitePieces[index] = 'spots';
+                    } else {
+                        this.data.blackPieces[index] = 'spots';
+                    }
+                    break;
+                }
+            }
+        } else if (toPosition === 'start') {
+            // Completing the circuit - piece should be spots
+            if (player === 'white') {
+                this.data.whitePieces[index] = 'spots';
+            } else {
+                this.data.blackPieces[index] = 'spots';
+            }
+        }
+
+        // Check for rosette landing
+        if (toPosition !== 'start' && ROSETTE_SQUARES.includes(toPosition as any)) {
+            landedOnRosette = true;
+        }
+
+        // Handle piece capture
+        if (toPosition !== 'start') {
+            const opponentPositions = player === 'white' ? this.data.blackPiecePositions : this.data.whitePiecePositions;
+            const opponentPieces = player === 'white' ? this.data.blackPieces : this.data.whitePieces;
+
+            const capturedPieceIndex = opponentPositions.findIndex(pos => pos === toPosition);
+            if (capturedPieceIndex !== -1) {
+                opponentPositions[capturedPieceIndex] = 'start';
+                opponentPieces[capturedPieceIndex] = 'blank';
+            }
+        }
 
         // Reset animation state
         this.data.animatingPiece = null;
@@ -295,7 +358,6 @@ export class GameState {
         this.data.diceRolls = [];
         this.data.diceTotal = 0;
         this.data.eligiblePieces = [];
-        this.data.selectedPiece = null;
 
         // Switch player if didn't land on rosette
         if (!landedOnRosette) {
@@ -560,6 +622,13 @@ export class GameState {
     // Get destination square for selected piece
     getDestinationSquare(): number | 'complete' | null {
         if (!this.data.selectedPiece || this.data.diceTotal === 0) return null;
+
+        // If this piece is currently animating, use the stored destination
+        if (this.data.animatingPiece &&
+            this.data.animatingPiece.player === this.data.selectedPiece.player &&
+            this.data.animatingPiece.index === this.data.selectedPiece.index) {
+            return this.data.animatingPiece.toPosition === 'start' ? 'complete' : this.data.animatingPiece.toPosition;
+        }
 
         const currentPlayerPath = this.data.selectedPiece.player === 'white' ? this.whitePath : this.blackPath;
         const currentPositions = this.data.selectedPiece.player === 'white' ? this.data.whitePiecePositions : this.data.blackPiecePositions;

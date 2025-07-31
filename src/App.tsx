@@ -357,8 +357,8 @@ function App() {
                   pos === squareNumber ? index : null
                 ).filter(p => p !== null);
 
-                // Check if any piece on this square is eligible to move (only during active gameplay)
-                const hasEligiblePiece = state.gameStarted && !winner && (state.currentPlayer === 'white' ? whitePiecesOnSquare : blackPiecesOnSquare).some(pieceIndex =>
+                // Check if any piece on this square is eligible to move (only during active gameplay and not during animation)
+                const hasEligiblePiece = state.gameStarted && !winner && !gameState.isAnimating() && (state.currentPlayer === 'white' ? whitePiecesOnSquare : blackPiecesOnSquare).some(pieceIndex =>
                   state.eligiblePieces.includes(pieceIndex as number)
                 );
 
@@ -509,7 +509,7 @@ function App() {
                           />
                         )}
                         {whitePiecesOnSquare.map((pieceIndex) => {
-                          const isEligible = state.gameStarted && !winner && state.currentPlayer === 'white' && state.eligiblePieces.includes(pieceIndex as number);
+                          const isEligible = state.gameStarted && !winner && state.currentPlayer === 'white' && !gameState.isAnimating() && state.eligiblePieces.includes(pieceIndex as number);
                           const isSelected = state.selectedPiece !== null && state.selectedPiece.player === 'white' && state.selectedPiece.index === pieceIndex;
                           return (
                             <div
@@ -558,7 +558,7 @@ function App() {
                           );
                         })}
                         {blackPiecesOnSquare.map((pieceIndex) => {
-                          const isEligible = state.gameStarted && !winner && state.currentPlayer === 'black' && state.eligiblePieces.includes(pieceIndex as number);
+                          const isEligible = state.gameStarted && !winner && state.currentPlayer === 'black' && !gameState.isAnimating() && state.eligiblePieces.includes(pieceIndex as number);
                           const isSelected = state.selectedPiece !== null && state.selectedPiece.player === 'black' && state.selectedPiece.index === pieceIndex;
                           return (
                             <div

@@ -77,7 +77,7 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
                 {Array.from({ length: settings.piecesPerPlayer }).map((_, idx) => {
                     const isPieceInStart = positions[idx] === 'start';
                     const isPieceMoving = positions[idx] === 'moving';
-                    const isEligible = state.gameStarted && !winner && state.currentPlayer === player && state.eligiblePieces.includes(idx);
+                    const isEligible = state.gameStarted && !winner && state.currentPlayer === player && !state.animatingPiece?.isAnimating && state.eligiblePieces.includes(idx);
                     const isSelected = state.selectedPiece !== null && state.selectedPiece.player === player && state.selectedPiece.index === idx && isPieceInStart;
 
                     // Check if this home slot is the destination for a piece completing the path

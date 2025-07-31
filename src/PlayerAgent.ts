@@ -107,6 +107,11 @@ export class ComputerPlayerAgent implements PlayerAgent {
             return;
         }
 
+        // Don't act if a piece has already been selected (prevents multiple calls)
+        if (gameState.state.selectedPiece !== null) {
+            return;
+        }
+
         // Add thinking delay
         await this.delay(1000);
 
@@ -125,7 +130,7 @@ export class ComputerPlayerAgent implements PlayerAgent {
         gameState.selectPiece(selectedPieceIndex);
 
         // Small delay before moving
-        await this.delay(300);
+        await this.delay(1300);
         gameState.movePiece(selectedPieceIndex);
     }
 
@@ -179,12 +184,21 @@ export class ComputerPlayerAgent implements PlayerAgent {
     private evaluateMove(
         pieceIndex: number,
         diceTotal: number,
-        myPositions: (number | 'start')[],
-        opponentPositions: (number | 'start')[]
+        myPositions: (number | 'start' | 'moving')[],
+        opponentPositions: (number | 'start' | 'moving')[]
     ): MoveEvaluation {
         let score = 0;
         const reasons: string[] = [];
         const currentPosition = myPositions[pieceIndex];
+
+        // Skip evaluation for pieces that are currently moving (in animation)
+        if (currentPosition === 'moving') {
+            return {
+                pieceIndex,
+                score: -1000, // Very low score to avoid selecting moving pieces
+                reasons: ['Piece is currently moving']
+            };
+        }
 
         // Get the path for this player
         const path = this.color === 'white' ? WHITE_PATH : BLACK_PATH;
@@ -200,8 +214,8 @@ export class ComputerPlayerAgent implements PlayerAgent {
                 reasons.push('Getting piece into play');
             }
         } else {
-            // Moving piece already on board
-            const currentIndex = path.indexOf(currentPosition);
+            // Moving piece already on board (currentPosition is guaranteed to be number here)
+            const currentIndex = path.indexOf(currentPosition as number);
             if (currentIndex !== -1 && currentIndex + diceTotal < path.length) {
                 destinationSquare = path[currentIndex + diceTotal];
                 score += 5; // Base score for advancing piece
@@ -235,16 +249,16 @@ export class ComputerPlayerAgent implements PlayerAgent {
 
             // Prefer advancing pieces that are further along
             if (currentPosition !== 'start') {
-                const currentIndex = path.indexOf(currentPosition);
+                const currentIndex = path.indexOf(currentPosition as number);
                 score += Math.floor(currentIndex / 2); // Small bonus for pieces further along
                 reasons.push(`Advancing piece at position ${currentIndex}`);
             }
 
             // Avoid moves that put piece in danger (near opponent pieces)
             const isDangerous = opponentPositions.some(pos => {
-                if (pos === 'start' || pos === destinationSquare) return false;
+                if (pos === 'start' || pos === 'moving' || pos === destinationSquare) return false;
                 const opponentPath = this.color === 'white' ? BLACK_PATH : WHITE_PATH;
-                const opponentIndex = opponentPath.indexOf(pos);
+                const opponentIndex = opponentPath.indexOf(pos as number);
                 if (opponentIndex === -1) return false;
 
                 // Check if opponent could reach our destination square with any dice roll (1-4)
