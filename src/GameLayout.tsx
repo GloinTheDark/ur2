@@ -1,6 +1,7 @@
 import React, { useRef, useCallback } from 'react';
 import { GameState } from './GameState';
 import PieceAnimator from './PieceAnimator';
+import CapturedPieceAnimator from './CapturedPieceAnimator';
 import { SQUARE_SIZE, BOARD_GAP, PIECE_SIZE } from './UIConstants';
 import { BOARD_COLUMNS } from './BoardLayout';
 
@@ -113,9 +114,16 @@ const GameLayout: React.FC<GameLayoutProps> = ({
                 {blackPlayerHome}
             </div>
 
-            {/* Piece Animator */}
+            {/* Piece Animators */}
             {gameState.gameSettings.pieceAnimations && gameState.isAnimating() && (
                 <PieceAnimator
+                    gameState={gameState}
+                    getSquarePosition={getSquarePosition}
+                    getHomePosition={getHomePosition}
+                />
+            )}
+            {gameState.gameSettings.pieceAnimations && gameState.getCapturedPieceAnimationData() && (
+                <CapturedPieceAnimator
                     gameState={gameState}
                     getSquarePosition={getSquarePosition}
                     getHomePosition={getHomePosition}

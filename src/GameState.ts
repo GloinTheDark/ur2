@@ -40,6 +40,13 @@ export interface GameStateData {
         originalDiceRoll: number,
         isAnimating: boolean
     } | null;
+    animatingCapturedPiece: {
+        player: 'white' | 'black',
+        index: number,
+        fromPosition: number,
+        isAnimating: boolean,
+        originalMoveLandedOnRosette: boolean
+    } | null;
 }
 
 export class GameState {
@@ -70,7 +77,8 @@ export class GameState {
             diceRolls: [],
             diceTotal: 0,
             eligiblePieces: [],
-            animatingPiece: null
+            animatingPiece: null,
+            animatingCapturedPiece: null
         };
     }
 
@@ -339,21 +347,52 @@ export class GameState {
             landedOnRosette = true;
         }
 
-        // Handle piece capture
+        // Handle piece capture - start captured piece animation
         if (toPosition !== 'start') {
             const opponentPositions = player === 'white' ? this.data.blackPiecePositions : this.data.whitePiecePositions;
             const opponentPieces = player === 'white' ? this.data.blackPieces : this.data.whitePieces;
+            const opponentPlayer = player === 'white' ? 'black' : 'white';
 
             const capturedPieceIndex = opponentPositions.findIndex(pos => pos === toPosition);
             if (capturedPieceIndex !== -1) {
-                opponentPositions[capturedPieceIndex] = 'start';
-                opponentPieces[capturedPieceIndex] = 'blank';
+                // Start captured piece animation if animations are enabled
+                if (this.settings.pieceAnimations) {
+                    // Set piece to blank immediately (before animation starts)
+                    opponentPieces[capturedPieceIndex] = 'blank';
+
+                    // Start captured piece animation
+                    this.data.animatingCapturedPiece = {
+                        player: opponentPlayer,
+                        index: capturedPieceIndex,
+                        fromPosition: toPosition as number,
+                        isAnimating: true,
+                        originalMoveLandedOnRosette: landedOnRosette
+                    };
+
+                    // Set captured piece position to 'moving' during animation
+                    opponentPositions[capturedPieceIndex] = 'moving';
+                } else {
+                    // Immediate capture without animation
+                    opponentPositions[capturedPieceIndex] = 'start';
+                    opponentPieces[capturedPieceIndex] = 'blank';
+                }
             }
         }
 
         // Reset animation state
         this.data.animatingPiece = null;
 
+        // If there's no captured piece animation, complete the turn immediately
+        if (!this.data.animatingCapturedPiece?.isAnimating) {
+            this.completeTurn(landedOnRosette);
+        }
+
+        this.notify();
+        return landedOnRosette;
+    }
+
+    // Complete the turn (called after all animations finish)
+    private completeTurn(landedOnRosette: boolean): void {
         // Reset dice state
         this.data.diceRolls = [];
         this.data.diceTotal = 0;
@@ -363,14 +402,11 @@ export class GameState {
         if (!landedOnRosette) {
             this.data.currentPlayer = this.data.currentPlayer === 'white' ? 'black' : 'white';
         }
-
-        this.notify();
-        return landedOnRosette;
     }
 
     // Check if any animation is currently in progress
     isAnimating(): boolean {
-        return this.data.animatingPiece?.isAnimating === true;
+        return this.data.animatingPiece?.isAnimating === true || this.data.animatingCapturedPiece?.isAnimating === true;
     }
 
     // Get current animation data
@@ -386,6 +422,61 @@ export class GameState {
 
         const { player, index, fromPosition, toPosition } = this.data.animatingPiece;
         return { player, index, fromPosition, toPosition };
+    }
+
+    // Get current captured piece animation data
+    getCapturedPieceAnimationData(): {
+        player: 'white' | 'black',
+        index: number,
+        fromPosition: number
+    } | null {
+        if (!this.data.animatingCapturedPiece?.isAnimating) {
+            return null;
+        }
+
+        const { player, index, fromPosition } = this.data.animatingCapturedPiece;
+        return { player, index, fromPosition };
+    }
+
+    // Called when captured piece animation completes
+    finishCapturedPieceAnimation(): void {
+        if (!this.data.animatingCapturedPiece?.isAnimating) {
+            return;
+        }
+
+        const { player, index } = this.data.animatingCapturedPiece;
+
+        // Move captured piece to start position
+        if (player === 'white') {
+            this.data.whitePiecePositions[index] = 'start';
+        } else {
+            this.data.blackPiecePositions[index] = 'start';
+        }
+
+        // Clear captured piece animation state
+        this.data.animatingCapturedPiece = null;
+
+        // Complete the turn (we need to check if the original move landed on rosette)
+        // Since we don't store this info, we need to recalculate or store it differently
+        // For now, let's get the current state and complete the turn
+        this.completeTurnAfterCapture();
+
+        this.notify();
+    }
+
+    // Complete turn after captured piece animation
+    private completeTurnAfterCapture(): void {
+        const landedOnRosette = this.data.animatingCapturedPiece?.originalMoveLandedOnRosette ?? false;
+
+        // Reset dice state
+        this.data.diceRolls = [];
+        this.data.diceTotal = 0;
+        this.data.eligiblePieces = [];
+
+        // Switch player if didn't land on rosette
+        if (!landedOnRosette) {
+            this.data.currentPlayer = this.data.currentPlayer === 'white' ? 'black' : 'white';
+        }
     }
 
     private executeMove(player: 'white' | 'black', pieceIndex: number, diceRoll: number): boolean {

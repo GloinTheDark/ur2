@@ -130,7 +130,7 @@ export class ComputerPlayerAgent implements PlayerAgent {
         gameState.selectPiece(selectedPieceIndex);
 
         // Small delay before moving
-        await this.delay(1300);
+        await this.delay(300);
         gameState.movePiece(selectedPieceIndex);
     }
 
