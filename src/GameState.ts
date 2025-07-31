@@ -444,7 +444,7 @@ export class GameState {
             return;
         }
 
-        const { player, index } = this.data.animatingCapturedPiece;
+        const { player, index, originalMoveLandedOnRosette } = this.data.animatingCapturedPiece;
 
         // Move captured piece to start position
         if (player === 'white') {
@@ -456,18 +456,14 @@ export class GameState {
         // Clear captured piece animation state
         this.data.animatingCapturedPiece = null;
 
-        // Complete the turn (we need to check if the original move landed on rosette)
-        // Since we don't store this info, we need to recalculate or store it differently
-        // For now, let's get the current state and complete the turn
-        this.completeTurnAfterCapture();
+        // Complete the turn with the preserved rosette information
+        this.completeTurnAfterCapture(originalMoveLandedOnRosette);
 
         this.notify();
     }
 
     // Complete turn after captured piece animation
-    private completeTurnAfterCapture(): void {
-        const landedOnRosette = this.data.animatingCapturedPiece?.originalMoveLandedOnRosette ?? false;
-
+    private completeTurnAfterCapture(landedOnRosette: boolean): void {
         // Reset dice state
         this.data.diceRolls = [];
         this.data.diceTotal = 0;
