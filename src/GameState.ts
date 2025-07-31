@@ -16,14 +16,15 @@ export interface GameSettings {
     gateKeeper: boolean;
     safeMarkets: boolean;
     diceAnimations: boolean;
+    pieceAnimations: boolean;
 }
 
 export interface GameStateData {
     currentPlayer: 'white' | 'black';
     whitePieces: ('blank' | 'spots')[];
     blackPieces: ('blank' | 'spots')[];
-    whitePiecePositions: (number | 'start')[];
-    blackPiecePositions: (number | 'start')[];
+    whitePiecePositions: (number | 'start' | 'moving')[];
+    blackPiecePositions: (number | 'start' | 'moving')[];
     selectedPiece: { player: 'white' | 'black', index: number } | null;
     gameStarted: boolean;
     gamePhase: 'initial-roll' | 'playing';
@@ -31,6 +32,14 @@ export interface GameStateData {
     diceRolls: number[];
     diceTotal: number;
     eligiblePieces: number[];
+    animatingPiece: {
+        player: 'white' | 'black',
+        index: number,
+        fromPosition: number | 'start',
+        toPosition: number | 'start',
+        originalDiceRoll: number,
+        isAnimating: boolean
+    } | null;
 }
 
 export class GameState {
@@ -60,7 +69,8 @@ export class GameState {
             initialRollResult: null,
             diceRolls: [],
             diceTotal: 0,
-            eligiblePieces: []
+            eligiblePieces: [],
+            animatingPiece: null
         };
     }
 
@@ -179,7 +189,17 @@ export class GameState {
             return false;
         }
 
-        const landedOnRosette = this.executeMove(this.data.currentPlayer, pieceIndex, this.data.diceTotal);
+        // Check if animations are enabled
+        if (this.settings.pieceAnimations) {
+            return this.startPieceAnimation(this.data.currentPlayer, pieceIndex, this.data.diceTotal);
+        } else {
+            return this.executeMoveImmediately(this.data.currentPlayer, pieceIndex, this.data.diceTotal);
+        }
+    }
+
+    // Immediate move (no animation)
+    private executeMoveImmediately(player: 'white' | 'black', pieceIndex: number, diceRoll: number): boolean {
+        const landedOnRosette = this.executeMove(player, pieceIndex, diceRoll);
 
         // Reset dice state
         this.data.diceRolls = [];
@@ -196,6 +216,114 @@ export class GameState {
         this.notify();
 
         return landedOnRosette;
+    }
+
+    // Animation methods
+    private startPieceAnimation(player: 'white' | 'black', pieceIndex: number, diceRoll: number): boolean {
+        const currentPositions = player === 'white' ? this.data.whitePiecePositions : this.data.blackPiecePositions;
+        const currentPieces = player === 'white' ? this.data.whitePieces : this.data.blackPieces;
+        const playerPath = player === 'white' ? this.whitePath : this.blackPath;
+        const currentPos = currentPositions[pieceIndex];
+
+        // Don't start animation if piece is already moving
+        if (currentPos === 'moving') {
+            return false;
+        }
+
+        let toPosition: number | 'start';
+
+        // Calculate destination position
+        if (currentPos === 'start') {
+            if (diceRoll <= playerPath.length) {
+                toPosition = playerPath[diceRoll - 1];
+            } else {
+                return false; // Invalid move
+            }
+        } else {
+            const currentIndex = this.findPieceIndexInPath(currentPos as number, currentPieces[pieceIndex], playerPath);
+            const newIndex = currentIndex + diceRoll;
+
+            if (newIndex >= playerPath.length) {
+                // Check if gate is blocked
+                const opponentPositions = player === 'white' ? this.data.blackPiecePositions : this.data.whitePiecePositions;
+                const isGateBlocked = this.settings.gateKeeper && opponentPositions.some(pos => pos === GATE_SQUARE);
+                if (isGateBlocked) {
+                    return false; // Cannot complete path if gate is blocked
+                }
+                toPosition = 'start'; // Piece completes circuit
+            } else {
+                toPosition = playerPath[newIndex];
+            }
+        }
+
+        // Set up animation state
+        this.data.animatingPiece = {
+            player,
+            index: pieceIndex,
+            fromPosition: currentPos as number | 'start',
+            toPosition,
+            originalDiceRoll: this.data.diceTotal,
+            isAnimating: true
+        };
+
+        // Set piece position to 'moving' so it doesn't render at source or destination
+        if (player === 'white') {
+            this.data.whitePiecePositions[pieceIndex] = 'moving';
+        } else {
+            this.data.blackPiecePositions[pieceIndex] = 'moving';
+        }
+
+        this.notify();
+        return true; // Animation started successfully
+    }
+
+    // Called when animation completes
+    finishPieceAnimation(): boolean {
+        if (!this.data.animatingPiece || !this.data.animatingPiece.isAnimating) {
+            return false;
+        }
+
+        const { player, index, originalDiceRoll } = this.data.animatingPiece;
+
+        // Execute the actual move using the original dice roll
+        const landedOnRosette = this.executeMove(player, index, originalDiceRoll);
+
+        // Reset animation state
+        this.data.animatingPiece = null;
+
+        // Reset dice state
+        this.data.diceRolls = [];
+        this.data.diceTotal = 0;
+        this.data.eligiblePieces = [];
+        this.data.selectedPiece = null;
+
+        // Switch player if didn't land on rosette
+        if (!landedOnRosette) {
+            this.data.currentPlayer = this.data.currentPlayer === 'white' ? 'black' : 'white';
+        }
+
+        this.notify();
+        return landedOnRosette;
+    }
+
+    // Check if any animation is currently in progress
+    isAnimating(): boolean {
+        return this.data.animatingPiece?.isAnimating === true;
+    }
+
+    // Get current animation data
+    getAnimationData(): {
+        player: 'white' | 'black',
+        index: number,
+        fromPosition: number | 'start',
+        toPosition: number | 'start'
+    } | null {
+        if (!this.data.animatingPiece?.isAnimating) {
+            return null;
+        }
+
+        const { player, index, fromPosition, toPosition } = this.data.animatingPiece;
+        return { player, index, fromPosition, toPosition };
     }
 
     private executeMove(player: 'white' | 'black', pieceIndex: number, diceRoll: number): boolean {
@@ -348,6 +476,12 @@ export class GameState {
             return;
         }
 
+        // Don't allow piece selection if animation is in progress
+        if (this.isAnimating()) {
+            this.data.eligiblePieces = [];
+            return;
+        }
+
         const eligiblePiecesList: number[] = [];
         const currentPlayer = this.data.currentPlayer;
         const currentPositions = currentPlayer === 'white' ? this.data.whitePiecePositions : this.data.blackPiecePositions;
@@ -362,9 +496,9 @@ export class GameState {
             eligiblePiecesList.push(leftmostStartIndex);
         }
 
-        // Add all pieces that are on the board and can move
+        // Add all pieces that are on the board and can move (excluding moving pieces)
         currentPositions.forEach((pos, index) => {
-            if (pos !== 'start' && this.canPieceMove(index)) {
+            if (pos !== 'start' && pos !== 'moving' && this.canPieceMove(index)) {
                 eligiblePiecesList.push(index);
             }
         });
@@ -378,6 +512,11 @@ export class GameState {
         const currentPlayerPath = currentPlayer === 'white' ? this.whitePath : this.blackPath;
         const currentPos = currentPositions[pieceIndex];
         let destinationSquare: number;
+
+        // Can't move pieces that are currently animating
+        if (currentPos === 'moving') {
+            return false;
+        }
 
         if (currentPos === 'start') {
             // Moving from start

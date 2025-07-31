@@ -76,6 +76,7 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
             }}>
                 {Array.from({ length: settings.piecesPerPlayer }).map((_, idx) => {
                     const isPieceInStart = positions[idx] === 'start';
+                    const isPieceMoving = positions[idx] === 'moving';
                     const isEligible = state.gameStarted && !winner && state.currentPlayer === player && state.eligiblePieces.includes(idx);
                     const isSelected = state.selectedPiece !== null && state.selectedPiece.player === player && state.selectedPiece.index === idx && isPieceInStart;
 
@@ -87,6 +88,7 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
                     return (
                         <div
                             key={`${player}-${idx}`}
+                            data-piece-index={idx}
                             style={{
                                 width: SQUARE_SIZE,
                                 height: SQUARE_SIZE,
@@ -133,7 +135,8 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
                                     }}
                                 />
                             )}
-                            {isPieceInStart && (
+                            {/* Only render piece if it's in start position and not currently moving */}
+                            {isPieceInStart && !isPieceMoving && (
                                 <img
                                     src={pieces[idx] === 'blank' ? blankIcon : spotsIcon}
                                     alt={`${isWhite ? 'White' : 'Black'} piece ${idx + 1} - ${pieces[idx]}`}

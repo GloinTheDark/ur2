@@ -23,6 +23,7 @@ interface GameSettingsProps {
         gateKeeper: boolean;
         safeMarkets: boolean;
         diceAnimations: boolean;
+        pieceAnimations: boolean;
     };
     onSettingsChange: (newSettings: Partial<GameSettingsProps['settings']>) => void;
 }
@@ -286,8 +287,18 @@ const GameSettings: React.FC<GameSettingsProps> = ({
                     <span>Enable dice rolling animations</span>
                 </label>
 
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1rem', color: 'var(--text-color, #333)' }}>
+                    <input
+                        type="checkbox"
+                        checked={settings.pieceAnimations}
+                        onChange={(e) => onSettingsChange({ pieceAnimations: e.target.checked })}
+                        style={{ transform: 'scale(1.2)' }}
+                    />
+                    <span>Enable piece movement animations</span>
+                </label>
+
                 <div style={{ marginTop: '8px', fontSize: '0.9rem', color: 'var(--text-color, #666)', textAlign: 'center' }}>
-                    <div>Dice animations add visual flair when rolling dice.</div>
+                    <div>Animations add visual flair when rolling dice and moving pieces.</div>
                     <div>Disable for faster gameplay or accessibility preferences.</div>
                 </div>
             </div>
