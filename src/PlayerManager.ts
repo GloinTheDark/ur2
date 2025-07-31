@@ -1,6 +1,8 @@
+import React from 'react';
 import { GameState } from './GameState';
 import { HumanPlayerAgent, ComputerPlayerAgent } from './PlayerAgent';
 import type { PlayerAgent, PlayerType } from './PlayerAgent';
+import type { DiceRollerRef } from './DiceRoller';
 
 export type GameMode = 'human-vs-human' | 'human-vs-computer' | 'computer-vs-human';
 
@@ -16,9 +18,11 @@ export class PlayerManager {
     private gameState: GameState;
     private isActive: boolean = false;
     private unsubscribe: (() => void) | null = null;
+    private diceRollerRef: React.RefObject<DiceRollerRef | null>;
 
-    constructor(gameState: GameState, config: PlayerConfiguration) {
+    constructor(gameState: GameState, config: PlayerConfiguration, diceRollerRef: React.RefObject<DiceRollerRef | null>) {
         this.gameState = gameState;
+        this.diceRollerRef = diceRollerRef;
 
         // Create player agents based on configuration
         this.whitePlayer = this.createPlayerAgent('white', config.white, config.computerDifficulty);
@@ -33,7 +37,7 @@ export class PlayerManager {
             case 'human':
                 return new HumanPlayerAgent(color);
             case 'computer':
-                return new ComputerPlayerAgent(color, difficulty || 'medium');
+                return new ComputerPlayerAgent(color, difficulty || 'medium', this.diceRollerRef);
             default:
                 throw new Error(`Unknown player type: ${type}`);
         }

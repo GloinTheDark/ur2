@@ -1,9 +1,17 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { SQUARE_BACKGROUND_COLOR } from './UIConstants';
 import HouseSquareIcon from './assets/HouseSquare.svg';
 import TempleSquareIcon from './assets/TempleSquare.svg';
 import GateSquareIcon from './assets/GateSquare.svg';
 import MarketSquareIcon from './assets/MarketSquare.svg';
+import RosetteSquareIcon from './assets/RosetteSquare.svg';
+import TreasurySquareIcon from './assets/TreasurySquare.svg';
+import dieB1 from './assets/DieB1.svg';
+import dieW1 from './assets/DieW1.svg';
+import whiteBlank from './assets/WhiteBlank.svg';
+import whiteSpots from './assets/WhiteSpots.svg';
+import blackBlank from './assets/BlackBlank.svg';
+import blackSpots from './assets/BlackSpots.svg';
 
 interface GameSettingsProps {
     isOpen: boolean;
@@ -14,9 +22,12 @@ interface GameSettingsProps {
         templeBlessings: boolean;
         gateKeeper: boolean;
         safeMarkets: boolean;
+        diceAnimations: boolean;
     };
     onSettingsChange: (newSettings: Partial<GameSettingsProps['settings']>) => void;
 }
+
+type TabType = 'rules' | 'optional' | 'preferences';
 
 const GameSettings: React.FC<GameSettingsProps> = ({
     isOpen,
@@ -24,7 +35,264 @@ const GameSettings: React.FC<GameSettingsProps> = ({
     settings,
     onSettingsChange
 }) => {
+    const [activeTab, setActiveTab] = useState<TabType>('rules');
+
     if (!isOpen) return null;
+
+    const tabStyle = (isActive: boolean) => ({
+        padding: '8px 16px',
+        fontSize: '1rem',
+        borderRadius: '6px 6px 0 0',
+        cursor: 'pointer',
+        backgroundColor: isActive ? 'var(--modal-bg, #fff)' : 'var(--button-bg, #f0f0f0)',
+        color: isActive ? 'var(--text-color, #333)' : 'var(--text-color, #666)',
+        border: `2px solid var(--border-color, #ddd)`,
+        borderBottom: isActive ? '2px solid var(--modal-bg, #fff)' : '2px solid var(--border-color, #ddd)',
+        marginBottom: '-2px',
+        fontWeight: isActive ? 'bold' : 'normal'
+    });
+
+    const renderRulesTab = () => (
+        <div style={{ padding: '20px 0' }}>
+            <h3 style={{ marginBottom: '16px', color: 'var(--text-color, #666)', fontSize: '1.2rem' }}>
+                Basic Rules of the Royal Game of Ur
+            </h3>
+
+            <div style={{ textAlign: 'left', lineHeight: '1.6', color: 'var(--text-color, #333)' }}>
+                <div style={{ marginBottom: '16px' }}>
+                    <h4 style={{ marginBottom: '8px', color: 'var(--text-color, #555)' }}>Setup:</h4>
+                    <ul style={{ marginLeft: '20px', marginBottom: '0' }}>
+                        <li style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
+                            <span>Each player starts with pieces in their starting area, blank side up</span>
+                            <img src={whiteBlank} alt="White blank piece" style={{ width: '20px', height: '20px', marginLeft: '4px' }} />
+                            <img src={blackBlank} alt="Black blank piece" style={{ width: '20px', height: '20px' }} />
+                        </li>
+                        <li style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
+                            <span>Pieces flip to spotted side when passing the first</span>
+                            <img src={TreasurySquareIcon} alt="Treasury Square" style={{ width: '16px', height: '16px', margin: '0 2px' }} />
+                            <span>treasury square</span>
+                            <img src={whiteSpots} alt="White spotted piece" style={{ width: '20px', height: '20px', marginLeft: '4px' }} />
+                            <img src={blackSpots} alt="Black spotted piece" style={{ width: '20px', height: '20px' }} />
+                        </li>
+                        <li>Roll a single die to determine the starting player</li>
+                    </ul>
+                    <div style={{ 
+                        marginTop: '12px', 
+                        padding: '12px', 
+                        backgroundColor: 'var(--info-box-bg, #f8f9fa)', 
+                        borderRadius: '6px',
+                        border: '1px solid var(--border-color, #ddd)'
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '20px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <img src={dieW1} alt="White die face" style={{ width: '24px', height: '24px' }} />
+                                <span style={{ fontSize: '0.9rem' }}>= White goes first</span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <img src={dieB1} alt="Black die face" style={{ width: '24px', height: '24px' }} />
+                                <span style={{ fontSize: '0.9rem' }}>= Black goes first</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style={{ marginBottom: '16px' }}>
+                    <h4 style={{ marginBottom: '8px', color: 'var(--text-color, #555)' }}>Gameplay:</h4>
+                    <ul style={{ marginLeft: '20px', marginBottom: '0' }}>
+                        <li>Roll four dice to move your pieces</li>
+                        <li style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <span>Each die shows either a</span>
+                            <img src={dieB1} alt="Blank die face" style={{ width: '16px', height: '16px', margin: '0 2px' }} />
+                            <span>blank face (0 points) or a</span>
+                            <img src={dieW1} alt="Spotted die face" style={{ width: '16px', height: '16px', margin: '0 2px' }} />
+                            <span>spotted face (1 point)</span>
+                        </li>
+                        <li>Move one piece forward by the total number of points rolled</li>
+                        <li>Land on an opponent's piece to capture it (sends it back to start)</li>
+                        <li style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <img src={RosetteSquareIcon} alt="Rosette Square" style={{ width: '16px', height: '16px' }} />
+                            <span>Rosette squares give you an extra turn</span>
+                        </li>
+                    </ul>
+                    <div style={{ 
+                        marginTop: '12px', 
+                        padding: '12px', 
+                        backgroundColor: 'var(--info-box-bg, #f8f9fa)', 
+                        borderRadius: '6px',
+                        border: '1px solid var(--border-color, #ddd)'
+                    }}>
+                        <div style={{ fontSize: '0.9rem', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                            <strong>Example:</strong>
+                            <span>Rolling</span>
+                            <img src={dieW1} alt="Spotted die" style={{ width: '20px', height: '20px' }} />
+                            <img src={dieW1} alt="Spotted die" style={{ width: '20px', height: '20px' }} />
+                            <img src={dieW1} alt="Spotted die" style={{ width: '20px', height: '20px' }} />
+                            <img src={dieB1} alt="Blank die" style={{ width: '20px', height: '20px' }} />
+                            <span>= 3 points total</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div style={{ marginBottom: '16px' }}>
+                    <h4 style={{ marginBottom: '8px', color: 'var(--text-color, #555)' }}>Winning:</h4>
+                    <ul style={{ marginLeft: '20px', marginBottom: '0' }}>
+                        <li>Be the first to get all your pieces to the end of the board</li>
+                        <li>Pieces automatically complete their journey when they reach or pass the final square</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    );
+
+    const renderOptionalTab = () => (
+        <div style={{ padding: '20px 0' }}>
+            <h3 style={{ marginBottom: '16px', color: 'var(--text-color, #666)', fontSize: '1.2rem' }}>
+                Optional Rules & Variants
+            </h3>
+
+            <div style={{ marginBottom: '20px' }}>
+                <h4 style={{ marginBottom: '12px', color: 'var(--text-color, #666)', fontSize: '1.1rem' }}>
+                    Number of Pieces per Player
+                </h4>
+                <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                    {[3, 5, 7].map(count => (
+                        <button
+                            key={count}
+                            onClick={() => onSettingsChange({ piecesPerPlayer: count })}
+                            style={{
+                                padding: '8px 16px',
+                                fontSize: '1rem',
+                                borderRadius: 6,
+                                cursor: 'pointer',
+                                backgroundColor: settings.piecesPerPlayer === count ? '#4CAF50' : 'var(--button-bg, #f0f0f0)',
+                                color: settings.piecesPerPlayer === count ? '#fff' : 'var(--text-color, #333)',
+                                border: `2px solid ${settings.piecesPerPlayer === count ? '#4CAF50' : '#ccc'}`,
+                                fontWeight: settings.piecesPerPlayer === count ? 'bold' : 'normal'
+                            }}
+                        >
+                            {count}
+                        </button>
+                    ))}
+                </div>
+                <div style={{ marginTop: '8px', fontSize: '0.8rem', color: 'var(--text-color, #666)', textAlign: 'center' }}>
+                    Current: {settings.piecesPerPlayer} pieces per player
+                </div>
+            </div>
+
+            <div style={{ marginBottom: '20px' }}>
+                <h4 style={{ marginBottom: '12px', color: 'var(--text-color, #666)', fontSize: '1.1rem' }}>
+                    Special Square Rules
+                </h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1rem', color: 'var(--text-color, #333)' }}>
+                        <input
+                            type="checkbox"
+                            checked={settings.houseBonus}
+                            onChange={(e) => onSettingsChange({ houseBonus: e.target.checked })}
+                            style={{ transform: 'scale(1.2)' }}
+                        />
+                        <div style={{
+                            backgroundColor: SQUARE_BACKGROUND_COLOR,
+                            padding: '2px',
+                            borderRadius: '3px',
+                            border: '2px solid #00f',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                        }}>
+                            <img src={HouseSquareIcon} alt="House Square" style={{ width: '20px', height: '20px', display: 'block' }} />
+                        </div>
+                        <span>House Bonus (+1 dice for controlling most house squares)</span>
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1rem', color: 'var(--text-color, #333)' }}>
+                        <input
+                            type="checkbox"
+                            checked={settings.templeBlessings}
+                            onChange={(e) => onSettingsChange({ templeBlessings: e.target.checked })}
+                            style={{ transform: 'scale(1.2)' }}
+                        />
+                        <div style={{
+                            backgroundColor: SQUARE_BACKGROUND_COLOR,
+                            padding: '2px',
+                            borderRadius: '3px',
+                            border: '2px solid #00f',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                        }}>
+                            <img src={TempleSquareIcon} alt="Temple Square" style={{ width: '20px', height: '20px', display: 'block' }} />
+                        </div>
+                        <span>Temple Blessings (0 roll becomes 4 when controlling most temples)</span>
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1rem', color: 'var(--text-color, #333)' }}>
+                        <input
+                            type="checkbox"
+                            checked={settings.gateKeeper}
+                            onChange={(e) => onSettingsChange({ gateKeeper: e.target.checked })}
+                            style={{ transform: 'scale(1.2)' }}
+                        />
+                        <div style={{
+                            backgroundColor: SQUARE_BACKGROUND_COLOR,
+                            padding: '2px',
+                            borderRadius: '3px',
+                            border: '2px solid #00f',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                        }}>
+                            <img src={GateSquareIcon} alt="Gate Square" style={{ width: '20px', height: '20px', display: 'block' }} />
+                        </div>
+                        <span>Gate Keeper (opponent on gate square blocks path completion)</span>
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1rem', color: 'var(--text-color, #333)' }}>
+                        <input
+                            type="checkbox"
+                            checked={settings.safeMarkets}
+                            onChange={(e) => onSettingsChange({ safeMarkets: e.target.checked })}
+                            style={{ transform: 'scale(1.2)' }}
+                        />
+                        <div style={{
+                            backgroundColor: SQUARE_BACKGROUND_COLOR,
+                            padding: '2px',
+                            borderRadius: '3px',
+                            border: '2px solid #00f',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                        }}>
+                            <img src={MarketSquareIcon} alt="Market Square" style={{ width: '20px', height: '20px', display: 'block' }} />
+                        </div>
+                        <span>Safe Markets (pieces on market squares cannot be captured)</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+    );
+
+    const renderPreferencesTab = () => (
+        <div style={{ padding: '20px 0' }}>
+            <h3 style={{ marginBottom: '16px', color: 'var(--text-color, #666)', fontSize: '1.2rem' }}>
+                Player Preferences
+            </h3>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'center' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1rem', color: 'var(--text-color, #333)' }}>
+                    <input
+                        type="checkbox"
+                        checked={settings.diceAnimations}
+                        onChange={(e) => onSettingsChange({ diceAnimations: e.target.checked })}
+                        style={{ transform: 'scale(1.2)' }}
+                    />
+                    <span>Enable dice rolling animations</span>
+                </label>
+
+                <div style={{ marginTop: '8px', fontSize: '0.9rem', color: 'var(--text-color, #666)', textAlign: 'center' }}>
+                    <div>Dice animations add visual flair when rolling dice.</div>
+                    <div>Disable for faster gameplay or accessibility preferences.</div>
+                </div>
+            </div>
+        </div>
+    );
 
     return (
         <div style={{
@@ -40,140 +308,63 @@ const GameSettings: React.FC<GameSettingsProps> = ({
             zIndex: 1000
         }}>
             <div style={{
-                padding: '24px',
+                padding: '0',
                 backgroundColor: 'var(--modal-bg, #fff)',
                 borderRadius: '12px',
                 border: '2px solid var(--border-color, #ddd)',
                 boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
-                minWidth: '300px',
+                minWidth: '500px',
+                maxWidth: '600px',
+                maxHeight: '80vh',
+                overflow: 'hidden',
                 textAlign: 'center'
             }}>
-                <h2 style={{ marginBottom: '20px', color: 'var(--text-color, #333)' }}>Game Settings</h2>
+                <div style={{
+                    padding: '16px 24px 0 24px',
+                    borderBottom: '2px solid var(--border-color, #ddd)'
+                }}>
+                    <h2 style={{ marginBottom: '16px', color: 'var(--text-color, #333)' }}>Game Settings</h2>
 
-                <div style={{ marginBottom: '20px' }}>
-                    <h3 style={{ marginBottom: '12px', color: 'var(--text-color, #666)', fontSize: '1.1rem' }}>
-                        Number of Pieces per Player
-                    </h3>
-                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-                        {[3, 5, 7].map(count => (
-                            <button
-                                key={count}
-                                onClick={() => onSettingsChange({ piecesPerPlayer: count })}
-                                style={{
-                                    padding: '8px 16px',
-                                    fontSize: '1rem',
-                                    borderRadius: 6,
-                                    cursor: 'pointer',
-                                    backgroundColor: settings.piecesPerPlayer === count ? '#4CAF50' : 'var(--button-bg, #f0f0f0)',
-                                    color: settings.piecesPerPlayer === count ? '#fff' : 'var(--text-color, #333)',
-                                    border: `2px solid ${settings.piecesPerPlayer === count ? '#4CAF50' : '#ccc'}`,
-                                    fontWeight: settings.piecesPerPlayer === count ? 'bold' : 'normal'
-                                }}
-                            >
-                                {count}
-                            </button>
-                        ))}
-                    </div>
-                    <div style={{ marginTop: '8px', fontSize: '0.8rem', color: 'var(--text-color, #666)' }}>
-                        Current: {settings.piecesPerPlayer} pieces per player
+                    {/* Tab Headers */}
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: '4px' }}>
+                        <button
+                            onClick={() => setActiveTab('rules')}
+                            style={tabStyle(activeTab === 'rules')}
+                        >
+                            Rules
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('optional')}
+                            style={tabStyle(activeTab === 'optional')}
+                        >
+                            Optional Rules
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('preferences')}
+                            style={tabStyle(activeTab === 'preferences')}
+                        >
+                            Preferences
+                        </button>
                     </div>
                 </div>
 
-                <div style={{ marginBottom: '20px' }}>
-                    <h3 style={{ marginBottom: '12px', color: 'var(--text-color, #666)', fontSize: '1.1rem' }}>
-                        Optional Rules
-                    </h3>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center' }}>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1rem', color: 'var(--text-color, #333)' }}>
-                            <input
-                                type="checkbox"
-                                checked={settings.houseBonus}
-                                onChange={(e) => onSettingsChange({ houseBonus: e.target.checked })}
-                                style={{ transform: 'scale(1.2)' }}
-                            />
-                            <div style={{
-                                backgroundColor: SQUARE_BACKGROUND_COLOR,
-                                padding: '2px',
-                                borderRadius: '3px',
-                                border: '2px solid #00f',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center'
-                            }}>
-                                <img src={HouseSquareIcon} alt="House Square" style={{ width: '20px', height: '20px', display: 'block' }} />
-                            </div>
-                            <span>House Bonus (+1 dice for controlling most house squares)</span>
-                        </label>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1rem', color: 'var(--text-color, #333)' }}>
-                            <input
-                                type="checkbox"
-                                checked={settings.templeBlessings}
-                                onChange={(e) => onSettingsChange({ templeBlessings: e.target.checked })}
-                                style={{ transform: 'scale(1.2)' }}
-                            />
-                            <div style={{
-                                backgroundColor: SQUARE_BACKGROUND_COLOR,
-                                padding: '2px',
-                                borderRadius: '3px',
-                                border: '2px solid #00f',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center'
-                            }}>
-                                <img src={TempleSquareIcon} alt="Temple Square" style={{ width: '20px', height: '20px', display: 'block' }} />
-                            </div>
-                            <span>Temple Blessings (0 roll becomes 4 when controlling most temples)</span>
-                        </label>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1rem', color: 'var(--text-color, #333)' }}>
-                            <input
-                                type="checkbox"
-                                checked={settings.gateKeeper}
-                                onChange={(e) => onSettingsChange({ gateKeeper: e.target.checked })}
-                                style={{ transform: 'scale(1.2)' }}
-                            />
-                            <div style={{
-                                backgroundColor: SQUARE_BACKGROUND_COLOR,
-                                padding: '2px',
-                                borderRadius: '3px',
-                                border: '2px solid #00f',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center'
-                            }}>
-                                <img src={GateSquareIcon} alt="Gate Square" style={{ width: '20px', height: '20px', display: 'block' }} />
-                            </div>
-                            <span>Gate Keeper (opponent on gate square blocks path completion)</span>
-                        </label>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1rem', color: 'var(--text-color, #333)' }}>
-                            <input
-                                type="checkbox"
-                                checked={settings.safeMarkets}
-                                onChange={(e) => onSettingsChange({ safeMarkets: e.target.checked })}
-                                style={{ transform: 'scale(1.2)' }}
-                            />
-                            <div style={{
-                                backgroundColor: SQUARE_BACKGROUND_COLOR,
-                                padding: '2px',
-                                borderRadius: '3px',
-                                border: '2px solid #00f',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center'
-                            }}>
-                                <img src={MarketSquareIcon} alt="Market Square" style={{ width: '20px', height: '20px', display: 'block' }} />
-                            </div>
-                            <span>Safe Markets (pieces on market squares cannot be captured)</span>
-                        </label>
-                    </div>
-                    <div style={{ marginTop: '8px', fontSize: '0.8rem', color: 'var(--text-color, #666)' }}>
-                        {settings.houseBonus && <div>House Bonus: Player controlling the most house squares gets +1 to dice rolls</div>}
-                        {settings.templeBlessings && <div>Temple Blessings: Player controlling the most temple squares gets 4 instead of 0 on dice rolls</div>}
-                        {settings.gateKeeper && <div>Gate Keeper: Pieces cannot complete their path if an opponent piece is on the gate square</div>}
-                        {settings.safeMarkets && <div>Safe Markets: Pieces on market squares cannot be captured by opponents</div>}
-                    </div>
+                {/* Tab Content */}
+                <div style={{
+                    padding: '0 24px',
+                    maxHeight: '50vh',
+                    overflowY: 'auto'
+                }}>
+                    {activeTab === 'rules' && renderRulesTab()}
+                    {activeTab === 'optional' && renderOptionalTab()}
+                    {activeTab === 'preferences' && renderPreferencesTab()}
                 </div>
 
-                <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+                {/* Footer */}
+                <div style={{
+                    padding: '16px 24px',
+                    borderTop: '2px solid var(--border-color, #ddd)',
+                    backgroundColor: 'var(--button-bg, #f8f8f8)'
+                }}>
                     <button
                         onClick={onClose}
                         style={{

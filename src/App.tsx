@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import './App.css'
 import { useGameState } from './useGameState'
 import DiceRoller from './DiceRoller'
+import type { DiceRollerRef } from './DiceRoller'
 import GameSetup from './GameSetup'
 import GameSettings from './GameSettings'
 import PlayerHome from './PlayerHome'
@@ -28,12 +29,22 @@ function App() {
     const saved = localStorage.getItem('royalGameSettings');
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        // Ensure diceAnimations is included for backward compatibility
+        return {
+          piecesPerPlayer: 3,
+          houseBonus: false,
+          templeBlessings: false,
+          gateKeeper: true,
+          safeMarkets: true,
+          diceAnimations: true,
+          ...parsed
+        };
       } catch {
-        return { piecesPerPlayer: 3, houseBonus: false, templeBlessings: false, gateKeeper: true, safeMarkets: true };
+        return { piecesPerPlayer: 3, houseBonus: false, templeBlessings: false, gateKeeper: true, safeMarkets: true, diceAnimations: true };
       }
     }
-    return { piecesPerPlayer: 3, houseBonus: false, templeBlessings: false, gateKeeper: true, safeMarkets: true };
+    return { piecesPerPlayer: 3, houseBonus: false, templeBlessings: false, gateKeeper: true, safeMarkets: true, diceAnimations: true };
   };
 
   const initialSettings = loadSettings();
@@ -45,6 +56,7 @@ function App() {
   const [showPath, setShowPath] = useState<boolean>(false);
   const [playerManager, setPlayerManager] = useState<PlayerManager | null>(null);
   const [showGameSetup, setShowGameSetup] = useState<boolean>(false);
+  const diceRollerRef = useRef<DiceRollerRef>(null);
 
   const winner = gameState.checkWinCondition();
 
@@ -66,7 +78,7 @@ function App() {
         white: whitePlayer,
         black: blackPlayer,
         computerDifficulty: difficulty
-      });
+      }, diceRollerRef);
 
       setPlayerManager(newPlayerManager);
       await newPlayerManager.start();
@@ -676,7 +688,7 @@ function App() {
                 </span>
               )}
             </div>
-          )}          <DiceRoller gameState={gameState} />
+          )}          <DiceRoller ref={diceRollerRef} gameState={gameState} />
 
           {/* Show Path Button */}
           <button

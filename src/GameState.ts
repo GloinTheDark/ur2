@@ -15,6 +15,7 @@ export interface GameSettings {
     templeBlessings: boolean;
     gateKeeper: boolean;
     safeMarkets: boolean;
+    diceAnimations: boolean;
 }
 
 export interface GameStateData {

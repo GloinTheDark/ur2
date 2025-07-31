@@ -1,5 +1,7 @@
+import React from 'react';
 import { GameState } from './GameState';
 import { WHITE_PATH, BLACK_PATH, BoardUtils } from './BoardLayout';
+import type { DiceRollerRef } from './DiceRoller';
 
 export type PlayerType = 'human' | 'computer';
 
@@ -64,10 +66,12 @@ export class ComputerPlayerAgent implements PlayerAgent {
     readonly playerType: PlayerType = 'computer';
     readonly color: 'white' | 'black';
     private difficulty: 'easy' | 'medium' | 'hard';
+    private diceRollerRef: React.RefObject<DiceRollerRef | null>;
 
-    constructor(color: 'white' | 'black', difficulty: 'easy' | 'medium' | 'hard' = 'medium') {
+    constructor(color: 'white' | 'black', difficulty: 'easy' | 'medium' | 'hard' = 'medium', diceRollerRef: React.RefObject<DiceRollerRef | null>) {
         this.color = color;
         this.difficulty = difficulty;
+        this.diceRollerRef = diceRollerRef;
     }
 
     async onTurnStart(gameState: GameState): Promise<void> {
@@ -84,7 +88,14 @@ export class ComputerPlayerAgent implements PlayerAgent {
 
             // Add a small delay to make it feel more natural
             await this.delay(500);
-            gameState.rollDice();
+            
+            // Use animated roll if available and animations are enabled
+            if (this.diceRollerRef.current && gameState.gameSettings.diceAnimations) {
+                this.diceRollerRef.current.triggerRoll();
+            } else {
+                // Fall back to direct roll if animations are disabled or ref is not available
+                gameState.rollDice();
+            }
         }
     }
 
