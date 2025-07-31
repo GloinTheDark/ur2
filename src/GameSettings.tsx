@@ -62,24 +62,24 @@ const GameSettings: React.FC<GameSettingsProps> = ({
                 <div style={{ marginBottom: '16px' }}>
                     <h4 style={{ marginBottom: '8px', color: 'var(--text-color, #555)' }}>Setup:</h4>
                     <ul style={{ marginLeft: '20px', marginBottom: '0' }}>
-                        <li style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
-                            <span>Each player starts with pieces in their starting area, blank side up</span>
-                            <img src={whiteBlank} alt="White blank piece" style={{ width: '20px', height: '20px', marginLeft: '4px' }} />
-                            <img src={blackBlank} alt="Black blank piece" style={{ width: '20px', height: '20px' }} />
+                        <li style={{ marginBottom: '4px' }}>
+                            <span>Each player starts with their pieces in their respective home areas, blank side up </span>
+                            <img src={whiteBlank} alt="White blank piece" style={{ width: '20px', height: '20px', margin: '0 2px', verticalAlign: 'middle' }} />
+                            <img src={blackBlank} alt="Black blank piece" style={{ width: '20px', height: '20px', margin: '0 2px', verticalAlign: 'middle' }} />
                         </li>
-                        <li style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
-                            <span>Pieces flip to spotted side when passing the first</span>
-                            <img src={TreasurySquareIcon} alt="Treasury Square" style={{ width: '16px', height: '16px', margin: '0 2px' }} />
-                            <span>treasury square</span>
-                            <img src={whiteSpots} alt="White spotted piece" style={{ width: '20px', height: '20px', marginLeft: '4px' }} />
-                            <img src={blackSpots} alt="Black spotted piece" style={{ width: '20px', height: '20px' }} />
+                        <li style={{ marginBottom: '4px' }}>
+                            <span>Pieces flip to spotted side when passing the first </span>
+                            <img src={TreasurySquareIcon} alt="Treasury Square" style={{ width: '20px', height: '20px', margin: '0 2px', verticalAlign: 'middle' }} />
+                            <span> treasury square </span>
+                            <img src={whiteSpots} alt="White spotted piece" style={{ width: '20px', height: '20px', margin: '0 2px', verticalAlign: 'middle' }} />
+                            <img src={blackSpots} alt="Black spotted piece" style={{ width: '20px', height: '20px', margin: '0 2px', verticalAlign: 'middle' }} />
                         </li>
                         <li>Roll a single die to determine the starting player</li>
                     </ul>
-                    <div style={{ 
-                        marginTop: '12px', 
-                        padding: '12px', 
-                        backgroundColor: 'var(--info-box-bg, #f8f9fa)', 
+                    <div style={{
+                        marginTop: '12px',
+                        padding: '12px',
+                        backgroundColor: 'var(--info-box-bg, #f8f9fa)',
                         borderRadius: '6px',
                         border: '1px solid var(--border-color, #ddd)'
                     }}>
@@ -100,24 +100,24 @@ const GameSettings: React.FC<GameSettingsProps> = ({
                     <h4 style={{ marginBottom: '8px', color: 'var(--text-color, #555)' }}>Gameplay:</h4>
                     <ul style={{ marginLeft: '20px', marginBottom: '0' }}>
                         <li>Roll four dice to move your pieces</li>
-                        <li style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <span>Each die shows either a</span>
-                            <img src={dieB1} alt="Blank die face" style={{ width: '16px', height: '16px', margin: '0 2px' }} />
-                            <span>blank face (0 points) or a</span>
-                            <img src={dieW1} alt="Spotted die face" style={{ width: '16px', height: '16px', margin: '0 2px' }} />
-                            <span>spotted face (1 point)</span>
+                        <li>
+                            <span>Each die shows either a </span>
+                            <img src={dieB1} alt="Blank die face" style={{ width: '20px', height: '20px', margin: '0 2px', verticalAlign: 'middle' }} />
+                            <span> blank face (0 points) or a </span>
+                            <img src={dieW1} alt="Spotted die face" style={{ width: '20px', height: '20px', margin: '0 2px', verticalAlign: 'middle' }} />
+                            <span> spotted face (1 point)</span>
                         </li>
-                        <li>Move one piece forward by the total number of points rolled</li>
-                        <li>Land on an opponent's piece to capture it (sends it back to start)</li>
-                        <li style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <img src={RosetteSquareIcon} alt="Rosette Square" style={{ width: '16px', height: '16px' }} />
-                            <span>Rosette squares give you an extra turn</span>
+                        <li>Move one piece forward along the path by the total number of points rolled (press the show path button to see the route)</li>
+                        <li>Land on an opponent's piece to capture it (sends it back to home)</li>
+                        <li>
+                            <img src={RosetteSquareIcon} alt="Rosette Square" style={{ width: '20px', height: '20px', margin: '0 2px', verticalAlign: 'middle' }} />
+                            <span> Rosette squares give you an extra turn</span>
                         </li>
                     </ul>
-                    <div style={{ 
-                        marginTop: '12px', 
-                        padding: '12px', 
-                        backgroundColor: 'var(--info-box-bg, #f8f9fa)', 
+                    <div style={{
+                        marginTop: '12px',
+                        padding: '12px',
+                        backgroundColor: 'var(--info-box-bg, #f8f9fa)',
                         borderRadius: '6px',
                         border: '1px solid var(--border-color, #ddd)'
                     }}>
@@ -126,8 +126,8 @@ const GameSettings: React.FC<GameSettingsProps> = ({
                             <span>Rolling</span>
                             <img src={dieW1} alt="Spotted die" style={{ width: '20px', height: '20px' }} />
                             <img src={dieW1} alt="Spotted die" style={{ width: '20px', height: '20px' }} />
-                            <img src={dieW1} alt="Spotted die" style={{ width: '20px', height: '20px' }} />
                             <img src={dieB1} alt="Blank die" style={{ width: '20px', height: '20px' }} />
+                            <img src={dieW1} alt="Spotted die" style={{ width: '20px', height: '20px' }} />
                             <span>= 3 points total</span>
                         </div>
                     </div>
@@ -136,8 +136,8 @@ const GameSettings: React.FC<GameSettingsProps> = ({
                 <div style={{ marginBottom: '16px' }}>
                     <h4 style={{ marginBottom: '8px', color: 'var(--text-color, #555)' }}>Winning:</h4>
                     <ul style={{ marginLeft: '20px', marginBottom: '0' }}>
-                        <li>Be the first to get all your pieces to the end of the board</li>
-                        <li>Pieces automatically complete their journey when they reach or pass the final square</li>
+                        <li>Be the first to get all your pieces through the end of the board and back to home</li>
+                        <li>Pieces automatically complete their journey and return home when they pass the final square</li>
                     </ul>
                 </div>
             </div>

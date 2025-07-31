@@ -88,7 +88,7 @@ export class ComputerPlayerAgent implements PlayerAgent {
 
             // Add a small delay to make it feel more natural
             await this.delay(500);
-            
+
             // Use animated roll if available and animations are enabled
             if (this.diceRollerRef.current && gameState.gameSettings.diceAnimations) {
                 this.diceRollerRef.current.triggerRoll();
