@@ -300,339 +300,337 @@ function App() {
       )}
 
       {/* Game Layout with Animation Support */}
-      {state.gameStarted && (
-        <GameLayout
-          gameState={gameState}
-          whitePlayerHome={
-            <PlayerHome
-              player="white"
-              state={state}
-              settings={settings}
-              winner={winner}
-              getDestinationSquare={() => gameState.getDestinationSquare()}
-              onPieceClick={handlePieceClick}
-              onDestinationClick={handleDestinationClick}
-            />
-          }
-          blackPlayerHome={
-            <PlayerHome
-              player="black"
-              state={state}
-              settings={settings}
-              winner={winner}
-              getDestinationSquare={() => gameState.getDestinationSquare()}
-              onPieceClick={handlePieceClick}
-              onDestinationClick={handleDestinationClick}
-            />
-          }
-        >
-          {/* Main Game Board */}
-          <div style={{ position: 'relative' }}>
-            <div className="gameboard" style={{
-              display: 'grid',
-              gridTemplateColumns: `repeat(${BOARD_COLUMNS}, ${SQUARE_SIZE}px)`,
-              gridTemplateRows: `repeat(${BOARD_ROWS}, ${SQUARE_SIZE}px)`,
-              gap: `${BOARD_GAP}px`,
-              justifyContent: 'center'
-            }}>
-              {Array.from({ length: TOTAL_SQUARES }).map((_, idx) => {
-                const squareNumber = idx + 1;
-                const isRosetteSquare = BoardUtils.isRosetteSquare(squareNumber);
-                const isGateSquare = BoardUtils.isGateSquare(squareNumber);
-                const isMarketSquare = BoardUtils.isMarketSquare(squareNumber);
-                const isTempleSquare = BoardUtils.isTempleSquare(squareNumber);
-                const isHouseSquare = BoardUtils.isHouseSquare(squareNumber);
-                const isTreasurySquare = BoardUtils.isTreasurySquare(squareNumber);
-                const isBlackedOut = BoardUtils.isBlackedOutSquare(squareNumber);
+      <GameLayout
+        gameState={gameState}
+        whitePlayerHome={
+          <PlayerHome
+            player="white"
+            state={state}
+            settings={settings}
+            winner={winner}
+            getDestinationSquare={() => gameState.getDestinationSquare()}
+            onPieceClick={handlePieceClick}
+            onDestinationClick={handleDestinationClick}
+          />
+        }
+        blackPlayerHome={
+          <PlayerHome
+            player="black"
+            state={state}
+            settings={settings}
+            winner={winner}
+            getDestinationSquare={() => gameState.getDestinationSquare()}
+            onPieceClick={handlePieceClick}
+            onDestinationClick={handleDestinationClick}
+          />
+        }
+      >
+        {/* Main Game Board */}
+        <div style={{ position: 'relative' }}>
+          <div className="gameboard" style={{
+            display: 'grid',
+            gridTemplateColumns: `repeat(${BOARD_COLUMNS}, ${SQUARE_SIZE}px)`,
+            gridTemplateRows: `repeat(${BOARD_ROWS}, ${SQUARE_SIZE}px)`,
+            gap: `${BOARD_GAP}px`,
+            justifyContent: 'center'
+          }}>
+            {Array.from({ length: TOTAL_SQUARES }).map((_, idx) => {
+              const squareNumber = idx + 1;
+              const isRosetteSquare = BoardUtils.isRosetteSquare(squareNumber);
+              const isGateSquare = BoardUtils.isGateSquare(squareNumber);
+              const isMarketSquare = BoardUtils.isMarketSquare(squareNumber);
+              const isTempleSquare = BoardUtils.isTempleSquare(squareNumber);
+              const isHouseSquare = BoardUtils.isHouseSquare(squareNumber);
+              const isTreasurySquare = BoardUtils.isTreasurySquare(squareNumber);
+              const isBlackedOut = BoardUtils.isBlackedOutSquare(squareNumber);
 
-                // Check if this square is the destination for the selected piece
-                const destinationSquare = gameState.getDestinationSquare();
-                const isDestinationSquare = destinationSquare === squareNumber;
+              // Check if this square is the destination for the selected piece
+              const destinationSquare = gameState.getDestinationSquare();
+              const isDestinationSquare = destinationSquare === squareNumber;
 
-                // Check if any pieces are on this square (excluding moving pieces)
-                const whitePiecesOnSquare = state.whitePiecePositions.map((pos, index) =>
-                  pos === squareNumber ? index : null
-                ).filter(p => p !== null);
-                const blackPiecesOnSquare = state.blackPiecePositions.map((pos, index) =>
-                  pos === squareNumber ? index : null
-                ).filter(p => p !== null);
+              // Check if any pieces are on this square (excluding moving pieces)
+              const whitePiecesOnSquare = state.whitePiecePositions.map((pos, index) =>
+                pos === squareNumber ? index : null
+              ).filter(p => p !== null);
+              const blackPiecesOnSquare = state.blackPiecePositions.map((pos, index) =>
+                pos === squareNumber ? index : null
+              ).filter(p => p !== null);
 
-                // Check if any piece on this square is eligible to move (only during active gameplay and not during animation)
-                const hasEligiblePiece = state.gameStarted && !winner && !gameState.isAnimating() && (state.currentPlayer === 'white' ? whitePiecesOnSquare : blackPiecesOnSquare).some(pieceIndex =>
-                  state.eligiblePieces.includes(pieceIndex as number)
+              // Check if any piece on this square is eligible to move (only during active gameplay and not during animation)
+              const hasEligiblePiece = state.gameStarted && !winner && !gameState.isAnimating() && (state.currentPlayer === 'white' ? whitePiecesOnSquare : blackPiecesOnSquare).some(pieceIndex =>
+                state.eligiblePieces.includes(pieceIndex as number)
+              );
+
+              // Check if any piece on this square is selected
+              const hasSelectedPiece = state.selectedPiece !== null &&
+                (state.currentPlayer === 'white' ? whitePiecesOnSquare : blackPiecesOnSquare).some(pieceIndex =>
+                  state.selectedPiece!.player === state.currentPlayer && state.selectedPiece!.index === pieceIndex
                 );
 
-                // Check if any piece on this square is selected
-                const hasSelectedPiece = state.selectedPiece !== null &&
-                  (state.currentPlayer === 'white' ? whitePiecesOnSquare : blackPiecesOnSquare).some(pieceIndex =>
-                    state.selectedPiece!.player === state.currentPlayer && state.selectedPiece!.index === pieceIndex
-                  );
+              return (
+                <div
+                  key={idx}
+                  style={{
+                    width: SQUARE_SIZE,
+                    height: SQUARE_SIZE,
+                    background: isBlackedOut ? 'transparent' : SQUARE_BACKGROUND_COLOR,
+                    border: isBlackedOut ? 'none' : '3px solid #33f',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: 500,
+                    borderRadius: 1,
+                    gap: '0px',
+                    position: 'relative',
+                  }}
+                >
+                  {isRosetteSquare && (
+                    <img
+                      src={rosetteSquare}
+                      alt="Rosette Square"
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        borderRadius: 4
+                      }}
+                    />
+                  )}
+                  {isGateSquare && (
+                    <img
+                      src={gateSquare}
+                      alt="Gate Square"
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        borderRadius: 4
+                      }}
+                    />
+                  )}
+                  {isMarketSquare && (
+                    <img
+                      src={marketSquare}
+                      alt="Market Square"
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        borderRadius: 4
+                      }}
+                    />
+                  )}
+                  {isTempleSquare && (
+                    <img
+                      src={templeSquare}
+                      alt="Temple Square"
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        borderRadius: 4
+                      }}
+                    />
+                  )}
+                  {isHouseSquare && (
+                    <img
+                      src={houseSquare}
+                      alt="House Square"
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        borderRadius: 4
+                      }}
+                    />
+                  )}
+                  {isTreasurySquare && (
+                    <img
+                      src={treasurySquare}
+                      alt="Treasury Square"
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        borderRadius: 4
+                      }}
+                    />
+                  )}
+                  {isDestinationSquare && (
+                    <img
+                      src={goToSquare}
+                      alt="Go To Square"
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        borderRadius: 4,
+                        zIndex: 3,
+                        cursor: 'pointer'
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (state.selectedPiece) {
+                          handleDestinationClick(state.selectedPiece.index);
+                        }
+                      }}
+                    />
+                  )}
 
-                return (
-                  <div
-                    key={idx}
-                    style={{
-                      width: SQUARE_SIZE,
-                      height: SQUARE_SIZE,
-                      background: isBlackedOut ? 'transparent' : SQUARE_BACKGROUND_COLOR,
-                      border: isBlackedOut ? 'none' : '3px solid #33f',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontWeight: 500,
-                      borderRadius: 1,
-                      gap: '0px',
-                      position: 'relative',
-                    }}
-                  >
-                    {isRosetteSquare && (
-                      <img
-                        src={rosetteSquare}
-                        alt="Rosette Square"
-                        style={{
-                          width: '100%',
-                          height: '100%',
-                          position: 'absolute',
-                          top: 0,
-                          left: 0,
-                          borderRadius: 4
-                        }}
-                      />
-                    )}
-                    {isGateSquare && (
-                      <img
-                        src={gateSquare}
-                        alt="Gate Square"
-                        style={{
-                          width: '100%',
-                          height: '100%',
-                          position: 'absolute',
-                          top: 0,
-                          left: 0,
-                          borderRadius: 4
-                        }}
-                      />
-                    )}
-                    {isMarketSquare && (
-                      <img
-                        src={marketSquare}
-                        alt="Market Square"
-                        style={{
-                          width: '100%',
-                          height: '100%',
-                          position: 'absolute',
-                          top: 0,
-                          left: 0,
-                          borderRadius: 4
-                        }}
-                      />
-                    )}
-                    {isTempleSquare && (
-                      <img
-                        src={templeSquare}
-                        alt="Temple Square"
-                        style={{
-                          width: '100%',
-                          height: '100%',
-                          position: 'absolute',
-                          top: 0,
-                          left: 0,
-                          borderRadius: 4
-                        }}
-                      />
-                    )}
-                    {isHouseSquare && (
-                      <img
-                        src={houseSquare}
-                        alt="House Square"
-                        style={{
-                          width: '100%',
-                          height: '100%',
-                          position: 'absolute',
-                          top: 0,
-                          left: 0,
-                          borderRadius: 4
-                        }}
-                      />
-                    )}
-                    {isTreasurySquare && (
-                      <img
-                        src={treasurySquare}
-                        alt="Treasury Square"
-                        style={{
-                          width: '100%',
-                          height: '100%',
-                          position: 'absolute',
-                          top: 0,
-                          left: 0,
-                          borderRadius: 4
-                        }}
-                      />
-                    )}
-                    {isDestinationSquare && (
-                      <img
-                        src={goToSquare}
-                        alt="Go To Square"
-                        style={{
-                          width: '100%',
-                          height: '100%',
-                          position: 'absolute',
-                          top: 0,
-                          left: 0,
-                          borderRadius: 4,
-                          zIndex: 3,
-                          cursor: 'pointer'
-                        }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (state.selectedPiece) {
-                            handleDestinationClick(state.selectedPiece.index);
-                          }
-                        }}
-                      />
-                    )}
-
-                    {/* Display pieces on this square */}
-                    {(whitePiecesOnSquare.length > 0 || blackPiecesOnSquare.length > 0) && (
-                      <>
-                        {/* Green highlight circle for eligible pieces (only during active gameplay and if no piece is selected) */}
-                        {hasEligiblePiece && !hasSelectedPiece && (
+                  {/* Display pieces on this square */}
+                  {(whitePiecesOnSquare.length > 0 || blackPiecesOnSquare.length > 0) && (
+                    <>
+                      {/* Green highlight circle for eligible pieces (only during active gameplay and if no piece is selected) */}
+                      {hasEligiblePiece && !hasSelectedPiece && (
+                        <div
+                          className="highlight-circle"
+                          style={{
+                            position: 'absolute',
+                            width: `${HIGHLIGHT_CIRCLE_SIZE}px`,
+                            height: `${HIGHLIGHT_CIRCLE_SIZE}px`,
+                            borderRadius: '50%',
+                            zIndex: 1
+                          }}
+                        />
+                      )}
+                      {whitePiecesOnSquare.map((pieceIndex) => {
+                        const isEligible = state.gameStarted && !winner && state.currentPlayer === 'white' && !gameState.isAnimating() && state.eligiblePieces.includes(pieceIndex as number);
+                        const isSelected = state.selectedPiece !== null && state.selectedPiece.player === 'white' && state.selectedPiece.index === pieceIndex;
+                        return (
                           <div
-                            className="highlight-circle"
+                            key={`white-${pieceIndex}`}
                             style={{
-                              position: 'absolute',
-                              width: `${HIGHLIGHT_CIRCLE_SIZE}px`,
-                              height: `${HIGHLIGHT_CIRCLE_SIZE}px`,
-                              borderRadius: '50%',
-                              zIndex: 1
+                              position: 'relative',
+                              cursor: isEligible ? 'pointer' : 'default'
                             }}
-                          />
-                        )}
-                        {whitePiecesOnSquare.map((pieceIndex) => {
-                          const isEligible = state.gameStarted && !winner && state.currentPlayer === 'white' && !gameState.isAnimating() && state.eligiblePieces.includes(pieceIndex as number);
-                          const isSelected = state.selectedPiece !== null && state.selectedPiece.player === 'white' && state.selectedPiece.index === pieceIndex;
-                          return (
-                            <div
-                              key={`white-${pieceIndex}`}
-                              style={{
-                                position: 'relative',
-                                cursor: isEligible ? 'pointer' : 'default'
-                              }}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (isEligible) {
-                                  handlePieceClick(pieceIndex as number);
-                                }
-                              }}
-                            >
-                              {isSelected && (
-                                <div
-                                  className="selected-circle"
-                                  style={{
-                                    position: 'absolute',
-                                    width: `${HIGHLIGHT_CIRCLE_SIZE}px`,
-                                    height: `${HIGHLIGHT_CIRCLE_SIZE}px`,
-                                    borderRadius: '50%',
-                                    top: '50%',
-                                    left: '50%',
-                                    transform: 'translate(-50%, -50%)',
-                                    zIndex: 1
-                                  }}
-                                />
-                              )}
-                              <img
-                                src={state.whitePieces[pieceIndex as number] === 'blank' ? whiteBlank : whiteSpots}
-                                alt={`White piece ${(pieceIndex as number) + 1}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (isEligible) {
+                                handlePieceClick(pieceIndex as number);
+                              }
+                            }}
+                          >
+                            {isSelected && (
+                              <div
+                                className="selected-circle"
                                 style={{
-                                  width: `${PIECE_SIZE}px`,
-                                  height: `${PIECE_SIZE}px`,
-                                  borderRadius: 4,
                                   position: 'absolute',
+                                  width: `${HIGHLIGHT_CIRCLE_SIZE}px`,
+                                  height: `${HIGHLIGHT_CIRCLE_SIZE}px`,
+                                  borderRadius: '50%',
                                   top: '50%',
                                   left: '50%',
                                   transform: 'translate(-50%, -50%)',
-                                  zIndex: 2
+                                  zIndex: 1
                                 }}
                               />
-                            </div>
-                          );
-                        })}
-                        {blackPiecesOnSquare.map((pieceIndex) => {
-                          const isEligible = state.gameStarted && !winner && state.currentPlayer === 'black' && !gameState.isAnimating() && state.eligiblePieces.includes(pieceIndex as number);
-                          const isSelected = state.selectedPiece !== null && state.selectedPiece.player === 'black' && state.selectedPiece.index === pieceIndex;
-                          return (
-                            <div
-                              key={`black-${pieceIndex}`}
+                            )}
+                            <img
+                              src={state.whitePieces[pieceIndex as number] === 'blank' ? whiteBlank : whiteSpots}
+                              alt={`White piece ${(pieceIndex as number) + 1}`}
                               style={{
-                                position: 'relative',
-                                cursor: isEligible ? 'pointer' : 'default'
+                                width: `${PIECE_SIZE}px`,
+                                height: `${PIECE_SIZE}px`,
+                                borderRadius: 4,
+                                position: 'absolute',
+                                top: '50%',
+                                left: '50%',
+                                transform: 'translate(-50%, -50%)',
+                                zIndex: 2
                               }}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (isEligible) {
-                                  handlePieceClick(pieceIndex as number);
-                                }
-                              }}
-                            >
-                              {isSelected && (
-                                <div
-                                  className="selected-circle"
-                                  style={{
-                                    position: 'absolute',
-                                    width: `${HIGHLIGHT_CIRCLE_SIZE}px`,
-                                    height: `${HIGHLIGHT_CIRCLE_SIZE}px`,
-                                    borderRadius: '50%',
-                                    top: '50%',
-                                    left: '50%',
-                                    transform: 'translate(-50%, -50%)',
-                                    zIndex: 1
-                                  }}
-                                />
-                              )}
-                              <img
-                                src={state.blackPieces[pieceIndex as number] === 'blank' ? blackBlank : blackSpots}
-                                alt={`Black piece ${(pieceIndex as number) + 1}`}
+                            />
+                          </div>
+                        );
+                      })}
+                      {blackPiecesOnSquare.map((pieceIndex) => {
+                        const isEligible = state.gameStarted && !winner && state.currentPlayer === 'black' && !gameState.isAnimating() && state.eligiblePieces.includes(pieceIndex as number);
+                        const isSelected = state.selectedPiece !== null && state.selectedPiece.player === 'black' && state.selectedPiece.index === pieceIndex;
+                        return (
+                          <div
+                            key={`black-${pieceIndex}`}
+                            style={{
+                              position: 'relative',
+                              cursor: isEligible ? 'pointer' : 'default'
+                            }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (isEligible) {
+                                handlePieceClick(pieceIndex as number);
+                              }
+                            }}
+                          >
+                            {isSelected && (
+                              <div
+                                className="selected-circle"
                                 style={{
-                                  width: `${PIECE_SIZE}px`,
-                                  height: `${PIECE_SIZE}px`,
-                                  borderRadius: 4,
                                   position: 'absolute',
+                                  width: `${HIGHLIGHT_CIRCLE_SIZE}px`,
+                                  height: `${HIGHLIGHT_CIRCLE_SIZE}px`,
+                                  borderRadius: '50%',
                                   top: '50%',
                                   left: '50%',
                                   transform: 'translate(-50%, -50%)',
-                                  zIndex: 2
+                                  zIndex: 1
                                 }}
                               />
-                            </div>
-                          );
-                        })}
-                      </>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Path Overlay */}
-            {showPath && (
-              <img
-                src={pathOverlay}
-                alt="Path Overlay"
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  width: '100%',
-                  height: '100%',
-                  pointerEvents: 'none',
-                  zIndex: 10,
-                  transform: state.currentPlayer === 'black' ? 'scaleY(-1)' : 'none'
-                }}
-              />
-            )}
+                            )}
+                            <img
+                              src={state.blackPieces[pieceIndex as number] === 'blank' ? blackBlank : blackSpots}
+                              alt={`Black piece ${(pieceIndex as number) + 1}`}
+                              style={{
+                                width: `${PIECE_SIZE}px`,
+                                height: `${PIECE_SIZE}px`,
+                                borderRadius: 4,
+                                position: 'absolute',
+                                top: '50%',
+                                left: '50%',
+                                transform: 'translate(-50%, -50%)',
+                                zIndex: 2
+                              }}
+                            />
+                          </div>
+                        );
+                      })}
+                    </>
+                  )}
+                </div>
+              );
+            })}
           </div>
-        </GameLayout>
-      )}
+
+          {/* Path Overlay */}
+          {showPath && (
+            <img
+              src={pathOverlay}
+              alt="Path Overlay"
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                pointerEvents: 'none',
+                zIndex: 10,
+                transform: state.currentPlayer === 'black' ? 'scaleY(-1)' : 'none'
+              }}
+            />
+          )}
+        </div>
+      </GameLayout>
 
       {state.gameStarted && !winner && (
         <div style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
