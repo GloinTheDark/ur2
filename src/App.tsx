@@ -9,7 +9,7 @@ import PlayerHome from './PlayerHome'
 import GameLayout from './GameLayout'
 import { PlayerManager } from './PlayerManager'
 import type { PlayerType } from './PlayerAgent'
-import { BoardUtils, BOARD_COLUMNS, BOARD_ROWS, TOTAL_SQUARES } from './BoardLayout'
+import { BoardUtils, BOARD_COLUMNS, BOARD_ROWS, TOTAL_SQUARES, WHITE_PATH, BLACK_PATH } from './BoardLayout'
 import { SQUARE_BACKGROUND_COLOR, PIECE_SIZE, HIGHLIGHT_CIRCLE_SIZE, SQUARE_SIZE, BOARD_GAP } from './UIConstants'
 import rosetteSquare from './assets/RosetteSquare.svg'
 import gateSquare from './assets/GateSquare.svg'
@@ -351,12 +351,14 @@ function App() {
               const isDestinationSquare = destinationSquare === squareNumber;
 
               // Check if any pieces are on this square (excluding moving pieces)
-              const whitePiecesOnSquare = state.whitePiecePositions.map((pos, index) =>
-                pos === squareNumber ? index : null
-              ).filter(p => p !== null);
-              const blackPiecesOnSquare = state.blackPiecePositions.map((pos, index) =>
-                pos === squareNumber ? index : null
-              ).filter(p => p !== null);
+              const whitePiecesOnSquare = state.whitePiecePositions.map((pos, index) => {
+                if (pos === 'start' || pos === 'moving') return null;
+                return WHITE_PATH[pos as number] === squareNumber ? index : null;
+              }).filter(p => p !== null);
+              const blackPiecesOnSquare = state.blackPiecePositions.map((pos, index) => {
+                if (pos === 'start' || pos === 'moving') return null;
+                return BLACK_PATH[pos as number] === squareNumber ? index : null;
+              }).filter(p => p !== null);
 
               // Check if any piece on this square is eligible to move (only during active gameplay and not during animation)
               const hasEligiblePiece = state.gameStarted && !winner && !gameState.isAnimating() && (state.currentPlayer === 'white' ? whitePiecesOnSquare : blackPiecesOnSquare).some(pieceIndex =>

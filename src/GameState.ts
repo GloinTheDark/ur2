@@ -23,8 +23,8 @@ export interface GameStateData {
     currentPlayer: 'white' | 'black';
     whitePieces: ('blank' | 'spots')[];
     blackPieces: ('blank' | 'spots')[];
-    whitePiecePositions: (number | 'start' | 'moving')[];
-    blackPiecePositions: (number | 'start' | 'moving')[];
+    whitePiecePositions: (number | 'start' | 'moving')[]; // numbers represent indices into WHITE_PATH
+    blackPiecePositions: (number | 'start' | 'moving')[]; // numbers represent indices into BLACK_PATH
     selectedPiece: { player: 'white' | 'black', index: number } | null;
     gameStarted: boolean;
     gamePhase: 'initial-roll' | 'playing';
@@ -43,7 +43,7 @@ export interface GameStateData {
     animatingCapturedPiece: {
         player: 'white' | 'black',
         index: number,
-        fromPosition: number,
+        fromPosition: number, // path index
         isAnimating: boolean,
         originalMoveLandedOnRosette: boolean
     } | null;
@@ -232,7 +232,6 @@ export class GameState {
     // Animation methods
     private startPieceAnimation(player: 'white' | 'black', pieceIndex: number, diceRoll: number): boolean {
         const currentPositions = player === 'white' ? this.data.whitePiecePositions : this.data.blackPiecePositions;
-        const currentPieces = player === 'white' ? this.data.whitePieces : this.data.blackPieces;
         const playerPath = player === 'white' ? this.whitePath : this.blackPath;
         const currentPos = currentPositions[pieceIndex];
 
@@ -243,27 +242,31 @@ export class GameState {
 
         let toPosition: number | 'start';
 
-        // Calculate destination position
+        // Calculate destination position (as path index)
         if (currentPos === 'start') {
             if (diceRoll <= playerPath.length) {
-                toPosition = playerPath[diceRoll - 1];
+                toPosition = diceRoll - 1; // Convert 1-based dice roll to 0-based path index
             } else {
                 return false; // Invalid move
             }
         } else {
-            const currentIndex = this.findPieceIndexInPath(currentPos as number, currentPieces[pieceIndex], playerPath);
-            const newIndex = currentIndex + diceRoll;
+            const currentPathIndex = currentPos as number;
+            const newPathIndex = currentPathIndex + diceRoll;
 
-            if (newIndex >= playerPath.length) {
+            if (newPathIndex >= playerPath.length) {
                 // Check if gate is blocked
                 const opponentPositions = player === 'white' ? this.data.blackPiecePositions : this.data.whitePiecePositions;
-                const isGateBlocked = this.settings.gateKeeper && opponentPositions.some(pos => pos === GATE_SQUARE);
+                const isGateBlocked = this.settings.gateKeeper && opponentPositions.some(pos => {
+                    if (pos === 'start' || pos === 'moving') return false;
+                    const opponentPath = player === 'white' ? this.blackPath : this.whitePath;
+                    return opponentPath[pos as number] === GATE_SQUARE;
+                });
                 if (isGateBlocked) {
                     return false; // Cannot complete path if gate is blocked
                 }
                 toPosition = 'start'; // Piece completes circuit
             } else {
-                toPosition = playerPath[newIndex];
+                toPosition = newPathIndex;
             }
         }
 
@@ -299,7 +302,6 @@ export class GameState {
 
         const { player, index, fromPosition, toPosition, originalDiceRoll } = this.data.animatingPiece;
         const playerPath = player === 'white' ? this.whitePath : this.blackPath;
-        const currentPieces = player === 'white' ? this.data.whitePieces : this.data.blackPieces;
         let landedOnRosette = false;
 
         // Set the piece to its final position
@@ -324,8 +326,8 @@ export class GameState {
             }
         } else if (fromPosition !== 'start' && toPosition !== 'start') {
             // Moving along the path - check if we pass through any treasury squares
-            const fromIndex = this.findPieceIndexInPath(fromPosition as number, currentPieces[index], playerPath);
-            const toIndex = this.findPieceIndexInPath(toPosition as number, currentPieces[index], playerPath);
+            const fromIndex = fromPosition as number;
+            const toIndex = toPosition as number;
             for (let i = fromIndex + 1; i <= toIndex; i++) {
                 if (TREASURY_SQUARES.includes(playerPath[i] as any)) {
                     if (player === 'white') {
@@ -346,17 +348,26 @@ export class GameState {
         }
 
         // Check for rosette landing
-        if (toPosition !== 'start' && ROSETTE_SQUARES.includes(toPosition as any)) {
-            landedOnRosette = true;
+        if (toPosition !== 'start') {
+            const destinationSquare = playerPath[toPosition as number];
+            if (ROSETTE_SQUARES.includes(destinationSquare as any)) {
+                landedOnRosette = true;
+            }
         }
 
         // Handle piece capture - start captured piece animation
         if (toPosition !== 'start') {
+            const destinationSquare = playerPath[toPosition as number];
             const opponentPositions = player === 'white' ? this.data.blackPiecePositions : this.data.whitePiecePositions;
             const opponentPieces = player === 'white' ? this.data.blackPieces : this.data.whitePieces;
             const opponentPlayer = player === 'white' ? 'black' : 'white';
+            const opponentPath = player === 'white' ? this.blackPath : this.whitePath;
 
-            const capturedPieceIndex = opponentPositions.findIndex(pos => pos === toPosition);
+            const capturedPieceIndex = opponentPositions.findIndex(pos => {
+                if (pos === 'start' || pos === 'moving') return false;
+                return opponentPath[pos as number] === destinationSquare;
+            });
+
             if (capturedPieceIndex !== -1) {
                 // Start captured piece animation if animations are enabled
                 if (this.settings.pieceAnimations) {
@@ -367,7 +378,7 @@ export class GameState {
                     this.data.animatingCapturedPiece = {
                         player: opponentPlayer,
                         index: capturedPieceIndex,
-                        fromPosition: toPosition as number,
+                        fromPosition: opponentPositions[capturedPieceIndex] as number,
                         isAnimating: true,
                         originalMoveLandedOnRosette: landedOnRosette
                     };
@@ -483,13 +494,15 @@ export class GameState {
 
         if (player === 'white') {
             const currentPos = this.data.whitePiecePositions[pieceIndex];
+            let destinationPathIndex: number | undefined;
             let destinationSquare: number | undefined;
 
             if (currentPos === 'start') {
                 // Move from start to first position
                 if (diceRoll <= this.whitePath.length) {
-                    destinationSquare = this.whitePath[diceRoll - 1];
-                    this.data.whitePiecePositions[pieceIndex] = destinationSquare;
+                    destinationPathIndex = diceRoll - 1; // Convert to 0-based index
+                    destinationSquare = this.whitePath[destinationPathIndex];
+                    this.data.whitePiecePositions[pieceIndex] = destinationPathIndex;
 
                     // Check if piece landed on a rosette square
                     if (ROSETTE_SQUARES.includes(destinationSquare as any)) {
@@ -505,21 +518,25 @@ export class GameState {
                     }
                 }
             } else {
-                // Find current position in path and move forward
-                let currentIndex = this.findPieceIndexInPath(currentPos as number, this.data.whitePieces[pieceIndex], this.whitePath);
-                const newIndex = currentIndex + diceRoll;
+                // Move along the path
+                const currentPathIndex = currentPos as number;
+                const newPathIndex = currentPathIndex + diceRoll;
 
-                if (newIndex >= this.whitePath.length) {
-                    // Check if gate square (9) is occupied by opponent piece (only if gate keeper rule is enabled)
-                    const isGateBlocked = this.settings.gateKeeper && this.data.blackPiecePositions.some(pos => pos === GATE_SQUARE);
+                if (newPathIndex >= this.whitePath.length) {
+                    // Check if gate square is occupied by opponent piece (only if gate keeper rule is enabled)
+                    const isGateBlocked = this.settings.gateKeeper && this.data.blackPiecePositions.some(pos => {
+                        if (pos === 'start' || pos === 'moving') return false;
+                        return this.blackPath[pos as number] === GATE_SQUARE;
+                    });
                     if (!isGateBlocked) {
                         // Piece completes the circuit and returns to start
                         this.data.whitePiecePositions[pieceIndex] = 'start';
                         this.data.whitePieces[pieceIndex] = 'spots'; // Keep spots state to indicate completion
                     }
                 } else {
-                    destinationSquare = this.whitePath[newIndex];
-                    this.data.whitePiecePositions[pieceIndex] = destinationSquare;
+                    destinationPathIndex = newPathIndex;
+                    destinationSquare = this.whitePath[destinationPathIndex];
+                    this.data.whitePiecePositions[pieceIndex] = destinationPathIndex;
 
                     // Check if piece landed on a rosette square
                     if (ROSETTE_SQUARES.includes(destinationSquare as any)) {
@@ -527,7 +544,7 @@ export class GameState {
                     }
 
                     // Check if piece lands on or passes through a treasury square and change to spots
-                    for (let i = currentIndex + 1; i <= newIndex; i++) {
+                    for (let i = currentPathIndex + 1; i <= newPathIndex; i++) {
                         if (TREASURY_SQUARES.includes(this.whitePath[i] as any)) {
                             this.data.whitePieces[pieceIndex] = 'spots';
                             break;
@@ -538,7 +555,10 @@ export class GameState {
 
             // Check for opponent piece capture
             if (destinationSquare !== undefined) {
-                const capturedPieceIndex = this.data.blackPiecePositions.findIndex(pos => pos === destinationSquare);
+                const capturedPieceIndex = this.data.blackPiecePositions.findIndex(pos => {
+                    if (pos === 'start' || pos === 'moving') return false;
+                    return this.blackPath[pos as number] === destinationSquare;
+                });
                 if (capturedPieceIndex !== -1) {
                     this.data.blackPiecePositions[capturedPieceIndex] = 'start';
                     this.data.blackPieces[capturedPieceIndex] = 'blank';
@@ -547,12 +567,14 @@ export class GameState {
         } else {
             // Similar logic for black player
             const currentPos = this.data.blackPiecePositions[pieceIndex];
+            let destinationPathIndex: number | undefined;
             let destinationSquare: number | undefined;
 
             if (currentPos === 'start') {
                 if (diceRoll <= this.blackPath.length) {
-                    destinationSquare = this.blackPath[diceRoll - 1];
-                    this.data.blackPiecePositions[pieceIndex] = destinationSquare;
+                    destinationPathIndex = diceRoll - 1; // Convert to 0-based index
+                    destinationSquare = this.blackPath[destinationPathIndex];
+                    this.data.blackPiecePositions[pieceIndex] = destinationPathIndex;
 
                     if (ROSETTE_SQUARES.includes(destinationSquare as any)) {
                         landedOnRosette = true;
@@ -566,24 +588,28 @@ export class GameState {
                     }
                 }
             } else {
-                let currentIndex = this.findPieceIndexInPath(currentPos as number, this.data.blackPieces[pieceIndex], this.blackPath);
-                const newIndex = currentIndex + diceRoll;
+                const currentPathIndex = currentPos as number;
+                const newPathIndex = currentPathIndex + diceRoll;
 
-                if (newIndex >= this.blackPath.length) {
-                    const isGateBlocked = this.settings.gateKeeper && this.data.whitePiecePositions.some(pos => pos === GATE_SQUARE);
+                if (newPathIndex >= this.blackPath.length) {
+                    const isGateBlocked = this.settings.gateKeeper && this.data.whitePiecePositions.some(pos => {
+                        if (pos === 'start' || pos === 'moving') return false;
+                        return this.whitePath[pos as number] === GATE_SQUARE;
+                    });
                     if (!isGateBlocked) {
                         this.data.blackPiecePositions[pieceIndex] = 'start';
                         this.data.blackPieces[pieceIndex] = 'spots';
                     }
                 } else {
-                    destinationSquare = this.blackPath[newIndex];
-                    this.data.blackPiecePositions[pieceIndex] = destinationSquare;
+                    destinationPathIndex = newPathIndex;
+                    destinationSquare = this.blackPath[destinationPathIndex];
+                    this.data.blackPiecePositions[pieceIndex] = destinationPathIndex;
 
                     if (ROSETTE_SQUARES.includes(destinationSquare as any)) {
                         landedOnRosette = true;
                     }
 
-                    for (let i = currentIndex + 1; i <= newIndex; i++) {
+                    for (let i = currentPathIndex + 1; i <= newPathIndex; i++) {
                         if (TREASURY_SQUARES.includes(this.blackPath[i] as any)) {
                             this.data.blackPieces[pieceIndex] = 'spots';
                             break;
@@ -594,7 +620,10 @@ export class GameState {
 
             // Check for opponent piece capture
             if (destinationSquare !== undefined) {
-                const capturedPieceIndex = this.data.whitePiecePositions.findIndex(pos => pos === destinationSquare);
+                const capturedPieceIndex = this.data.whitePiecePositions.findIndex(pos => {
+                    if (pos === 'start' || pos === 'moving') return false;
+                    return this.whitePath[pos as number] === destinationSquare;
+                });
                 if (capturedPieceIndex !== -1) {
                     this.data.whitePiecePositions[capturedPieceIndex] = 'start';
                     this.data.whitePieces[capturedPieceIndex] = 'blank';
@@ -603,22 +632,6 @@ export class GameState {
         }
 
         return landedOnRosette;
-    }
-
-    private findPieceIndexInPath(square: number, pieceState: 'blank' | 'spots', path: number[]): number {
-        if ([9, 10, 11, 12, 13, 14, 15].includes(square)) {
-            // This square appears twice in the path
-            if (pieceState === 'blank') {
-                // Use first occurrence (early in path)
-                return path.indexOf(square);
-            } else {
-                // Use second occurrence (later in path)
-                return path.lastIndexOf(square);
-            }
-        } else {
-            // This square appears only once
-            return path.indexOf(square);
-        }
     }
 
     // Calculate eligible pieces
@@ -673,38 +686,46 @@ export class GameState {
         if (currentPos === 'start') {
             // Moving from start
             if (this.data.diceTotal <= currentPlayerPath.length) {
-                destinationSquare = currentPlayerPath[this.data.diceTotal - 1];
+                destinationSquare = currentPlayerPath[this.data.diceTotal - 1]; // Convert 1-based dice to 0-based path index
             } else {
                 return false; // Can't move beyond path
             }
         } else {
             // Moving along the path
-            const currentPieceStates = currentPlayer === 'white' ? this.data.whitePieces : this.data.blackPieces;
-            let currentIndex = this.findPieceIndexInPath(currentPos as number, currentPieceStates[pieceIndex], currentPlayerPath);
-            const newIndex = currentIndex + this.data.diceTotal;
+            const currentPathIndex = currentPos as number;
+            const newPathIndex = currentPathIndex + this.data.diceTotal;
 
-            if (newIndex >= currentPlayerPath.length) {
-                // Check if gate square (9) is occupied by opponent piece (only if gate keeper rule is enabled)
+            if (newPathIndex >= currentPlayerPath.length) {
+                // Check if gate square is occupied by opponent piece (only if gate keeper rule is enabled)
                 const opponentPositions = currentPlayer === 'white' ? this.data.blackPiecePositions : this.data.whitePiecePositions;
-                const isGateBlocked = this.settings.gateKeeper && opponentPositions.some(pos => pos === GATE_SQUARE);
+                const opponentPath = currentPlayer === 'white' ? this.blackPath : this.whitePath;
+                const isGateBlocked = this.settings.gateKeeper && opponentPositions.some(pos => {
+                    if (pos === 'start' || pos === 'moving') return false;
+                    return opponentPath[pos as number] === GATE_SQUARE;
+                });
                 if (isGateBlocked) {
                     return false; // Cannot complete path if gate is blocked
                 }
                 return true; // Can return to start if gate is clear
             } else {
-                destinationSquare = currentPlayerPath[newIndex];
+                destinationSquare = currentPlayerPath[newPathIndex];
             }
         }
 
         // Check if destination is occupied by same color piece (blocking)
-        const isSameColorBlocking = currentPositions.some((pos, idx) =>
-            pos === destinationSquare && idx !== pieceIndex
-        );
+        const isSameColorBlocking = currentPositions.some((pos, idx) => {
+            if (pos === 'start' || pos === 'moving' || idx === pieceIndex) return false;
+            return currentPlayerPath[pos as number] === destinationSquare;
+        });
 
         // Check if destination is a market square occupied by opponent piece (safe square)
         const opponentPositions = currentPlayer === 'white' ? this.data.blackPiecePositions : this.data.whitePiecePositions;
+        const opponentPath = currentPlayer === 'white' ? this.blackPath : this.whitePath;
         const isMarketSquareBlocked = this.settings.safeMarkets && MARKET_SQUARES.includes(destinationSquare as any) &&
-            opponentPositions.some(pos => pos === destinationSquare);
+            opponentPositions.some(pos => {
+                if (pos === 'start' || pos === 'moving') return false;
+                return opponentPath[pos as number] === destinationSquare;
+            });
 
         return !isSameColorBlocking && !isMarketSquareBlocked;
     }
@@ -717,29 +738,34 @@ export class GameState {
         if (this.data.animatingPiece &&
             this.data.animatingPiece.player === this.data.selectedPiece.player &&
             this.data.animatingPiece.index === this.data.selectedPiece.index) {
-            return this.data.animatingPiece.toPosition === 'start' ? 'complete' : this.data.animatingPiece.toPosition;
+            if (this.data.animatingPiece.toPosition === 'start') {
+                return 'complete';
+            } else {
+                // Convert path index to board square
+                const playerPath = this.data.animatingPiece.player === 'white' ? this.whitePath : this.blackPath;
+                return playerPath[this.data.animatingPiece.toPosition as number];
+            }
         }
 
         const currentPlayerPath = this.data.selectedPiece.player === 'white' ? this.whitePath : this.blackPath;
         const currentPositions = this.data.selectedPiece.player === 'white' ? this.data.whitePiecePositions : this.data.blackPiecePositions;
-        const currentPieces = this.data.selectedPiece.player === 'white' ? this.data.whitePieces : this.data.blackPieces;
         const currentPos = currentPositions[this.data.selectedPiece.index];
 
         if (currentPos === 'start') {
             // Moving from start
             if (this.data.diceTotal <= currentPlayerPath.length) {
-                return currentPlayerPath[this.data.diceTotal - 1];
+                return currentPlayerPath[this.data.diceTotal - 1]; // Convert 1-based dice to 0-based path index
             }
             return null; // Can't move beyond path
         } else {
             // Moving along the path
-            let currentIndex = this.findPieceIndexInPath(currentPos as number, currentPieces[this.data.selectedPiece.index], currentPlayerPath);
-            const newIndex = currentIndex + this.data.diceTotal;
+            const currentPathIndex = currentPos as number;
+            const newPathIndex = currentPathIndex + this.data.diceTotal;
 
-            if (newIndex >= currentPlayerPath.length) {
+            if (newPathIndex >= currentPlayerPath.length) {
                 return 'complete'; // Piece would complete the path and return to start
             } else {
-                return currentPlayerPath[newIndex];
+                return currentPlayerPath[newPathIndex];
             }
         }
     }
@@ -750,8 +776,14 @@ export class GameState {
         let blackHouses = 0;
 
         HOUSE_SQUARES.forEach(square => {
-            const whiteOnSquare = this.data.whitePiecePositions.some(pos => pos === square);
-            const blackOnSquare = this.data.blackPiecePositions.some(pos => pos === square);
+            const whiteOnSquare = this.data.whitePiecePositions.some(pos => {
+                if (pos === 'start' || pos === 'moving') return false;
+                return this.whitePath[pos as number] === square;
+            });
+            const blackOnSquare = this.data.blackPiecePositions.some(pos => {
+                if (pos === 'start' || pos === 'moving') return false;
+                return this.blackPath[pos as number] === square;
+            });
 
             if (whiteOnSquare && !blackOnSquare) whiteHouses++;
             else if (blackOnSquare && !whiteOnSquare) blackHouses++;
@@ -766,8 +798,14 @@ export class GameState {
         let blackTemples = 0;
 
         TEMPLE_SQUARES.forEach(square => {
-            const whiteOnSquare = this.data.whitePiecePositions.some(pos => pos === square);
-            const blackOnSquare = this.data.blackPiecePositions.some(pos => pos === square);
+            const whiteOnSquare = this.data.whitePiecePositions.some(pos => {
+                if (pos === 'start' || pos === 'moving') return false;
+                return this.whitePath[pos as number] === square;
+            });
+            const blackOnSquare = this.data.blackPiecePositions.some(pos => {
+                if (pos === 'start' || pos === 'moving') return false;
+                return this.blackPath[pos as number] === square;
+            });
 
             if (whiteOnSquare && !blackOnSquare) whiteTemples++;
             else if (blackOnSquare && !whiteOnSquare) blackTemples++;
