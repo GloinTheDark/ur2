@@ -74,6 +74,41 @@ export class GameState {
         return this.getSquareFromPathIndex(player, position);
     }
 
+    // Get animation waypoints between two positions
+    getAnimationWaypoints(player: 'white' | 'black', fromPosition: number | 'start', toPosition: number | 'start'): number[] {
+        const path = player === 'white' ? this.whitePath : this.blackPath;
+        const waypoints: number[] = [];
+
+        // Handle moving from start
+        if (fromPosition === 'start') {
+            if (toPosition === 'start') return waypoints; // No movement
+            const toIndex = toPosition as number;
+            // Add all squares from path[0] to path[toIndex]
+            for (let i = 0; i <= toIndex; i++) {
+                waypoints.push(path[i]);
+            }
+        }
+        // Handle moving to start (completing circuit)
+        else if (toPosition === 'start') {
+            const fromIndex = fromPosition as number;
+            // Add all squares from current position to end of path
+            for (let i = fromIndex + 1; i < path.length; i++) {
+                waypoints.push(path[i]);
+            }
+        }
+        // Handle moving along the path
+        else {
+            const fromIndex = fromPosition as number;
+            const toIndex = toPosition as number;
+            // Add all squares between fromIndex and toIndex (exclusive of from, inclusive of to)
+            for (let i = fromIndex + 1; i <= toIndex; i++) {
+                waypoints.push(path[i]);
+            }
+        }
+
+        return waypoints;
+    }
+
     private createInitialState(): GameStateData {
         return {
             currentPlayer: 'white',
@@ -439,14 +474,16 @@ export class GameState {
         player: 'white' | 'black',
         index: number,
         fromPosition: number | 'start',
-        toPosition: number | 'start'
+        toPosition: number | 'start',
+        waypoints: number[]
     } | null {
         if (!this.data.animatingPiece?.isAnimating) {
             return null;
         }
 
         const { player, index, fromPosition, toPosition } = this.data.animatingPiece;
-        return { player, index, fromPosition, toPosition };
+        const waypoints = this.getAnimationWaypoints(player, fromPosition, toPosition);
+        return { player, index, fromPosition, toPosition, waypoints };
     }
 
     // Get current captured piece animation data

@@ -15,6 +15,8 @@ interface PieceAnimatorProps {
 interface AnimationState {
     startPosition: { x: number; y: number };
     endPosition: { x: number; y: number };
+    waypoints: { x: number; y: number }[];
+    totalDistance: number;
     progress: number;
     duration: number;
     startTime: number;
@@ -33,7 +35,7 @@ const PieceAnimator: React.FC<PieceAnimatorProps> = ({
 
         if (animationData && !animationState) {
             // Start new animation
-            const { player, index, fromPosition, toPosition } = animationData;
+            const { player, index, fromPosition, toPosition, waypoints } = animationData;
 
             let startPos: { x: number; y: number } | null = null;
             let endPos: { x: number; y: number } | null = null;
@@ -57,11 +59,38 @@ const PieceAnimator: React.FC<PieceAnimatorProps> = ({
             }
 
             if (startPos && endPos) {
+                // Calculate waypoint positions
+                const waypointPositions: { x: number; y: number }[] = [];
+                for (const waypointSquare of waypoints) {
+                    const waypointPos = getSquarePosition(waypointSquare);
+                    if (waypointPos) {
+                        waypointPositions.push(waypointPos);
+                    }
+                }
+
+                // Calculate total distance for proper speed
+                let totalDistance = 0;
+                let prevPos = startPos;
+
+                for (const waypoint of waypointPositions) {
+                    const dx = waypoint.x - prevPos.x;
+                    const dy = waypoint.y - prevPos.y;
+                    totalDistance += Math.sqrt(dx * dx + dy * dy);
+                    prevPos = waypoint;
+                }
+
+                // Add distance from last waypoint to end
+                const dx = endPos.x - prevPos.x;
+                const dy = endPos.y - prevPos.y;
+                totalDistance += Math.sqrt(dx * dx + dy * dy);
+
                 const newAnimationState: AnimationState = {
                     startPosition: startPos,
                     endPosition: endPos,
+                    waypoints: waypointPositions,
+                    totalDistance,
                     progress: 0,
-                    duration: 800, // 800ms animation
+                    duration: Math.max(800, waypoints.length * 300), // Longer duration for more waypoints
                     startTime: performance.now()
                 };
 
@@ -117,10 +146,59 @@ const PieceAnimator: React.FC<PieceAnimatorProps> = ({
     const pieces = gameState.state[player === 'white' ? 'whitePieces' : 'blackPieces'];
     const pieceType = pieces[index];
 
-    // Calculate current position
-    const { startPosition, endPosition, progress } = animationState;
-    const currentX = startPosition.x + (endPosition.x - startPosition.x) * progress;
-    const currentY = startPosition.y + (endPosition.y - startPosition.y) * progress;
+    // Calculate current position along the waypoint path
+    const { startPosition, endPosition, waypoints, totalDistance, progress } = animationState;
+
+    // Helper function to calculate position along waypoint path
+    const calculateCurrentPosition = (progress: number) => {
+        if (waypoints.length === 0) {
+            // No waypoints, direct path
+            return {
+                x: startPosition.x + (endPosition.x - startPosition.x) * progress,
+                y: startPosition.y + (endPosition.y - startPosition.y) * progress
+            };
+        }
+
+        // Create full path: start -> waypoints -> end
+        const fullPath = [startPosition, ...waypoints, endPosition];
+
+        // Calculate distances between consecutive points
+        const segmentDistances: number[] = [];
+        for (let i = 0; i < fullPath.length - 1; i++) {
+            const dx = fullPath[i + 1].x - fullPath[i].x;
+            const dy = fullPath[i + 1].y - fullPath[i].y;
+            segmentDistances.push(Math.sqrt(dx * dx + dy * dy));
+        }
+
+        // Find current position based on progress
+        const targetDistance = progress * totalDistance;
+        let currentDistance = 0;
+
+        for (let i = 0; i < segmentDistances.length; i++) {
+            const segmentDistance = segmentDistances[i];
+
+            if (currentDistance + segmentDistance >= targetDistance) {
+                // Current position is within this segment
+                const segmentProgress = (targetDistance - currentDistance) / segmentDistance;
+                const start = fullPath[i];
+                const end = fullPath[i + 1];
+
+                return {
+                    x: start.x + (end.x - start.x) * segmentProgress,
+                    y: start.y + (end.y - start.y) * segmentProgress
+                };
+            }
+
+            currentDistance += segmentDistance;
+        }
+
+        // Fallback to end position
+        return endPosition;
+    };
+
+    const currentPos = calculateCurrentPosition(progress);
+    const currentX = currentPos.x;
+    const currentY = currentPos.y;
 
     // Get the appropriate piece image
     const getPieceImage = () => {
