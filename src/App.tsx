@@ -56,15 +56,6 @@ function App() {
     gameState.updateAndSaveSettings(newSettings);
   };
 
-  const handlePieceClick = (pieceIndex: number) => {
-    gameState.selectPiece(pieceIndex);
-  };
-
-  // Handle clicking on destination square to move piece
-  const handleDestinationClick = (pieceIndex: number) => {
-    gameState.movePiece(pieceIndex);
-  };
-
   return (
     <div className="app" style={{
       display: 'flex',
@@ -261,16 +252,12 @@ function App() {
           <PlayerHome
             player="white"
             gameState={gameState}
-            onPieceClick={handlePieceClick}
-            onDestinationClick={handleDestinationClick}
           />
         }
         blackPlayerHome={
           <PlayerHome
             player="black"
             gameState={gameState}
-            onPieceClick={handlePieceClick}
-            onDestinationClick={handleDestinationClick}
           />
         }
       >
@@ -426,7 +413,7 @@ function App() {
                       onClick={(e) => {
                         e.stopPropagation();
                         if (state.selectedPiece) {
-                          handleDestinationClick(state.selectedPiece.index);
+                          gameState.movePiece(state.selectedPiece.index);
                         }
                       }}
                     />
@@ -461,7 +448,7 @@ function App() {
                             onClick={(e) => {
                               e.stopPropagation();
                               if (isEligible) {
-                                handlePieceClick(pieceIndex as number);
+                                gameState.selectPiece(pieceIndex as number);
                               }
                             }}
                           >
@@ -509,7 +496,7 @@ function App() {
                             onClick={(e) => {
                               e.stopPropagation();
                               if (isEligible) {
-                                handlePieceClick(pieceIndex as number);
+                                gameState.selectPiece(pieceIndex as number);
                               }
                             }}
                           >

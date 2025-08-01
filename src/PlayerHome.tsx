@@ -10,15 +10,11 @@ import goToSquare from './assets/GoTo.svg';
 interface PlayerHomeProps {
     player: 'white' | 'black';
     gameState: GameState;
-    onPieceClick: (pieceIndex: number) => void;
-    onDestinationClick: (pieceIndex: number) => void;
 }
 
 const PlayerHome: React.FC<PlayerHomeProps> = ({
     player,
-    gameState,
-    onPieceClick,
-    onDestinationClick
+    gameState
 }) => {
     const state = gameState.state;
     const settings = gameState.gameSettings;
@@ -101,7 +97,7 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
                             onClick={(e) => {
                                 e.stopPropagation();
                                 if (isPieceInStart && isEligible) {
-                                    onPieceClick(idx);
+                                    gameState.selectPiece(idx);
                                 }
                             }}
                         >
@@ -162,7 +158,7 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
                                     }}
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        onDestinationClick(idx);
+                                        gameState.movePiece(idx);
                                     }}
                                 />
                             )}
