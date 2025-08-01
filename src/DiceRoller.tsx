@@ -209,22 +209,20 @@ const DiceRoller = forwardRef<DiceRollerRef, DiceRollerProps>(({ gameState }, re
                 </span>
             </div>
 
-            {rolls.length === 0 && (
+            {rolls.length === 0 && !isRolling && (
                 <button
                     onClick={handleRoll}
-                    disabled={isRolling}
                     style={{
                         padding: '8px 16px',
                         fontSize: '1rem',
                         borderRadius: 4,
-                        cursor: isRolling ? 'not-allowed' : 'pointer',
-                        backgroundColor: isRolling ? '#ccc' : (currentPlayer === 'white' ? '#f0f0f0' : '#333'),
-                        color: isRolling ? '#666' : (currentPlayer === 'white' ? '#333' : '#fff'),
-                        border: `2px solid ${isRolling ? '#999' : (currentPlayer === 'white' ? '#ccc' : '#666')}`,
-                        opacity: isRolling ? 0.6 : 1
+                        cursor: 'pointer',
+                        backgroundColor: currentPlayer === 'white' ? '#f0f0f0' : '#333',
+                        color: currentPlayer === 'white' ? '#333' : '#fff',
+                        border: `2px solid ${currentPlayer === 'white' ? '#ccc' : '#666'}`,
                     }}
                 >
-                    {isRolling ? 'Rolling...' : `Roll Dice (${currentPlayer})`}
+                    {`Roll Dice (${currentPlayer})`}
                 </button>
             )}
 
@@ -255,9 +253,7 @@ const DiceRoller = forwardRef<DiceRollerRef, DiceRollerProps>(({ gameState }, re
 
             {(rolls.length > 0 || isRolling) && (
                 <div style={{ marginTop: '12px', fontSize: '1.2rem', fontWeight: 'bold', color: '#646cff' }}>
-                    {isRolling ? (
-                        <span style={{ color: '#ff9500' }}>Rolling...</span>
-                    ) : (
+                    {!isRolling && (
                         <>
                             Total: {diceTotal}
                             {houseBonus > 0 && (

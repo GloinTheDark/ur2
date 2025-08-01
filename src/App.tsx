@@ -624,7 +624,8 @@ function App() {
                 width: '100%',
                 height: '100%',
                 pointerEvents: 'none',
-                zIndex: 10,
+                zIndex: 5,
+                opacity: 0.7,
                 transform: state.currentPlayer === 'black' ? 'scaleY(-1)' : 'none'
               }}
             />
@@ -701,11 +702,9 @@ function App() {
             </div>
           )}          <DiceRoller ref={diceRollerRef} gameState={gameState} />
 
-          {/* Show Path Button */}
+          {/* Toggle Path Button */}
           <button
-            onMouseDown={() => setShowPath(true)}
-            onMouseUp={() => setShowPath(false)}
-            onMouseLeave={() => setShowPath(false)}
+            onClick={() => setShowPath(!showPath)}
             style={{
               marginTop: '16px',
               padding: '8px 16px',
@@ -719,7 +718,7 @@ function App() {
               userSelect: 'none'
             }}
           >
-            Show Path
+            {showPath ? 'Hide Path' : 'Show Path'}
           </button>
         </div>
       )}

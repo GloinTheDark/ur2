@@ -52,15 +52,15 @@
 /* Highlight circle animation */
 @keyframes highlight-pulse {
   0% {
-    background-color: rgba(71, 115, 71, 0.6);
+    background-color: rgba(255, 255, 0, 0.5);
   }
 
   50% {
-    background-color: rgba(17, 226, 27, 0.8);
+    background-color: rgba(255, 255, 0, 0.9);
   }
 
   100% {
-    background-color: rgba(71, 115, 71, 0.6);
+    background-color: rgba(255, 255, 0, 0.5);
   }
 }
 
@@ -71,15 +71,15 @@
 /* Selected piece circle animation */
 @keyframes selected-pulse {
   0% {
-    background-color: rgba(100, 108, 255, 0.3);
+    background-color: rgba(0, 255, 0, 0.7);
   }
 
   50% {
-    background-color: rgba(21, 12, 79, 0.5);
+    background-color: rgba(0, 255, 0, 0.9);
   }
 
   100% {
-    background-color: rgba(100, 108, 255, 0.3);
+    background-color: rgba(0, 255, 0, 0.7);
   }
 }
 
