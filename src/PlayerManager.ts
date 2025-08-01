@@ -64,7 +64,9 @@ export class PlayerManager {
 
         this.whitePlayer.cleanup();
         this.blackPlayer.cleanup();
-    } getCurrentPlayerAgent(): PlayerAgent {
+    }
+
+    getCurrentPlayerAgent(): PlayerAgent {
         const currentPlayer = this.gameState.state.currentPlayer;
         const agent = currentPlayer === 'white' ? this.whitePlayer : this.blackPlayer;
         return agent;
@@ -101,24 +103,18 @@ export class PlayerManager {
         // Handle different game states
         if (state.diceRolls.length === 0) {
             // Player needs to roll dice - only auto-roll for computer players
-            if (currentPlayerAgent.playerType === 'computer' && this.isCurrentPlayerComputer()) {
-                if (currentPlayerAgent.color === state.currentPlayer) {
-                    await currentPlayerAgent.onTurnStart(this.gameState);
-                }
+            if (currentPlayerAgent.playerType === 'computer') {
+                await currentPlayerAgent.onTurnStart(this.gameState);
             }
         } else if (state.diceTotal > 0 && state.eligiblePieces.length > 0) {
             // Player needs to make a move - only auto-move for computer players
-            if (currentPlayerAgent.playerType === 'computer' && this.isCurrentPlayerComputer()) {
-                if (currentPlayerAgent.color === state.currentPlayer) {
-                    await currentPlayerAgent.onMoveRequired(this.gameState);
-                }
+            if (currentPlayerAgent.playerType === 'computer') {
+                await currentPlayerAgent.onMoveRequired(this.gameState);
             }
         } else if (state.diceTotal === 0 || state.eligiblePieces.length === 0) {
             // No moves available, player should pass - only auto-pass for computer players
-            if (currentPlayerAgent.playerType === 'computer' && this.isCurrentPlayerComputer()) {
-                if (currentPlayerAgent.color === state.currentPlayer) {
-                    await currentPlayerAgent.onMoveRequired(this.gameState);
-                }
+            if (currentPlayerAgent.playerType === 'computer') {
+                await currentPlayerAgent.onMoveRequired(this.gameState);
             }
         }
     }

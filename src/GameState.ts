@@ -244,7 +244,7 @@ export class GameState {
         this.data.templeBlessingApplied = false;
         this.data.eligiblePieces = [];
         this.data.selectedPiece = null;
-        this.notify();
+        // Don't notify here - let the calling method handle notification
     }
 
     // Piece selection
@@ -472,6 +472,9 @@ export class GameState {
         if (!landedOnRosette) {
             this.data.currentPlayer = this.data.currentPlayer === 'white' ? 'black' : 'white';
         }
+
+        // Notify after all state changes are complete
+        this.notify();
     }
 
     // Check if any animation is currently in progress
