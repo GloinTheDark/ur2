@@ -682,25 +682,7 @@ function App() {
             </div>
           )}
 
-          {/* Player Type Indicator */}
-          {playerManager && (
-            <div style={{
-              marginBottom: '12px',
-              padding: '8px 16px',
-              backgroundColor: '#f0f0f0',
-              borderRadius: '6px',
-              fontSize: '0.9rem',
-              color: '#666',
-              textAlign: 'center'
-            }}>
-              {playerManager ? playerManager.getGameModeDescription() : 'Human vs Human'}
-              {playerManager && playerManager.isCurrentPlayerComputer() && (
-                <span style={{ color: '#646cff', fontWeight: 'bold', marginLeft: '8px' }}>
-                  (Computer thinking...)
-                </span>
-              )}
-            </div>
-          )}          <DiceRoller ref={diceRollerRef} gameState={gameState} />
+          <DiceRoller ref={diceRollerRef} gameState={gameState} />
 
           {/* Toggle Path Button */}
           <button
