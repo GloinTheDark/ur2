@@ -160,13 +160,14 @@ export class GameState {
         const newRolls = Array.from({ length: 4 }, () => Math.floor(Math.random() * 2));
         const baseTotal = newRolls.reduce((sum, roll) => sum + roll, 0);
 
-        // Apply house bonus
-        let total = baseTotal + this.getHouseBonus(this.data.currentPlayer);
-
-        // Apply temple blessings (only if base roll is 0 and player has temple control)
+        // Apply temple blessings first (only if base roll is 0 and player has temple control)
+        let total = baseTotal;
         if (baseTotal === 0 && this.getTempleBlessings(this.data.currentPlayer).hasControl) {
             total = 4;
         }
+
+        // Apply house bonus second
+        total += this.getHouseBonus(this.data.currentPlayer);
 
         this.data.diceRolls = newRolls;
         this.data.diceTotal = total;
