@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { GameState } from './GameState';
-import { WHITE_PATH, BLACK_PATH } from './BoardLayout';
 import whiteBlank from './assets/WhiteBlank.svg';
 import whiteSpots from './assets/WhiteSpots.svg';
 import blackBlank from './assets/BlackBlank.svg';
@@ -43,9 +42,8 @@ const PieceAnimator: React.FC<PieceAnimatorProps> = ({
             if (fromPosition === 'start') {
                 startPos = getHomePosition(player, index);
             } else {
-                // Convert path index to board square
-                const playerPath = player === 'white' ? WHITE_PATH : BLACK_PATH;
-                const boardSquare = playerPath[fromPosition as number];
+                // Convert path index to board square using GameState helper
+                const boardSquare = gameState.getSquareFromPathIndex(player, fromPosition as number);
                 startPos = getSquarePosition(boardSquare);
             }
 
@@ -53,9 +51,8 @@ const PieceAnimator: React.FC<PieceAnimatorProps> = ({
             if (toPosition === 'start') {
                 endPos = getHomePosition(player, index);
             } else {
-                // Convert path index to board square
-                const playerPath = player === 'white' ? WHITE_PATH : BLACK_PATH;
-                const boardSquare = playerPath[toPosition as number];
+                // Convert path index to board square using GameState helper
+                const boardSquare = gameState.getSquareFromPathIndex(player, toPosition as number);
                 endPos = getSquarePosition(boardSquare);
             }
 

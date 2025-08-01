@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { GameState } from './GameState';
-import { WHITE_PATH, BLACK_PATH } from './BoardLayout';
 import whiteBlank from './assets/WhiteBlank.svg';
 import blackBlank from './assets/BlackBlank.svg';
 import { PIECE_SIZE } from './UIConstants';
@@ -35,8 +34,7 @@ const CapturedPieceAnimator: React.FC<CapturedPieceAnimatorProps> = ({
             const { player, index, fromPosition } = capturedAnimationData;
 
             // Get start position (board square where piece was captured)
-            const playerPath = player === 'white' ? WHITE_PATH : BLACK_PATH;
-            const boardSquare = playerPath[fromPosition];
+            const boardSquare = gameState.getSquareFromPathIndex(player, fromPosition);
             const startPos = getSquarePosition(boardSquare);
 
             // Get end position (home area)

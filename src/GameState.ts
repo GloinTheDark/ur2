@@ -63,6 +63,17 @@ export class GameState {
         this.data = this.createInitialState();
     }
 
+    // Helper methods for position conversion
+    getSquareFromPathIndex(player: 'white' | 'black', pathIndex: number): number {
+        const path = player === 'white' ? this.whitePath : this.blackPath;
+        return path[pathIndex];
+    }
+
+    getSquareFromPosition(player: 'white' | 'black', position: number | 'start' | 'moving'): number | 'start' | 'moving' {
+        if (position === 'start' || position === 'moving') return position;
+        return this.getSquareFromPathIndex(player, position);
+    }
+
     private createInitialState(): GameStateData {
         return {
             currentPlayer: 'white',
