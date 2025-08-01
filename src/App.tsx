@@ -10,7 +10,7 @@ import GameLayout from './GameLayout'
 import { PlayerManager } from './PlayerManager'
 import type { PlayerType } from './PlayerAgent'
 import { BoardUtils, BOARD_COLUMNS, BOARD_ROWS, TOTAL_SQUARES, WHITE_PATH, BLACK_PATH } from './BoardLayout'
-import { SQUARE_BACKGROUND_COLOR, PIECE_SIZE, HIGHLIGHT_CIRCLE_SIZE, SQUARE_SIZE, BOARD_GAP } from './UIConstants'
+import { PIECE_SIZE, HIGHLIGHT_CIRCLE_SIZE, SQUARE_SIZE, BOARD_GAP } from './UIConstants'
 import rosetteSquare from './assets/RosetteSquare.svg'
 import gateSquare from './assets/GateSquare.svg'
 import marketSquare from './assets/MarketSquare.svg'
@@ -377,14 +377,11 @@ function App() {
                   style={{
                     width: SQUARE_SIZE,
                     height: SQUARE_SIZE,
-                    background: isBlackedOut ? 'transparent' : SQUARE_BACKGROUND_COLOR,
                     border: isBlackedOut ? 'none' : '3px solid #33f',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     fontWeight: 500,
-                    borderRadius: 1,
-                    gap: '0px',
                     position: 'relative',
                   }}
                 >
@@ -397,8 +394,7 @@ function App() {
                         height: '100%',
                         position: 'absolute',
                         top: 0,
-                        left: 0,
-                        borderRadius: 4
+                        left: 0
                       }}
                     />
                   )}
@@ -411,8 +407,7 @@ function App() {
                         height: '100%',
                         position: 'absolute',
                         top: 0,
-                        left: 0,
-                        borderRadius: 4
+                        left: 0
                       }}
                     />
                   )}
@@ -425,8 +420,7 @@ function App() {
                         height: '100%',
                         position: 'absolute',
                         top: 0,
-                        left: 0,
-                        borderRadius: 4
+                        left: 0
                       }}
                     />
                   )}
@@ -439,8 +433,7 @@ function App() {
                         height: '100%',
                         position: 'absolute',
                         top: 0,
-                        left: 0,
-                        borderRadius: 4
+                        left: 0
                       }}
                     />
                   )}
@@ -453,8 +446,7 @@ function App() {
                         height: '100%',
                         position: 'absolute',
                         top: 0,
-                        left: 0,
-                        borderRadius: 4
+                        left: 0
                       }}
                     />
                   )}
@@ -467,8 +459,7 @@ function App() {
                         height: '100%',
                         position: 'absolute',
                         top: 0,
-                        left: 0,
-                        borderRadius: 4
+                        left: 0
                       }}
                     />
                   )}
@@ -482,7 +473,6 @@ function App() {
                         position: 'absolute',
                         top: 0,
                         left: 0,
-                        borderRadius: 4,
                         zIndex: 3,
                         cursor: 'pointer'
                       }}
@@ -549,7 +539,6 @@ function App() {
                               style={{
                                 width: `${PIECE_SIZE}px`,
                                 height: `${PIECE_SIZE}px`,
-                                borderRadius: 4,
                                 position: 'absolute',
                                 top: '50%',
                                 left: '50%',
@@ -598,7 +587,6 @@ function App() {
                               style={{
                                 width: `${PIECE_SIZE}px`,
                                 height: `${PIECE_SIZE}px`,
-                                borderRadius: 4,
                                 position: 'absolute',
                                 top: '50%',
                                 left: '50%',

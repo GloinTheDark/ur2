@@ -105,8 +105,6 @@ const DiceRoller = forwardRef<DiceRollerRef, DiceRollerProps>(({ gameState }, re
     const diceTotal = state.diceTotal;
     const selectedPiece = state.selectedPiece;
     const eligiblePieces = state.eligiblePieces;
-    const houseBonus = gameState.getHouseBonus(currentPlayer);
-    const templeBlessings = gameState.getTempleBlessings(currentPlayer);
 
     const currentPositions = currentPlayer === 'white' ? state.whitePiecePositions : state.blackPiecePositions;
 
@@ -252,14 +250,14 @@ const DiceRoller = forwardRef<DiceRollerRef, DiceRollerProps>(({ gameState }, re
                     })}
 
                     {/* Temple blessing icon inline with dice - applied first */}
-                    {!isRolling && rolls.reduce((sum, roll) => sum + roll, 0) === 0 && templeBlessings.hasControl && diceTotal === 4 && (
+                    {!isRolling && state.templeBlessingApplied && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.9rem', color: '#9370DB' }}>
                             <img src={templeBlessingIcon} alt="Temple blessing" style={{ height: '40px' }} />
                         </div>
                     )}
 
                     {/* House bonus icon inline with dice - applied second */}
-                    {!isRolling && houseBonus > 0 && (
+                    {!isRolling && state.houseBonusApplied && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.9rem', color: '#FFD700' }}>
                             <img src={houseBonusIcon} alt="House bonus" style={{ height: '40px' }} />
                         </div>

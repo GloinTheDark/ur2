@@ -31,6 +31,8 @@ export interface GameStateData {
     initialRollResult: number | null;
     diceRolls: number[];
     diceTotal: number;
+    houseBonusApplied: boolean;
+    templeBlessingApplied: boolean;
     eligiblePieces: number[];
     animatingPiece: {
         player: 'white' | 'black',
@@ -122,6 +124,8 @@ export class GameState {
             initialRollResult: null,
             diceRolls: [],
             diceTotal: 0,
+            houseBonusApplied: false,
+            templeBlessingApplied: false,
             eligiblePieces: [],
             animatingPiece: null,
             animatingCapturedPiece: null
@@ -210,15 +214,24 @@ export class GameState {
 
         // Apply temple blessings first (only if base roll is 0 and player has temple control)
         let total = baseTotal;
+        let templeBlessingApplied = false;
         if (baseTotal === 0 && this.getTempleBlessings(this.data.currentPlayer).hasControl) {
             total = 4;
+            templeBlessingApplied = true;
         }
 
         // Apply house bonus second
-        total += this.getHouseBonus(this.data.currentPlayer);
+        let houseBonusApplied = false;
+        const houseBonus = this.getHouseBonus(this.data.currentPlayer);
+        if (houseBonus > 0) {
+            total += houseBonus;
+            houseBonusApplied = true;
+        }
 
         this.data.diceRolls = newRolls;
         this.data.diceTotal = total;
+        this.data.houseBonusApplied = houseBonusApplied;
+        this.data.templeBlessingApplied = templeBlessingApplied;
         this.data.selectedPiece = null; // Reset selection on new roll
         this.calculateEligiblePieces();
         this.notify();
@@ -227,6 +240,8 @@ export class GameState {
     resetDice(): void {
         this.data.diceRolls = [];
         this.data.diceTotal = 0;
+        this.data.houseBonusApplied = false;
+        this.data.templeBlessingApplied = false;
         this.data.eligiblePieces = [];
         this.data.selectedPiece = null;
         this.notify();
@@ -259,10 +274,7 @@ export class GameState {
         const landedOnRosette = this.executeMove(player, pieceIndex, diceRoll);
 
         // Reset dice state
-        this.data.diceRolls = [];
-        this.data.diceTotal = 0;
-        this.data.eligiblePieces = [];
-        this.data.selectedPiece = null;
+        this.resetDice();
 
         // Switch player if didn't land on rosette
         if (!landedOnRosette) {
@@ -454,9 +466,7 @@ export class GameState {
     // Complete the turn (called after all animations finish)
     private completeTurn(landedOnRosette: boolean): void {
         // Reset dice state
-        this.data.diceRolls = [];
-        this.data.diceTotal = 0;
-        this.data.eligiblePieces = [];
+        this.resetDice();
 
         // Switch player if didn't land on rosette
         if (!landedOnRosette) {
@@ -519,22 +529,9 @@ export class GameState {
         this.data.animatingCapturedPiece = null;
 
         // Complete the turn with the preserved rosette information
-        this.completeTurnAfterCapture(originalMoveLandedOnRosette);
+        this.completeTurn(originalMoveLandedOnRosette);
 
         this.notify();
-    }
-
-    // Complete turn after captured piece animation
-    private completeTurnAfterCapture(landedOnRosette: boolean): void {
-        // Reset dice state
-        this.data.diceRolls = [];
-        this.data.diceTotal = 0;
-        this.data.eligiblePieces = [];
-
-        // Switch player if didn't land on rosette
-        if (!landedOnRosette) {
-            this.data.currentPlayer = this.data.currentPlayer === 'white' ? 'black' : 'white';
-        }
     }
 
     private executeMove(player: 'white' | 'black', pieceIndex: number, diceRoll: number): boolean {
@@ -902,10 +899,7 @@ export class GameState {
 
     passTurn(): void {
         // Reset dice state and switch player in one atomic operation
-        this.data.diceRolls = [];
-        this.data.diceTotal = 0;
-        this.data.eligiblePieces = [];
-        this.data.selectedPiece = null;
+        this.resetDice();
         this.data.currentPlayer = this.data.currentPlayer === 'white' ? 'black' : 'white';
 
         // Single notification after all state changes are complete

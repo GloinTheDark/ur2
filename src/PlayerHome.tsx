@@ -1,6 +1,6 @@
 import React from 'react';
 import type { GameStateData, GameSettings } from './GameState';
-import { SQUARE_BACKGROUND_COLOR, PIECE_SIZE, HIGHLIGHT_CIRCLE_SIZE, SQUARE_SIZE } from './UIConstants';
+import { PIECE_SIZE, HIGHLIGHT_CIRCLE_SIZE, HOME_SQUARE_SIZE } from './UIConstants';
 import whiteBlank from './assets/WhiteBlank.svg';
 import whiteSpots from './assets/WhiteSpots.svg';
 import blackBlank from './assets/BlackBlank.svg';
@@ -65,11 +65,11 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
             </h3>
             <div style={{
                 display: 'grid',
-                gridTemplateColumns: `repeat(${settings.piecesPerPlayer}, ${SQUARE_SIZE}px)`,
-                gridTemplateRows: `repeat(1, ${SQUARE_SIZE}px)`,
-                gap: '4px',
+                gridTemplateColumns: `repeat(${settings.piecesPerPlayer}, ${HOME_SQUARE_SIZE}px)`,
+                gridTemplateRows: `repeat(1, ${HOME_SQUARE_SIZE}px)`,
+                gap: '0px',
                 justifyContent: 'center',
-                padding: '8px',
+                padding: '4px',
                 backgroundColor: homeStyle.backgroundColor,
                 borderRadius: '8px',
                 border: `2px solid ${homeStyle.borderColor}`,
@@ -92,15 +92,12 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
                             key={`${player}-${idx}`}
                             data-piece-index={idx}
                             style={{
-                                width: SQUARE_SIZE,
-                                height: SQUARE_SIZE,
-                                background: SQUARE_BACKGROUND_COLOR,
-                                border: '1px solid #999',
+                                width: HOME_SQUARE_SIZE,
+                                height: HOME_SQUARE_SIZE,
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 fontWeight: 500,
-                                borderRadius: 4,
                                 position: 'relative',
                                 cursor: isPieceInStart && isEligible ? 'pointer' : 'default'
                             }}
@@ -124,7 +121,7 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
                                     }}
                                 />
                             )}
-                            {/* Green highlight circle for eligible pieces (only if not selected) */}
+                            {/* Highlight circle for eligible pieces (only if not selected) */}
                             {isPieceInStart && isEligible && !isSelected && (
                                 <div
                                     className="highlight-circle"
