@@ -2,9 +2,9 @@
 <!-- Created with Inkscape (http://www.inkscape.org/) -->
 
 <svg
-   width="210mm"
-   height="297mm"
-   viewBox="0 0 210 297"
+   width="43.18985mm"
+   height="20.434061mm"
+   viewBox="0 0 43.18985 20.434061"
    version="1.1"
    id="svg1"
    inkscape:version="1.4 (86a8ad7, 2024-10-11)"
@@ -25,8 +25,8 @@
      inkscape:document-units="mm"
      showgrid="true"
      inkscape:zoom="4.3666621"
-     inkscape:cx="497.17609"
-     inkscape:cy="604.23727"
+     inkscape:cx="124.58028"
+     inkscape:cy="83.931385"
      inkscape:window-width="3840"
      inkscape:window-height="2036"
      inkscape:window-x="-12"
@@ -36,8 +36,8 @@
     <inkscape:grid
        id="grid1"
        units="mm"
-       originx="0"
-       originy="0"
+       originx="-98.557288"
+       originy="-137.65448"
        spacingx="0.26458333"
        spacingy="0.26458334"
        empcolor="#0099e5"
@@ -53,335 +53,294 @@
   <g
      inkscape:label="Layer 1"
      inkscape:groupmode="layer"
-     id="layer1">
+     id="layer1"
+     transform="translate(-98.557288,-137.65448)">
     <g
        id="Four_Eyes_4_"
        transform="matrix(0.26458333,0,0,0.26458333,98.68958,138.90625)">
-	<rect
-   class="st0"
-   width="72"
-   height="72"
-   id="rect1"
-   style="fill:#ffffff;stroke:#0000ff"
-   x="0"
-   y="0" />
-
-	<g
-   id="g10">
-		<g
-   id="g5">
-			<rect
-   x="17.799999"
-   y="32.700001"
-   class="st1"
-   width="6.5"
-   height="9.6000004"
-   id="rect2"
-   style="fill:#ffffff;stroke:#000000;stroke-linejoin:round;stroke-miterlimit:10" />
-
-			<rect
-   x="27.5"
-   y="32.799999"
-   class="st1"
-   width="6.5"
-   height="9.6000004"
-   id="rect3"
-   style="fill:#ffffff;stroke:#000000;stroke-linejoin:round;stroke-miterlimit:10" />
-
-			<rect
-   x="17.799999"
-   y="13.5"
-   class="st1"
-   width="6.5"
-   height="14.4"
-   id="rect4"
-   style="fill:#ffffff;stroke:#000000;stroke-linejoin:round;stroke-miterlimit:10" />
-
-			<rect
-   x="27.5"
-   y="13.6"
-   class="st1"
-   width="6.5"
-   height="14.4"
-   id="rect5"
-   style="fill:#ffffff;stroke:#000000;stroke-linejoin:round;stroke-miterlimit:10" />
-
-		</g>
-
-		<g
-   id="g9">
-			<rect
-   x="1.6"
-   y="32.799999"
-   class="st1"
-   width="6.5"
-   height="9.6000004"
-   id="rect6"
-   style="fill:#ffffff;stroke:#000000;stroke-linejoin:round;stroke-miterlimit:10" />
-
-			<rect
-   x="11.3"
-   y="32.799999"
-   class="st1"
-   width="6.5"
-   height="9.6000004"
-   id="rect7"
-   style="fill:#ffffff;stroke:#000000;stroke-linejoin:round;stroke-miterlimit:10" />
-
-			<rect
-   x="1.6"
-   y="13.6"
-   class="st1"
-   width="6.5"
-   height="14.4"
-   id="rect8"
-   style="fill:#ffffff;stroke:#000000;stroke-linejoin:round;stroke-miterlimit:10" />
-
-			<rect
-   x="11.3"
-   y="13.6"
-   class="st1"
-   width="6.5"
-   height="14.4"
-   id="rect9"
-   style="fill:#ffffff;stroke:#000000;stroke-linejoin:round;stroke-miterlimit:10" />
-
-		</g>
-
-		<line
-   class="st2"
-   x1="17.700001"
-   y1="16.9"
-   x2="17.700001"
-   y2="42.400002"
-   id="line9"
-   style="fill:none;stroke:#000000;stroke-linejoin:round;stroke-miterlimit:10" />
-
-	</g>
-
-	<path
-   class="st1"
-   d="M 34,9.7 27.2,4.2 C 24.3,1.9 21.1,0.7 17.7,0.7 14.3,0.7 11.1,1.9 8.2,4.2 L 1.4,9.7 v 6 l 5.4,4.4 c 3.2,2.6 7,4.1 10.8,4.1 3.8,0 7.5,-1.4 10.8,-4.1 l 5.4,-4.4 v -6 H 34 Z"
-   id="path10"
-   style="fill:#ffffff;stroke:#000000;stroke-linejoin:round;stroke-miterlimit:10" />
-
-	<path
-   class="st1"
-   d="M 1.6,12.7 9.7,6 c 5,-4.1 11.2,-4.1 16.2,0 l 8.1,6.7 -6.8,5.6 c -5.7,4.7 -13,4.7 -18.8,0 z"
-   id="path11"
-   style="fill:#ffffff;stroke:#000000;stroke-linejoin:round;stroke-miterlimit:10" />
-
-	<ellipse
-   class="st3"
-   cx="17.700001"
-   cy="12.4"
-   rx="4"
-   ry="4.1999998"
-   id="ellipse11"
-   style="fill:#0000ff" />
-
-	<g
-   id="g19">
-		<g
-   id="g14">
-			<rect
-   x="54.299999"
-   y="32.700001"
-   class="st1"
-   width="6.5"
-   height="9.6000004"
-   id="rect11"
-   style="fill:#ffffff;stroke:#000000;stroke-linejoin:round;stroke-miterlimit:10" />
-
-			<rect
-   x="64"
-   y="32.700001"
-   class="st1"
-   width="6.5"
-   height="9.6000004"
-   id="rect12"
-   style="fill:#ffffff;stroke:#000000;stroke-linejoin:round;stroke-miterlimit:10" />
-
-			<rect
-   x="54.299999"
-   y="13.5"
-   class="st1"
-   width="6.5"
-   height="14.4"
-   id="rect13"
-   style="fill:#ffffff;stroke:#000000;stroke-linejoin:round;stroke-miterlimit:10" />
-
-			<rect
-   x="64"
-   y="13.5"
-   class="st1"
-   width="6.5"
-   height="14.4"
-   id="rect14"
-   style="fill:#ffffff;stroke:#000000;stroke-linejoin:round;stroke-miterlimit:10" />
-
-		</g>
-
-		<g
-   id="g18">
-			<rect
-   x="38.099998"
-   y="32.700001"
-   class="st1"
-   width="6.5"
-   height="9.6000004"
-   id="rect15"
-   style="fill:#ffffff;stroke:#000000;stroke-linejoin:round;stroke-miterlimit:10" />
-
-			<rect
-   x="47.799999"
-   y="32.799999"
-   class="st1"
-   width="6.5"
-   height="9.6000004"
-   id="rect16"
-   style="fill:#ffffff;stroke:#000000;stroke-linejoin:round;stroke-miterlimit:10" />
-
-			<rect
-   x="38.099998"
-   y="13.5"
-   class="st1"
-   width="6.5"
-   height="14.4"
-   id="rect17"
-   style="fill:#ffffff;stroke:#000000;stroke-linejoin:round;stroke-miterlimit:10" />
-
-			<rect
-   x="47.799999"
-   y="13.6"
-   class="st1"
-   width="6.5"
-   height="14.4"
-   id="rect18"
-   style="fill:#ffffff;stroke:#000000;stroke-linejoin:round;stroke-miterlimit:10" />
-
-		</g>
-
-		<line
-   class="st2"
-   x1="54.299999"
-   y1="16.9"
-   x2="54.299999"
-   y2="42.400002"
-   id="line18"
-   style="fill:none;stroke:#000000;stroke-linejoin:round;stroke-miterlimit:10" />
-
-	</g>
-
-	<path
-   class="st1"
-   d="M 70.4,9.7 63.6,4.2 C 60.7,1.9 57.5,0.7 54.1,0.7 c -3.4,0 -6.6,1.2 -9.5,3.5 l -6.8,5.5 v 6 l 5.4,4.4 c 3.2,2.6 7,4.1 10.8,4.1 3.8,0 7.5,-1.4 10.8,-4.1 l 5.4,-4.4 v -6 z"
-   id="path19"
-   style="fill:#ffffff;stroke:#000000;stroke-linejoin:round;stroke-miterlimit:10" />
-
-	<path
-   class="st1"
-   d="M 38,12.7 46.1,6 c 5,-4.1 11.2,-4.1 16.2,0 l 8.1,6.7 -6.8,5.6 c -5.7,4.7 -13,4.7 -18.8,0 z"
-   id="path20"
-   style="fill:#ffffff;stroke:#000000;stroke-linejoin:round;stroke-miterlimit:10" />
-
-	<ellipse
-   class="st3"
-   cx="54.299999"
-   cy="12.4"
-   rx="4"
-   ry="4.1999998"
-   id="ellipse20"
-   style="fill:#0000ff" />
-
-	<path
-   class="st1"
-   d="m 34,56.3 -6.8,-5.5 c -2.9,-2.3 -6.1,-3.5 -9.5,-3.5 -3.4,0 -6.6,1.2 -9.5,3.5 l -6.8,5.5 v 6 l 5.4,4.4 c 3.2,2.6 7,4.1 10.8,4.1 3.8,0 7.5,-1.4 10.8,-4.1 l 5.4,-4.4 v -6 z"
-   id="path21"
-   style="fill:#ffffff;stroke:#000000;stroke-linejoin:round;stroke-miterlimit:10" />
-
-	<path
-   class="st1"
-   d="m 1.6,59.3 8.1,-6.7 c 5,-4.1 11.2,-4.1 16.2,0 l 8.1,6.7 -6.8,5.6 c -5.7,4.7 -13,4.7 -18.8,0 z"
-   id="path22"
-   style="fill:#ffffff;stroke:#000000;stroke-linejoin:round;stroke-miterlimit:10" />
-
-	<ellipse
-   class="st3"
-   cx="17.700001"
-   cy="59"
-   rx="4"
-   ry="4.1999998"
-   id="ellipse22"
-   style="fill:#0000ff" />
-
-	<path
-   class="st1"
-   d="m 70.4,56.3 -6.8,-5.5 c -2.9,-2.3 -6.1,-3.5 -9.5,-3.5 -3.4,0 -6.6,1.2 -9.5,3.5 l -6.8,5.5 v 6 l 5.4,4.4 c 3.2,2.6 7,4.1 10.8,4.1 3.8,0 7.5,-1.4 10.8,-4.1 l 5.4,-4.4 v -6 z"
-   id="path23"
-   style="fill:#ffffff;stroke:#000000;stroke-linejoin:round;stroke-miterlimit:10" />
-
-	<path
-   class="st1"
-   d="m 38,59.3 8.1,-6.7 c 5,-4.1 11.2,-4.1 16.2,0 l 8.1,6.7 -6.8,5.6 c -5.7,4.7 -13,4.7 -18.8,0 z"
-   id="path24"
-   style="fill:#ffffff;stroke:#000000;stroke-linejoin:round;stroke-miterlimit:10" />
-
-	<ellipse
-   class="st3"
-   cx="54.299999"
-   cy="59"
-   rx="4"
-   ry="4.1999998"
-   id="ellipse24"
-   style="fill:#0000ff" />
-
-	<line
-   class="st2"
-   x1="38"
-   y1="0"
-   x2="38"
-   y2="72"
-   id="line24"
-   style="fill:none;stroke:#000000;stroke-linejoin:round;stroke-miterlimit:10" />
-
-	<line
-   class="st2"
-   x1="34"
-   y1="72"
-   x2="34"
-   y2="0"
-   id="line25"
-   style="fill:none;stroke:#000000;stroke-linejoin:round;stroke-miterlimit:10" />
-
-	<line
-   class="st2"
-   x1="1.6"
-   y1="42.400002"
-   x2="70.400002"
-   y2="42.400002"
-   id="line26"
-   style="fill:none;stroke:#000000;stroke-linejoin:round;stroke-miterlimit:10" />
-
-	<line
-   class="st4"
-   x1="1.5"
-   y1="72"
-   x2="1.5"
-   y2="0"
-   id="line27"
-   style="fill:none;stroke:#000000;stroke-miterlimit:10" />
-
-	<line
-   class="st4"
-   x1="70.5"
-   y1="0"
-   x2="70.5"
-   y2="72"
-   id="line28"
-   style="fill:none;stroke:#000000;stroke-miterlimit:10" />
-
-</g>
+      <rect
+         class="st0"
+         width="72"
+         height="72"
+         id="rect1"
+         style="fill:#ffffff;stroke:#0000ff"
+         x="0"
+         y="0" />
+      <g
+         id="g10">
+        <g
+           id="g5">
+          <rect
+             x="17.799999"
+             y="32.700001"
+             class="st1"
+             width="6.5"
+             height="9.6000004"
+             id="rect2"
+             style="fill:#ffffff;stroke:#000000;stroke-linejoin:round;stroke-miterlimit:10" />
+          <rect
+             x="27.5"
+             y="32.799999"
+             class="st1"
+             width="6.5"
+             height="9.6000004"
+             id="rect3"
+             style="fill:#ffffff;stroke:#000000;stroke-linejoin:round;stroke-miterlimit:10" />
+          <rect
+             x="17.799999"
+             y="13.5"
+             class="st1"
+             width="6.5"
+             height="14.4"
+             id="rect4"
+             style="fill:#ffffff;stroke:#000000;stroke-linejoin:round;stroke-miterlimit:10" />
+          <rect
+             x="27.5"
+             y="13.6"
+             class="st1"
+             width="6.5"
+             height="14.4"
+             id="rect5"
+             style="fill:#ffffff;stroke:#000000;stroke-linejoin:round;stroke-miterlimit:10" />
+        </g>
+        <g
+           id="g9">
+          <rect
+             x="1.6"
+             y="32.799999"
+             class="st1"
+             width="6.5"
+             height="9.6000004"
+             id="rect6"
+             style="fill:#ffffff;stroke:#000000;stroke-linejoin:round;stroke-miterlimit:10" />
+          <rect
+             x="11.3"
+             y="32.799999"
+             class="st1"
+             width="6.5"
+             height="9.6000004"
+             id="rect7"
+             style="fill:#ffffff;stroke:#000000;stroke-linejoin:round;stroke-miterlimit:10" />
+          <rect
+             x="1.6"
+             y="13.6"
+             class="st1"
+             width="6.5"
+             height="14.4"
+             id="rect8"
+             style="fill:#ffffff;stroke:#000000;stroke-linejoin:round;stroke-miterlimit:10" />
+          <rect
+             x="11.3"
+             y="13.6"
+             class="st1"
+             width="6.5"
+             height="14.4"
+             id="rect9"
+             style="fill:#ffffff;stroke:#000000;stroke-linejoin:round;stroke-miterlimit:10" />
+        </g>
+        <line
+           class="st2"
+           x1="17.700001"
+           y1="16.9"
+           x2="17.700001"
+           y2="42.400002"
+           id="line9"
+           style="fill:none;stroke:#000000;stroke-linejoin:round;stroke-miterlimit:10" />
+      </g>
+      <path
+         class="st1"
+         d="M 34,9.7 27.2,4.2 C 24.3,1.9 21.1,0.7 17.7,0.7 14.3,0.7 11.1,1.9 8.2,4.2 L 1.4,9.7 v 6 l 5.4,4.4 c 3.2,2.6 7,4.1 10.8,4.1 3.8,0 7.5,-1.4 10.8,-4.1 l 5.4,-4.4 v -6 H 34 Z"
+         id="path10"
+         style="fill:#ffffff;stroke:#000000;stroke-linejoin:round;stroke-miterlimit:10" />
+      <path
+         class="st1"
+         d="M 1.6,12.7 9.7,6 c 5,-4.1 11.2,-4.1 16.2,0 l 8.1,6.7 -6.8,5.6 c -5.7,4.7 -13,4.7 -18.8,0 z"
+         id="path11"
+         style="fill:#ffffff;stroke:#000000;stroke-linejoin:round;stroke-miterlimit:10" />
+      <ellipse
+         class="st3"
+         cx="17.700001"
+         cy="12.4"
+         rx="4"
+         ry="4.1999998"
+         id="ellipse11"
+         style="fill:#0000ff" />
+      <g
+         id="g19">
+        <g
+           id="g14">
+          <rect
+             x="54.299999"
+             y="32.700001"
+             class="st1"
+             width="6.5"
+             height="9.6000004"
+             id="rect11"
+             style="fill:#ffffff;stroke:#000000;stroke-linejoin:round;stroke-miterlimit:10" />
+          <rect
+             x="64"
+             y="32.700001"
+             class="st1"
+             width="6.5"
+             height="9.6000004"
+             id="rect12"
+             style="fill:#ffffff;stroke:#000000;stroke-linejoin:round;stroke-miterlimit:10" />
+          <rect
+             x="54.299999"
+             y="13.5"
+             class="st1"
+             width="6.5"
+             height="14.4"
+             id="rect13"
+             style="fill:#ffffff;stroke:#000000;stroke-linejoin:round;stroke-miterlimit:10" />
+          <rect
+             x="64"
+             y="13.5"
+             class="st1"
+             width="6.5"
+             height="14.4"
+             id="rect14"
+             style="fill:#ffffff;stroke:#000000;stroke-linejoin:round;stroke-miterlimit:10" />
+        </g>
+        <g
+           id="g18">
+          <rect
+             x="38.099998"
+             y="32.700001"
+             class="st1"
+             width="6.5"
+             height="9.6000004"
+             id="rect15"
+             style="fill:#ffffff;stroke:#000000;stroke-linejoin:round;stroke-miterlimit:10" />
+          <rect
+             x="47.799999"
+             y="32.799999"
+             class="st1"
+             width="6.5"
+             height="9.6000004"
+             id="rect16"
+             style="fill:#ffffff;stroke:#000000;stroke-linejoin:round;stroke-miterlimit:10" />
+          <rect
+             x="38.099998"
+             y="13.5"
+             class="st1"
+             width="6.5"
+             height="14.4"
+             id="rect17"
+             style="fill:#ffffff;stroke:#000000;stroke-linejoin:round;stroke-miterlimit:10" />
+          <rect
+             x="47.799999"
+             y="13.6"
+             class="st1"
+             width="6.5"
+             height="14.4"
+             id="rect18"
+             style="fill:#ffffff;stroke:#000000;stroke-linejoin:round;stroke-miterlimit:10" />
+        </g>
+        <line
+           class="st2"
+           x1="54.299999"
+           y1="16.9"
+           x2="54.299999"
+           y2="42.400002"
+           id="line18"
+           style="fill:none;stroke:#000000;stroke-linejoin:round;stroke-miterlimit:10" />
+      </g>
+      <path
+         class="st1"
+         d="M 70.4,9.7 63.6,4.2 C 60.7,1.9 57.5,0.7 54.1,0.7 c -3.4,0 -6.6,1.2 -9.5,3.5 l -6.8,5.5 v 6 l 5.4,4.4 c 3.2,2.6 7,4.1 10.8,4.1 3.8,0 7.5,-1.4 10.8,-4.1 l 5.4,-4.4 v -6 z"
+         id="path19"
+         style="fill:#ffffff;stroke:#000000;stroke-linejoin:round;stroke-miterlimit:10" />
+      <path
+         class="st1"
+         d="M 38,12.7 46.1,6 c 5,-4.1 11.2,-4.1 16.2,0 l 8.1,6.7 -6.8,5.6 c -5.7,4.7 -13,4.7 -18.8,0 z"
+         id="path20"
+         style="fill:#ffffff;stroke:#000000;stroke-linejoin:round;stroke-miterlimit:10" />
+      <ellipse
+         class="st3"
+         cx="54.299999"
+         cy="12.4"
+         rx="4"
+         ry="4.1999998"
+         id="ellipse20"
+         style="fill:#0000ff" />
+      <path
+         class="st1"
+         d="m 34,56.3 -6.8,-5.5 c -2.9,-2.3 -6.1,-3.5 -9.5,-3.5 -3.4,0 -6.6,1.2 -9.5,3.5 l -6.8,5.5 v 6 l 5.4,4.4 c 3.2,2.6 7,4.1 10.8,4.1 3.8,0 7.5,-1.4 10.8,-4.1 l 5.4,-4.4 v -6 z"
+         id="path21"
+         style="fill:#ffffff;stroke:#000000;stroke-linejoin:round;stroke-miterlimit:10" />
+      <path
+         class="st1"
+         d="m 1.6,59.3 8.1,-6.7 c 5,-4.1 11.2,-4.1 16.2,0 l 8.1,6.7 -6.8,5.6 c -5.7,4.7 -13,4.7 -18.8,0 z"
+         id="path22"
+         style="fill:#ffffff;stroke:#000000;stroke-linejoin:round;stroke-miterlimit:10" />
+      <ellipse
+         class="st3"
+         cx="17.700001"
+         cy="59"
+         rx="4"
+         ry="4.1999998"
+         id="ellipse22"
+         style="fill:#0000ff" />
+      <path
+         class="st1"
+         d="m 70.4,56.3 -6.8,-5.5 c -2.9,-2.3 -6.1,-3.5 -9.5,-3.5 -3.4,0 -6.6,1.2 -9.5,3.5 l -6.8,5.5 v 6 l 5.4,4.4 c 3.2,2.6 7,4.1 10.8,4.1 3.8,0 7.5,-1.4 10.8,-4.1 l 5.4,-4.4 v -6 z"
+         id="path23"
+         style="fill:#ffffff;stroke:#000000;stroke-linejoin:round;stroke-miterlimit:10" />
+      <path
+         class="st1"
+         d="m 38,59.3 8.1,-6.7 c 5,-4.1 11.2,-4.1 16.2,0 l 8.1,6.7 -6.8,5.6 c -5.7,4.7 -13,4.7 -18.8,0 z"
+         id="path24"
+         style="fill:#ffffff;stroke:#000000;stroke-linejoin:round;stroke-miterlimit:10" />
+      <ellipse
+         class="st3"
+         cx="54.299999"
+         cy="59"
+         rx="4"
+         ry="4.1999998"
+         id="ellipse24"
+         style="fill:#0000ff" />
+      <line
+         class="st2"
+         x1="38"
+         y1="0"
+         x2="38"
+         y2="72"
+         id="line24"
+         style="fill:none;stroke:#000000;stroke-linejoin:round;stroke-miterlimit:10" />
+      <line
+         class="st2"
+         x1="34"
+         y1="72"
+         x2="34"
+         y2="0"
+         id="line25"
+         style="fill:none;stroke:#000000;stroke-linejoin:round;stroke-miterlimit:10" />
+      <line
+         class="st2"
+         x1="1.6"
+         y1="42.400002"
+         x2="70.400002"
+         y2="42.400002"
+         id="line26"
+         style="fill:none;stroke:#000000;stroke-linejoin:round;stroke-miterlimit:10" />
+      <line
+         class="st4"
+         x1="1.5"
+         y1="72"
+         x2="1.5"
+         y2="0"
+         id="line27"
+         style="fill:none;stroke:#000000;stroke-miterlimit:10" />
+      <line
+         class="st4"
+         x1="70.5"
+         y1="0"
+         x2="70.5"
+         y2="72"
+         id="line28"
+         style="fill:none;stroke:#000000;stroke-miterlimit:10" />
+    </g>
     <g
        id="Layer_2"
        data-name="Layer 2"

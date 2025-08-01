@@ -2,9 +2,9 @@
 <!-- Created with Inkscape (http://www.inkscape.org/) -->
 
 <svg
-   width="210mm"
-   height="297mm"
-   viewBox="0 0 210 297"
+   width="38.682034mm"
+   height="19.314583mm"
+   viewBox="0 0 38.682034 19.314583"
    version="1.1"
    id="svg1"
    inkscape:version="1.4 (86a8ad7, 2024-10-11)"
@@ -24,20 +24,20 @@
      inkscape:deskcolor="#d1d1d1"
      inkscape:document-units="mm"
      inkscape:zoom="4.3666621"
-     inkscape:cx="407.176"
-     inkscape:cy="554.88607"
+     inkscape:cx="85.648944"
+     inkscape:cy="30.458047"
      inkscape:window-width="1974"
      inkscape:window-height="1531"
-     inkscape:window-x="994"
-     inkscape:window-y="306"
+     inkscape:window-x="1572"
+     inkscape:window-y="320"
      inkscape:window-maximized="0"
      inkscape:current-layer="layer1"
      showgrid="true">
     <inkscape:grid
        id="grid1"
        units="mm"
-       originx="0"
-       originy="0"
+       originx="-85.063541"
+       originy="-138.77396"
        spacingx="0.26458333"
        spacingy="0.26458334"
        empcolor="#0099e5"
@@ -53,7 +53,8 @@
   <g
      inkscape:label="Layer 1"
      inkscape:groupmode="layer"
-     id="layer1">
+     id="layer1"
+     transform="translate(-85.063541,-138.77396)">
     <g
        id="g17"
        inkscape:label="House Square"

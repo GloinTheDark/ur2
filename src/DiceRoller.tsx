@@ -6,6 +6,8 @@ import dieB3 from './assets/DieB3.svg';
 import dieW1 from './assets/DieW1.svg';
 import dieW2 from './assets/DieW2.svg';
 import dieW3 from './assets/DieW3.svg';
+import houseBonusIcon from './assets/HouseBonus.svg';
+import templeBlessingIcon from './assets/TempleBlessing.svg';
 
 interface DiceRollerProps {
     gameState: GameState;
@@ -248,6 +250,20 @@ const DiceRoller = forwardRef<DiceRollerRef, DiceRollerProps>(({ gameState }, re
                             />
                         );
                     })}
+
+                    {/* Temple blessing icon inline with dice - applied first */}
+                    {!isRolling && rolls.reduce((sum, roll) => sum + roll, 0) === 0 && templeBlessings.hasControl && diceTotal === 4 && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.9rem', color: '#9370DB' }}>
+                            <img src={templeBlessingIcon} alt="Temple blessing" style={{ height: '40px' }} />
+                        </div>
+                    )}
+
+                    {/* House bonus icon inline with dice - applied second */}
+                    {!isRolling && houseBonus > 0 && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.9rem', color: '#FFD700' }}>
+                            <img src={houseBonusIcon} alt="House bonus" style={{ height: '40px' }} />
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -256,16 +272,6 @@ const DiceRoller = forwardRef<DiceRollerRef, DiceRollerProps>(({ gameState }, re
                     {!isRolling && (
                         <>
                             Total: {diceTotal}
-                            {houseBonus > 0 && (
-                                <span style={{ fontSize: '0.9rem', color: '#FFD700', marginLeft: '8px' }}>
-                                    (includes +{houseBonus} house bonus)
-                                </span>
-                            )}
-                            {rolls.reduce((sum, roll) => sum + roll, 0) === 0 && templeBlessings.hasControl && diceTotal === 4 && (
-                                <span style={{ fontSize: '0.9rem', color: '#9370DB', marginLeft: '8px' }}>
-                                    (temple blessing: 0 → 4)
-                                </span>
-                            )}
                         </>
                     )}
                 </div>
