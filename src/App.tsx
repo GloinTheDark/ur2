@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useRef } from 'react'
 import './App.css'
 import { useGameState } from './useGameState'
 import DiceRoller from './DiceRoller'
@@ -7,7 +7,6 @@ import GameSetup from './GameSetup'
 import GameSettings from './GameSettings'
 import PlayerHome from './PlayerHome'
 import GameLayout from './GameLayout'
-import { PlayerManager } from './PlayerManager'
 import type { PlayerType } from './PlayerAgent'
 import { BoardUtils, BOARD_COLUMNS, BOARD_ROWS, TOTAL_SQUARES, WHITE_PATH, BLACK_PATH } from './BoardLayout'
 import { PIECE_SIZE, HIGHLIGHT_CIRCLE_SIZE, SQUARE_SIZE, BOARD_GAP } from './UIConstants'
@@ -25,38 +24,12 @@ import blackBlank from './assets/BlackBlank.svg'
 import blackSpots from './assets/BlackSpots.svg'
 
 function App() {
-  // Load settings from localStorage or use defaults
-  const loadSettings = () => {
-    const saved = localStorage.getItem('royalGameSettings');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        // Ensure diceAnimations and pieceAnimations are included for backward compatibility
-        return {
-          piecesPerPlayer: 3,
-          houseBonus: false,
-          templeBlessings: false,
-          gateKeeper: true,
-          safeMarkets: true,
-          diceAnimations: true,
-          pieceAnimations: true,
-          ...parsed
-        };
-      } catch {
-        return { piecesPerPlayer: 3, houseBonus: false, templeBlessings: false, gateKeeper: true, safeMarkets: true, diceAnimations: true, pieceAnimations: true };
-      }
-    }
-    return { piecesPerPlayer: 3, houseBonus: false, templeBlessings: false, gateKeeper: true, safeMarkets: true, diceAnimations: true, pieceAnimations: true };
-  };
-
-  const initialSettings = loadSettings();
-  const gameState = useGameState(initialSettings);
+  const gameState = useGameState();
   const state = gameState.state;
   const settings = gameState.gameSettings;
 
   const [showSettings, setShowSettings] = useState<boolean>(false);
   const [showPath, setShowPath] = useState<boolean>(false);
-  const [playerManager, setPlayerManager] = useState<PlayerManager | null>(null);
   const [showGameSetup, setShowGameSetup] = useState<boolean>(false);
   const diceRollerRef = useRef<DiceRollerRef>(null);
 
@@ -64,41 +37,23 @@ function App() {
 
   // Handle game setup completion
   const handleGameSetup = async (whitePlayer: PlayerType, blackPlayer: PlayerType, whiteDifficulty: 'easy' | 'medium' | 'hard' | null, blackDifficulty: 'easy' | 'medium' | 'hard' | null) => {
-    // Clean up any existing player manager
-    if (playerManager) {
-      playerManager.cleanup();
-      setPlayerManager(null);
-    }
-
     setShowGameSetup(false); // Close the setup modal
 
     // Start the game directly - no intermediate welcome screen
     gameState.startNewGame();
 
-    // Always create player manager for all game types (human vs human, human vs computer, computer vs computer)
-    const newPlayerManager = new PlayerManager(gameState, {
+    // Setup players in GameState
+    gameState.setupPlayers({
       white: whitePlayer,
       black: blackPlayer,
       whiteDifficulty: whiteDifficulty || undefined,
       blackDifficulty: blackDifficulty || undefined
     }, diceRollerRef);
-
-    setPlayerManager(newPlayerManager);
-    await newPlayerManager.start();
-  };  // Cleanup player manager on unmount
-  useEffect(() => {
-    return () => {
-      if (playerManager) {
-        playerManager.cleanup();
-      }
-    };
-  }, [playerManager]);
+  };
 
   // Save settings to localStorage
   const saveSettings = (newSettings: any) => {
-    const updatedSettings = { ...settings, ...newSettings };
-    localStorage.setItem('royalGameSettings', JSON.stringify(updatedSettings));
-    gameState.updateSettings(newSettings);
+    gameState.updateAndSaveSettings(newSettings);
   };
 
   const handlePieceClick = (pieceIndex: number) => {
@@ -305,11 +260,7 @@ function App() {
         whitePlayerHome={
           <PlayerHome
             player="white"
-            playerName={playerManager?.getPlayerAgent('white').getPlayerName()}
-            state={state}
-            settings={settings}
-            winner={winner}
-            getDestinationSquare={() => gameState.getDestinationSquare()}
+            gameState={gameState}
             onPieceClick={handlePieceClick}
             onDestinationClick={handleDestinationClick}
           />
@@ -317,11 +268,7 @@ function App() {
         blackPlayerHome={
           <PlayerHome
             player="black"
-            playerName={playerManager?.getPlayerAgent('black').getPlayerName()}
-            state={state}
-            settings={settings}
-            winner={winner}
-            getDestinationSquare={() => gameState.getDestinationSquare()}
+            gameState={gameState}
             onPieceClick={handlePieceClick}
             onDestinationClick={handleDestinationClick}
           />

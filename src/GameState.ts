@@ -1,3 +1,4 @@
+import React from 'react';
 import {
     ROSETTE_SQUARES,
     GATE_SQUARE,
@@ -8,6 +9,16 @@ import {
     BLACK_PATH,
     TREASURY_SQUARES
 } from './BoardLayout';
+import { HumanPlayerAgent, ComputerPlayerAgent } from './PlayerAgent';
+import type { PlayerAgent, PlayerType } from './PlayerAgent';
+import type { DiceRollerRef } from './DiceRoller';
+
+export interface PlayerConfiguration {
+    white: PlayerType;
+    black: PlayerType;
+    whiteDifficulty?: 'easy' | 'medium' | 'hard';
+    blackDifficulty?: 'easy' | 'medium' | 'hard';
+}
 
 export interface GameSettings {
     piecesPerPlayer: number;
@@ -55,6 +66,12 @@ export class GameState {
     private data: GameStateData;
     private settings: GameSettings;
     private listeners: Set<() => void> = new Set();
+
+    // Player management
+    private whitePlayer: PlayerAgent | null = null;
+    private blackPlayer: PlayerAgent | null = null;
+    private playerManagerActive: boolean = false;
+    private diceRollerRef: React.RefObject<DiceRollerRef | null> | null = null;
 
     // Game paths
     private readonly whitePath = [...WHITE_PATH];
@@ -140,6 +157,11 @@ export class GameState {
 
     private notify(): void {
         this.listeners.forEach(listener => listener());
+        // Handle player management after notifying UI
+        if (this.playerManagerActive) {
+            // Use setTimeout to avoid blocking the UI update
+            setTimeout(() => this.handleGameStateChange(), 0);
+        }
     }
 
     // Getters
@@ -182,6 +204,110 @@ export class GameState {
         return Math.floor(Math.random() * 2);
     }
 
+    // Player Management
+    setupPlayers(config: PlayerConfiguration, diceRollerRef: React.RefObject<DiceRollerRef | null>): void {
+        // Clean up existing players
+        this.cleanupPlayers();
+
+        this.diceRollerRef = diceRollerRef;
+
+        // Create player agents based on configuration
+        this.whitePlayer = this.createPlayerAgent('white', config.white, config.whiteDifficulty);
+        this.blackPlayer = this.createPlayerAgent('black', config.black, config.blackDifficulty);
+
+        // Start the player manager
+        this.playerManagerActive = true;
+        this.handleGameStateChange();
+    }
+
+    private createPlayerAgent(color: 'white' | 'black', type: PlayerType, difficulty?: 'easy' | 'medium' | 'hard'): PlayerAgent {
+        switch (type) {
+            case 'human':
+                return new HumanPlayerAgent(color);
+            case 'computer':
+                if (!this.diceRollerRef) {
+                    throw new Error('DiceRollerRef is required for computer players');
+                }
+                return new ComputerPlayerAgent(color, difficulty || 'medium', this.diceRollerRef);
+            default:
+                throw new Error(`Unknown player type: ${type}`);
+        }
+    }
+
+    private cleanupPlayers(): void {
+        this.playerManagerActive = false;
+
+        if (this.whitePlayer) {
+            this.whitePlayer.cleanup();
+            this.whitePlayer = null;
+        }
+
+        if (this.blackPlayer) {
+            this.blackPlayer.cleanup();
+            this.blackPlayer = null;
+        }
+
+        this.diceRollerRef = null;
+    }
+
+    getCurrentPlayerAgent(): PlayerAgent | null {
+        if (!this.whitePlayer || !this.blackPlayer) return null;
+        return this.data.currentPlayer === 'white' ? this.whitePlayer : this.blackPlayer;
+    }
+
+    getPlayerAgent(color: 'white' | 'black'): PlayerAgent | null {
+        return color === 'white' ? this.whitePlayer : this.blackPlayer;
+    }
+
+    getPlayerName(color: 'white' | 'black'): string {
+        const agent = this.getPlayerAgent(color);
+        return agent ? agent.getPlayerName() : color.charAt(0).toUpperCase() + color.slice(1);
+    }
+
+    isCurrentPlayerComputer(): boolean {
+        const currentAgent = this.getCurrentPlayerAgent();
+        return currentAgent ? currentAgent.playerType === 'computer' : false;
+    }
+
+    private async handleGameStateChange(): Promise<void> {
+        if (!this.playerManagerActive || !this.whitePlayer || !this.blackPlayer) return;
+
+        const currentPlayerAgent = this.getCurrentPlayerAgent();
+        if (!currentPlayerAgent) return;
+
+        // Check for game end
+        const winner = this.checkWinCondition();
+        if (winner) {
+            await this.whitePlayer.onGameEnd(this, winner);
+            await this.blackPlayer.onGameEnd(this, winner);
+            this.playerManagerActive = false;
+            return;
+        }
+
+        // Only proceed if game is in playing phase
+        if (this.data.gamePhase !== 'playing') {
+            return;
+        }
+
+        // Handle different game states
+        if (this.data.diceRolls.length === 0) {
+            // Player needs to roll dice - only auto-roll for computer players
+            if (currentPlayerAgent.playerType === 'computer') {
+                await currentPlayerAgent.onTurnStart(this);
+            }
+        } else if (this.data.diceTotal > 0 && this.data.eligiblePieces.length > 0) {
+            // Player needs to make a move - only auto-move for computer players
+            if (currentPlayerAgent.playerType === 'computer') {
+                await currentPlayerAgent.onMoveRequired(this);
+            }
+        } else if (this.data.diceTotal === 0 || this.data.eligiblePieces.length === 0) {
+            // No moves available, player should pass - only auto-pass for computer players
+            if (currentPlayerAgent.playerType === 'computer') {
+                await currentPlayerAgent.onMoveRequired(this);
+            }
+        }
+    }
+
     resetGame(): void {
         this.data = this.createInitialState();
         this.notify();
@@ -199,6 +325,51 @@ export class GameState {
             this.data.eligiblePieces = [];
         }
         this.notify();
+    }
+
+    // Settings persistence
+    static loadSettings(): GameSettings {
+        const saved = localStorage.getItem('royalGameSettings');
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                // Ensure diceAnimations and pieceAnimations are included for backward compatibility
+                return {
+                    piecesPerPlayer: 3,
+                    houseBonus: false,
+                    templeBlessings: false,
+                    gateKeeper: true,
+                    safeMarkets: true,
+                    diceAnimations: true,
+                    pieceAnimations: true,
+                    ...parsed
+                };
+            } catch {
+                return GameState.getDefaultSettings();
+            }
+        }
+        return GameState.getDefaultSettings();
+    }
+
+    static getDefaultSettings(): GameSettings {
+        return {
+            piecesPerPlayer: 3,
+            houseBonus: false,
+            templeBlessings: false,
+            gateKeeper: true,
+            safeMarkets: true,
+            diceAnimations: true,
+            pieceAnimations: true
+        };
+    }
+
+    saveSettings(): void {
+        localStorage.setItem('royalGameSettings', JSON.stringify(this.settings));
+    }
+
+    updateAndSaveSettings(newSettings: Partial<GameSettings>): void {
+        this.updateSettings(newSettings);
+        this.saveSettings();
     }
 
     // Dice rolling
@@ -907,5 +1078,11 @@ export class GameState {
 
         // Single notification after all state changes are complete
         this.notify();
+    }
+
+    // Cleanup method for when GameState is destroyed
+    cleanup(): void {
+        this.cleanupPlayers();
+        this.listeners.clear();
     }
 }

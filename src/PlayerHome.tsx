@@ -1,6 +1,6 @@
 import React from 'react';
-import type { GameStateData, GameSettings } from './GameState';
-import { PIECE_SIZE, HIGHLIGHT_CIRCLE_SIZE, HOME_SQUARE_SIZE } from './UIConstants';
+import type { GameState } from './GameState';
+import { HOME_SQUARE_SIZE, PIECE_SIZE, HIGHLIGHT_CIRCLE_SIZE } from './UIConstants';
 import whiteBlank from './assets/WhiteBlank.svg';
 import whiteSpots from './assets/WhiteSpots.svg';
 import blackBlank from './assets/BlackBlank.svg';
@@ -9,25 +9,22 @@ import goToSquare from './assets/GoTo.svg';
 
 interface PlayerHomeProps {
     player: 'white' | 'black';
-    playerName?: string;
-    state: GameStateData;
-    settings: GameSettings;
-    winner: 'white' | 'black' | null;
-    getDestinationSquare: () => number | 'complete' | null;
+    gameState: GameState;
     onPieceClick: (pieceIndex: number) => void;
     onDestinationClick: (pieceIndex: number) => void;
 }
 
 const PlayerHome: React.FC<PlayerHomeProps> = ({
     player,
-    playerName,
-    state,
-    settings,
-    winner,
-    getDestinationSquare,
+    gameState,
     onPieceClick,
     onDestinationClick
 }) => {
+    const state = gameState.state;
+    const settings = gameState.gameSettings;
+    const winner = gameState.checkWinCondition();
+    const playerName = gameState.getPlayerName(player);
+
     const isWhite = player === 'white';
     const pieces = isWhite ? state.whitePieces : state.blackPieces;
     const positions = isWhite ? state.whitePiecePositions : state.blackPiecePositions;
@@ -83,7 +80,7 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
                     const isSelected = state.selectedPiece !== null && state.selectedPiece.player === player && state.selectedPiece.index === idx && isPieceInStart;
 
                     // Check if this home slot is the destination for a piece completing the path
-                    const destinationSquare = getDestinationSquare();
+                    const destinationSquare = gameState.getDestinationSquare();
                     const isDestinationHome = destinationSquare === 'complete' && state.selectedPiece?.player === player &&
                         state.selectedPiece?.index === idx && !isPieceInStart;
 
