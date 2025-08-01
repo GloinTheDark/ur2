@@ -27,9 +27,25 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
     const blankIcon = isWhite ? whiteBlank : blackBlank;
     const spotsIcon = isWhite ? whiteSpots : blackSpots;
 
+    // Count pieces by type and location
     const completedCount = pieces.filter((piece, idx) =>
         piece === 'spots' && positions[idx] === 'start'
     ).length;
+
+    const blankPiecesInHome = pieces.filter((piece, idx) =>
+        piece === 'blank' && positions[idx] === 'start'
+    ).length;
+
+    // Get eligible blank pieces (for clicking)
+    const eligibleBlankPieces = state.eligiblePieces.filter(idx =>
+        pieces[idx] === 'blank' && positions[idx] === 'start'
+    );
+
+    // Check if any piece is selected and eligible to complete
+    const selectedPiece = state.selectedPiece;
+    const canCompleteToHome = selectedPiece &&
+        selectedPiece.player === player &&
+        gameState.getDestinationSquare() === 'complete';
 
     const homeStyle = isWhite ? {
         backgroundColor: '#f8f8f8ff',
@@ -69,21 +85,65 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
                 width: 'fit-content',
                 margin: '0 auto'
             }}>
-                {Array.from({ length: settings.piecesPerPlayer }).map((_, idx) => {
-                    const isPieceInStart = positions[idx] === 'start';
-                    const isPieceMoving = positions[idx] === 'moving';
-                    const isEligible = state.gameStarted && !winner && state.currentPlayer === player && !state.animatingPiece?.isAnimating && state.eligiblePieces.includes(idx);
-                    const isSelected = state.selectedPiece !== null && state.selectedPiece.player === player && state.selectedPiece.index === idx && isPieceInStart;
+                {Array.from({ length: settings.piecesPerPlayer }).map((_, slotIndex) => {
+                    // Determine what goes in this slot
+                    let slotContent = null;
+                    let clickHandler = null;
+                    let isEligible = false;
+                    let isSelected = false;
+                    let isDestination = false;
 
-                    // Check if this home slot is the destination for a piece completing the path
-                    const destinationSquare = gameState.getDestinationSquare();
-                    const isDestinationHome = destinationSquare === 'complete' && state.selectedPiece?.player === player &&
-                        state.selectedPiece?.index === idx && !isPieceInStart;
+                    if (slotIndex < completedCount) {
+                        // Left side: completed pieces (spots)
+                        slotContent = spotsIcon;
+                    } else if (slotIndex >= settings.piecesPerPlayer - blankPiecesInHome) {
+                        // Right side: blank pieces
+                        slotContent = blankIcon;
+
+                        // Only the leftmost blank piece (first slot with blank pieces) should be eligible
+                        const isLeftmostBlankSlot = slotIndex === settings.piecesPerPlayer - blankPiecesInHome;
+
+                        // Check if this is the leftmost blank piece and it's eligible to move
+                        isEligible = isLeftmostBlankSlot &&
+                            eligibleBlankPieces.length > 0 &&
+                            state.gameStarted && !winner &&
+                            state.currentPlayer === player &&
+                            !gameState.isAnimating();
+
+                        // Check if this leftmost blank piece is selected
+                        isSelected = isLeftmostBlankSlot && !!(selectedPiece &&
+                            selectedPiece.player === player &&
+                            pieces[selectedPiece.index] === 'blank' &&
+                            positions[selectedPiece.index] === 'start');
+
+                        if (isEligible) {
+                            clickHandler = () => {
+                                // Find the first eligible blank piece and select it
+                                const firstEligible = eligibleBlankPieces[0];
+                                if (firstEligible !== undefined) {
+                                    gameState.selectPiece(firstEligible);
+                                }
+                            };
+                        }
+                    } else {
+                        // Middle: empty slots
+                        // Check if this can be a destination for completing pieces
+                        // Only the leftmost empty slot should show the destination marker
+                        const isLeftmostEmptySlot = slotIndex === completedCount;
+
+                        if (canCompleteToHome && isLeftmostEmptySlot) {
+                            isDestination = true;
+                            clickHandler = () => {
+                                if (selectedPiece) {
+                                    gameState.movePiece(selectedPiece.index);
+                                }
+                            };
+                        }
+                    }
 
                     return (
                         <div
-                            key={`${player}-${idx}`}
-                            data-piece-index={idx}
+                            key={`${player}-slot-${slotIndex}`}
                             style={{
                                 width: HOME_SQUARE_SIZE,
                                 height: HOME_SQUARE_SIZE,
@@ -92,17 +152,17 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
                                 justifyContent: 'center',
                                 fontWeight: 500,
                                 position: 'relative',
-                                cursor: isPieceInStart && isEligible ? 'pointer' : 'default'
+                                cursor: (isEligible || isDestination) ? 'pointer' : 'default'
                             }}
                             onClick={(e) => {
                                 e.stopPropagation();
-                                if (isPieceInStart && isEligible) {
-                                    gameState.selectPiece(idx);
+                                if (clickHandler) {
+                                    clickHandler();
                                 }
                             }}
                         >
-                            {/* Selected piece circle takes priority over eligible highlight */}
-                            {isPieceInStart && isSelected && (
+                            {/* Selected piece circle */}
+                            {slotContent && isSelected && (
                                 <div
                                     className="selected-circle"
                                     style={{
@@ -114,8 +174,9 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
                                     }}
                                 />
                             )}
-                            {/* Highlight circle for eligible pieces (only if not selected) */}
-                            {isPieceInStart && isEligible && !isSelected && (
+
+                            {/* Highlight circle for eligible pieces */}
+                            {slotContent && isEligible && !isSelected && (
                                 <div
                                     className="highlight-circle"
                                     style={{
@@ -127,11 +188,12 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
                                     }}
                                 />
                             )}
-                            {/* Only render piece if it's in start position and not currently moving */}
-                            {isPieceInStart && !isPieceMoving && (
+
+                            {/* Piece image */}
+                            {slotContent && (
                                 <img
-                                    src={pieces[idx] === 'blank' ? blankIcon : spotsIcon}
-                                    alt={`${isWhite ? 'White' : 'Black'} piece ${idx + 1} - ${pieces[idx]}`}
+                                    src={slotContent}
+                                    alt={`${isWhite ? 'White' : 'Black'} piece`}
                                     style={{
                                         width: `${PIECE_SIZE}px`,
                                         height: `${PIECE_SIZE}px`,
@@ -141,8 +203,9 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
                                     }}
                                 />
                             )}
-                            {/* GoTo indicator for pieces completing the path */}
-                            {isDestinationHome && (
+
+                            {/* GoTo indicator for completion destination */}
+                            {isDestination && (
                                 <img
                                     src={goToSquare}
                                     alt="Go To Home"
@@ -155,10 +218,6 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
                                         borderRadius: 4,
                                         zIndex: 3,
                                         cursor: 'pointer'
-                                    }}
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        gameState.movePiece(idx);
                                     }}
                                 />
                             )}
