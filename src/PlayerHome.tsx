@@ -9,6 +9,7 @@ import goToSquare from './assets/GoTo.svg';
 
 interface PlayerHomeProps {
     player: 'white' | 'black';
+    playerName?: string;
     state: GameStateData;
     settings: GameSettings;
     winner: 'white' | 'black' | null;
@@ -19,6 +20,7 @@ interface PlayerHomeProps {
 
 const PlayerHome: React.FC<PlayerHomeProps> = ({
     player,
+    playerName,
     state,
     settings,
     winner,
@@ -56,7 +58,7 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
                 color: titleColor,
                 filter: 'var(--dark-mode-filter, none)'
             }}>
-                {isWhite ? "White's Home" : "Black's Home"}
+                {playerName || (isWhite ? "White's Home" : "Black's Home")}
                 <span style={{ fontSize: '0.8rem', fontWeight: 'normal', marginLeft: '8px' }}>
                     (Completed: {completedCount}/{settings.piecesPerPlayer})
                 </span>

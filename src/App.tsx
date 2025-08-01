@@ -63,7 +63,7 @@ function App() {
   const winner = gameState.checkWinCondition();
 
   // Handle game setup completion
-  const handleGameSetup = async (whitePlayer: PlayerType, blackPlayer: PlayerType, difficulty: 'easy' | 'medium' | 'hard') => {
+  const handleGameSetup = async (whitePlayer: PlayerType, blackPlayer: PlayerType, whiteDifficulty: 'easy' | 'medium' | 'hard' | null, blackDifficulty: 'easy' | 'medium' | 'hard' | null) => {
     // Clean up any existing player manager
     if (playerManager) {
       playerManager.cleanup();
@@ -73,18 +73,18 @@ function App() {
     setShowGameSetup(false); // Close the setup modal
 
     // Start the game directly - no intermediate welcome screen
-    gameState.startNewGame();    // Only create player manager if there are computer players
-    if (whitePlayer === 'computer' || blackPlayer === 'computer') {
-      // Create new player manager with selected configuration
-      const newPlayerManager = new PlayerManager(gameState, {
-        white: whitePlayer,
-        black: blackPlayer,
-        computerDifficulty: difficulty
-      }, diceRollerRef);
+    gameState.startNewGame();
 
-      setPlayerManager(newPlayerManager);
-      await newPlayerManager.start();
-    }
+    // Always create player manager for all game types (human vs human, human vs computer, computer vs computer)
+    const newPlayerManager = new PlayerManager(gameState, {
+      white: whitePlayer,
+      black: blackPlayer,
+      whiteDifficulty: whiteDifficulty || undefined,
+      blackDifficulty: blackDifficulty || undefined
+    }, diceRollerRef);
+
+    setPlayerManager(newPlayerManager);
+    await newPlayerManager.start();
   };  // Cleanup player manager on unmount
   useEffect(() => {
     return () => {
@@ -305,6 +305,7 @@ function App() {
         whitePlayerHome={
           <PlayerHome
             player="white"
+            playerName={playerManager?.getPlayerAgent('white').getPlayerName()}
             state={state}
             settings={settings}
             winner={winner}
@@ -316,6 +317,7 @@ function App() {
         blackPlayerHome={
           <PlayerHome
             player="black"
+            playerName={playerManager?.getPlayerAgent('black').getPlayerName()}
             state={state}
             settings={settings}
             winner={winner}

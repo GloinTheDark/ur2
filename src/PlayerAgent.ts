@@ -21,6 +21,9 @@ export interface PlayerAgent {
     // Called when the game ends
     onGameEnd(gameState: GameState, winner: 'white' | 'black' | null): Promise<void>;
 
+    // Get the player's display name
+    getPlayerName(): string;
+
     // Cleanup method
     cleanup(): void;
 }
@@ -49,6 +52,10 @@ export class HumanPlayerAgent implements PlayerAgent {
 
     async onGameEnd(_gameState: GameState, _winner: 'white' | 'black' | null): Promise<void> {
         // Could show a message or update UI, but for now just a no-op
+    }
+
+    getPlayerName(): string {
+        return this.color.charAt(0).toUpperCase() + this.color.slice(1);
     }
 
     cleanup(): void {
@@ -144,6 +151,10 @@ export class ComputerPlayerAgent implements PlayerAgent {
 
     cleanup(): void {
         // No cleanup needed for computer players
+    }
+
+    getPlayerName(): string {
+        return `Computer (${this.difficulty})`;
     }
 
     private selectBestMove(gameState: GameState, eligiblePieces: number[]): number {

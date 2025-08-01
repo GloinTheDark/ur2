@@ -9,7 +9,8 @@ export type GameMode = 'human-vs-human' | 'human-vs-computer' | 'computer-vs-hum
 export interface PlayerConfiguration {
     white: PlayerType;
     black: PlayerType;
-    computerDifficulty?: 'easy' | 'medium' | 'hard';
+    whiteDifficulty?: 'easy' | 'medium' | 'hard';
+    blackDifficulty?: 'easy' | 'medium' | 'hard';
 }
 
 export class PlayerManager {
@@ -25,8 +26,8 @@ export class PlayerManager {
         this.diceRollerRef = diceRollerRef;
 
         // Create player agents based on configuration
-        this.whitePlayer = this.createPlayerAgent('white', config.white, config.computerDifficulty);
-        this.blackPlayer = this.createPlayerAgent('black', config.black, config.computerDifficulty);
+        this.whitePlayer = this.createPlayerAgent('white', config.white, config.whiteDifficulty);
+        this.blackPlayer = this.createPlayerAgent('black', config.black, config.blackDifficulty);
 
         // Subscribe to game state changes
         this.unsubscribe = this.gameState.subscribe(() => this.handleGameStateChange());

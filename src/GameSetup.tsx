@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import type { PlayerType } from './PlayerAgent';
 
 export interface GameSetupProps {
-    onStartGame: (whitePlayer: PlayerType, blackPlayer: PlayerType, difficulty: 'easy' | 'medium' | 'hard') => void;
+    onStartGame: (whitePlayer: PlayerType, blackPlayer: PlayerType, whiteDifficulty: 'easy' | 'medium' | 'hard' | null, blackDifficulty: 'easy' | 'medium' | 'hard' | null) => void;
 }
 
 type PlayerOption = 'human' | 'easy-computer' | 'medium-computer' | 'hard-computer';
@@ -54,10 +54,7 @@ const GameSetup: React.FC<GameSetupProps> = ({ onStartGame }) => {
         const { type: whiteType, difficulty: whiteDifficulty } = parsePlayerOption(whitePlayerOption);
         const { type: blackType, difficulty: blackDifficulty } = parsePlayerOption(blackPlayerOption);
 
-        // Use the highest difficulty if both players are computers
-        const finalDifficulty = whiteDifficulty || blackDifficulty || 'medium';
-
-        onStartGame(whiteType, blackType, finalDifficulty);
+        onStartGame(whiteType, blackType, whiteDifficulty, blackDifficulty);
     };
 
     const parsePlayerOption = (option: PlayerOption): { type: PlayerType; difficulty: 'easy' | 'medium' | 'hard' | null } => {
@@ -76,17 +73,17 @@ const GameSetup: React.FC<GameSetupProps> = ({ onStartGame }) => {
     };
 
     const getGameModeDescription = (): string => {
-        const whiteType = parsePlayerOption(whitePlayerOption).type;
-        const blackType = parsePlayerOption(blackPlayerOption).type;
+        const { type: whiteType, difficulty: whiteDifficulty } = parsePlayerOption(whitePlayerOption);
+        const { type: blackType, difficulty: blackDifficulty } = parsePlayerOption(blackPlayerOption);
 
         if (whiteType === 'human' && blackType === 'human') {
             return 'Two players taking turns on the same device';
         } else if (whiteType === 'human' && blackType === 'computer') {
-            return 'You play as White against the computer';
+            return `You play as White against ${blackDifficulty} computer`;
         } else if (whiteType === 'computer' && blackType === 'human') {
-            return 'You play as Black against the computer';
+            return `You play as Black against ${whiteDifficulty} computer`;
         } else {
-            return 'Watch two computer players compete';
+            return `Watch ${whiteDifficulty} computer (White) vs ${blackDifficulty} computer (Black)`;
         }
     };
 
