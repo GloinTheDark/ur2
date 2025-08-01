@@ -119,7 +119,9 @@ export class GameState {
         this.data.currentPlayer = roll === 1 ? 'white' : 'black';
 
         this.notify();
-    } proceedToGame(): void {
+    }
+
+    proceedToGame(): void {
         this.data.gamePhase = 'playing';
         this.data.initialRollResult = null;
         this.notify();
