@@ -48,10 +48,10 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
         gameState.getDestinationSquare() === 'complete';
 
     const homeStyle = isWhite ? {
-        backgroundColor: '#f8f8f8ff',
-        borderColor: '#ccc'
+        backgroundColor: '#ccc',
+        borderColor: '#aaa'
     } : {
-        backgroundColor: '#2a2a2a',
+        backgroundColor: '#777',
         borderColor: '#555'
     };
 
