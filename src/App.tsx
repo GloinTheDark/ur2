@@ -558,53 +558,6 @@ function App() {
 
       {state.gameStarted && !winner && (
         <div style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          {gameState.getCurrentRuleSet().name === 'Burglers of Ur' && (
-            <div style={{
-              marginBottom: '16px',
-              padding: '8px 16px',
-              backgroundColor: 'var(--info-box-bg, #f0f8ff)',
-              borderRadius: '8px',
-              border: '1px solid #ccc',
-              fontSize: '0.9rem',
-              textAlign: 'center'
-            }}>
-              <strong>House Control:</strong>{' '}
-              {(() => {
-                const { whiteHouses, blackHouses } = gameState.calculateHouseControl();
-                if (whiteHouses > blackHouses) {
-                  return `White leads (${whiteHouses} vs ${blackHouses})`;
-                } else if (blackHouses > whiteHouses) {
-                  return `Black leads (${blackHouses} vs ${whiteHouses})`;
-                } else {
-                  return `Tied (${whiteHouses} each)`;
-                }
-              })()}
-            </div>
-          )}
-          {gameState.getCurrentRuleSet().name === 'Burglers of Ur' && (
-            <div style={{
-              marginBottom: '16px',
-              padding: '8px 16px',
-              backgroundColor: 'var(--temple-box-bg, #f5f0ff)',
-              borderRadius: '8px',
-              border: '1px solid #ccc',
-              fontSize: '0.9rem',
-              textAlign: 'center'
-            }}>
-              <strong>Temple Control:</strong>{' '}
-              {(() => {
-                const { whiteTemples, blackTemples } = gameState.calculateTempleControl();
-                if (whiteTemples > blackTemples) {
-                  return `White leads (${whiteTemples} vs ${blackTemples})`;
-                } else if (blackTemples > whiteTemples) {
-                  return `Black leads (${blackTemples} vs ${whiteTemples})`;
-                } else {
-                  return `Tied (${whiteTemples} each)`;
-                }
-              })()}
-            </div>
-          )}
-
           <DiceRoller ref={diceRollerRef} gameState={gameState} />
 
           {/* Toggle Path Button */}
