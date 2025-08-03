@@ -23,6 +23,11 @@ export class BurglersOfUrRuleSet extends RuleSet {
         return false; // Burglers don't need exact roll to bear off - more aggressive gameplay
     }
 
+    // Gate keeper rule is enabled for Burglers - opponent pieces on gate square block path completion
+    getGateKeeperEnabled(): boolean {
+        return true; // Gate keeper rule is active in Burglers variant
+    }
+
     // In Burglers rules, market squares are safe
     getSafeSquares(): number[] {
         return [...MARKET_SQUARES]; // Market squares are safe from capture

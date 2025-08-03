@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import GateSquareIcon from './assets/GateSquare.svg';
 import RosetteSquareIcon from './assets/RosetteSquare.svg';
 import TreasurySquareIcon from './assets/TreasurySquare.svg';
 import dieB1 from './assets/DieB1.svg';
@@ -14,7 +13,6 @@ interface GameSettingsProps {
     isOpen: boolean;
     onClose: () => void;
     settings: {
-        gateKeeper: boolean;
         diceAnimations: boolean;
         pieceAnimations: boolean;
         currentRuleSet: string; // Add current rule set
@@ -22,7 +20,7 @@ interface GameSettingsProps {
     onSettingsChange: (newSettings: Partial<GameSettingsProps['settings']>) => void;
 }
 
-type TabType = 'rules' | 'rulesets' | 'optional' | 'preferences';
+type TabType = 'rules' | 'rulesets' | 'preferences';
 
 const GameSettings: React.FC<GameSettingsProps> = ({
     isOpen,
@@ -217,38 +215,6 @@ const GameSettings: React.FC<GameSettingsProps> = ({
         </div>
     );
 
-    const renderOptionalTab = () => (
-        <div style={{ padding: '20px 0' }}>
-            <h3 style={{ marginBottom: '16px', color: 'var(--text-color, #666)', fontSize: '1.2rem' }}>
-                Optional Rules & Variants
-            </h3>
-
-            <div style={{ marginBottom: '20px' }}>
-                <h4 style={{ marginBottom: '12px', color: 'var(--text-color, #666)', fontSize: '1.1rem' }}>
-                    Special Square Rules
-                </h4>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center' }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1rem', color: 'var(--text-color, #333)' }}>
-                        <input
-                            type="checkbox"
-                            checked={settings.gateKeeper}
-                            onChange={(e) => onSettingsChange({ gateKeeper: e.target.checked })}
-                            style={{ transform: 'scale(1.2)' }}
-                        />
-                        <div style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
-                        }}>
-                            <img src={GateSquareIcon} alt="Gate Square" style={{ width: '20px', height: '20px', display: 'block' }} />
-                        </div>
-                        <span>Gate Keeper (opponent on gate square blocks path completion)</span>
-                    </label>
-                </div>
-            </div>
-        </div>
-    );
-
     const renderPreferencesTab = () => (
         <div style={{ padding: '20px 0' }}>
             <h3 style={{ marginBottom: '16px', color: 'var(--text-color, #666)', fontSize: '1.2rem' }}>
@@ -330,12 +296,6 @@ const GameSettings: React.FC<GameSettingsProps> = ({
                             Rule Sets
                         </button>
                         <button
-                            onClick={() => setActiveTab('optional')}
-                            style={tabStyle(activeTab === 'optional')}
-                        >
-                            Optional Rules
-                        </button>
-                        <button
                             onClick={() => setActiveTab('preferences')}
                             style={tabStyle(activeTab === 'preferences')}
                         >
@@ -352,7 +312,6 @@ const GameSettings: React.FC<GameSettingsProps> = ({
                 }}>
                     {activeTab === 'rules' && renderRulesTab()}
                     {activeTab === 'rulesets' && renderRuleSetsTab()}
-                    {activeTab === 'optional' && renderOptionalTab()}
                     {activeTab === 'preferences' && renderPreferencesTab()}
                 </div>
 

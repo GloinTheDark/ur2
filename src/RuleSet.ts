@@ -32,6 +32,11 @@ export abstract class RuleSet {
         return false; // Default: captures don't grant extra turns
     }
 
+    // Gate keeper rule - only enabled for specific rulesets (like Burglers)
+    getGateKeeperEnabled(): boolean {
+        return false; // Default: gate keeper rule is disabled
+    }
+
     // Safe squares - squares where pieces cannot be captured
     getSafeSquares(): number[] {
         return []; // Default: no safe squares (except rosettes handled separately)

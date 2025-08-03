@@ -21,7 +21,6 @@ export interface PlayerConfiguration {
 }
 
 export interface GameSettings {
-    gateKeeper: boolean;
     diceAnimations: boolean;
     pieceAnimations: boolean;
     currentRuleSet: string;
@@ -438,9 +437,8 @@ export class GameState {
                 const parsed = JSON.parse(saved);
                 // Remove deprecated settings and ensure all current settings are included
                 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                const { piecesPerPlayer: _piecesPerPlayer, houseBonus: _houseBonus, templeBlessings: _templeBlessings, safeMarkets: _safeMarkets, ...validSettings } = parsed;
+                const { piecesPerPlayer: _piecesPerPlayer, houseBonus: _houseBonus, templeBlessings: _templeBlessings, safeMarkets: _safeMarkets, gateKeeper: _gateKeeper, ...validSettings } = parsed;
                 return {
-                    gateKeeper: true,
                     diceAnimations: true,
                     pieceAnimations: true,
                     currentRuleSet: 'Finkel',
@@ -455,7 +453,6 @@ export class GameState {
 
     static getDefaultSettings(): GameSettings {
         return {
-            gateKeeper: true,
             diceAnimations: true,
             pieceAnimations: true,
             currentRuleSet: 'Finkel'
@@ -562,36 +559,14 @@ export class GameState {
         let toPosition: number | 'start';
 
         // Calculate destination position (as path index)
+        // Note: Move validation has already been done by canPieceMove() before this point
         if (currentPos === 'start') {
-            if (diceRoll <= playerPath.length) {
-                toPosition = diceRoll - 1; // Convert 1-based dice roll to 0-based path index
-            } else {
-                return false; // Invalid move
-            }
+            toPosition = diceRoll - 1; // Convert 1-based dice roll to 0-based path index
         } else {
             const currentPathIndex = currentPos as number;
             const newPathIndex = currentPathIndex + diceRoll;
 
             if (newPathIndex >= playerPath.length) {
-                // Attempting to bear off - check exact roll requirement
-                const ruleSet = this.getCurrentRuleSet();
-                if (ruleSet.getExactRollNeededToBearOff()) {
-                    const exactRollNeeded = playerPath.length - currentPathIndex;
-                    if (diceRoll !== exactRollNeeded) {
-                        return false; // Must have exact roll to bear off
-                    }
-                }
-
-                // Check if gate is blocked
-                const opponentPositions = player === 'white' ? this.data.blackPiecePositions : this.data.whitePiecePositions;
-                const isGateBlocked = this.settings.gateKeeper && opponentPositions.some(pos => {
-                    if (pos === 'start' || pos === 'moving') return false;
-                    const opponentPath = player === 'white' ? this.blackPath : this.whitePath;
-                    return opponentPath[pos as number] === GATE_SQUARE;
-                });
-                if (isGateBlocked) {
-                    return false; // Cannot complete path if gate is blocked
-                }
                 toPosition = 'start'; // Piece completes circuit
             } else {
                 toPosition = newPathIndex;
@@ -974,10 +949,10 @@ export class GameState {
                     }
                 }
 
-                // Check if gate square is occupied by opponent piece (only if gate keeper rule is enabled)
+                // Check if gate square is occupied by opponent piece (only if gate keeper rule is enabled by ruleset)
                 const opponentPositions = currentPlayer === 'white' ? this.data.blackPiecePositions : this.data.whitePiecePositions;
                 const opponentPath = currentPlayer === 'white' ? this.blackPath : this.whitePath;
-                const isGateBlocked = this.settings.gateKeeper && opponentPositions.some(pos => {
+                const isGateBlocked = ruleSet.getGateKeeperEnabled() && opponentPositions.some(pos => {
                     if (pos === 'start' || pos === 'moving') return false;
                     return opponentPath[pos as number] === GATE_SQUARE;
                 });
