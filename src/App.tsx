@@ -557,7 +557,7 @@ function App() {
 
       {state.gameStarted && !winner && (
         <div style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          {settings.houseBonus && (
+          {gameState.getCurrentRuleSet().name === 'Burglers of Ur' && (
             <div style={{
               marginBottom: '16px',
               padding: '8px 16px',
@@ -580,7 +580,7 @@ function App() {
               })()}
             </div>
           )}
-          {settings.templeBlessings && (
+          {gameState.getCurrentRuleSet().name === 'Burglers of Ur' && (
             <div style={{
               marginBottom: '16px',
               padding: '8px 16px',

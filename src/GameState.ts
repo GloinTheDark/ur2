@@ -22,8 +22,6 @@ export interface PlayerConfiguration {
 }
 
 export interface GameSettings {
-    houseBonus: boolean;
-    templeBlessings: boolean;
     gateKeeper: boolean;
     safeMarkets: boolean;
     diceAnimations: boolean;
@@ -440,11 +438,9 @@ export class GameState {
         if (saved) {
             try {
                 const parsed = JSON.parse(saved);
-                // Ensure diceAnimations and pieceAnimations are included for backward compatibility
-                const { piecesPerPlayer, ...validSettings } = parsed; // Remove piecesPerPlayer if it exists
+                // Remove deprecated settings and ensure all current settings are included
+                const { piecesPerPlayer, houseBonus, templeBlessings, ...validSettings } = parsed;
                 return {
-                    houseBonus: false,
-                    templeBlessings: false,
                     gateKeeper: true,
                     safeMarkets: true,
                     diceAnimations: true,
@@ -461,8 +457,6 @@ export class GameState {
 
     static getDefaultSettings(): GameSettings {
         return {
-            houseBonus: false,
-            templeBlessings: false,
             gateKeeper: true,
             safeMarkets: true,
             diceAnimations: true,
@@ -1133,7 +1127,9 @@ export class GameState {
     }
 
     getHouseBonus(player: 'white' | 'black'): number {
-        if (!this.settings.houseBonus) return 0;
+        // House bonus is only available in Burglers rule set
+        const ruleSet = this.getCurrentRuleSet();
+        if (ruleSet.name !== 'Burglers of Ur') return 0;
 
         const { whiteHouses, blackHouses } = this.calculateHouseControl();
 
@@ -1143,7 +1139,9 @@ export class GameState {
     }
 
     getTempleBlessings(player: 'white' | 'black'): { hasControl: boolean, templeCount: { white: number, black: number } } {
-        if (!this.settings.templeBlessings) return { hasControl: false, templeCount: { white: 0, black: 0 } };
+        // Temple blessings are only available in Burglers rule set
+        const ruleSet = this.getCurrentRuleSet();
+        if (ruleSet.name !== 'Burglers of Ur') return { hasControl: false, templeCount: { white: 0, black: 0 } };
 
         const { whiteTemples, blackTemples } = this.calculateTempleControl();
         const hasControl = (player === 'white' && whiteTemples > blackTemples) ||

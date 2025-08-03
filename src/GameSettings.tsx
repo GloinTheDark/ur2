@@ -1,6 +1,4 @@
 import React, { useState } from 'react';
-import HouseSquareIcon from './assets/HouseSquare.svg';
-import TempleSquareIcon from './assets/TempleSquare.svg';
 import GateSquareIcon from './assets/GateSquare.svg';
 import MarketSquareIcon from './assets/MarketSquare.svg';
 import RosetteSquareIcon from './assets/RosetteSquare.svg';
@@ -17,8 +15,6 @@ interface GameSettingsProps {
     isOpen: boolean;
     onClose: () => void;
     settings: {
-        houseBonus: boolean;
-        templeBlessings: boolean;
         gateKeeper: boolean;
         safeMarkets: boolean;
         diceAnimations: boolean;
@@ -234,38 +230,6 @@ const GameSettings: React.FC<GameSettingsProps> = ({
                     Special Square Rules
                 </h4>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center' }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1rem', color: 'var(--text-color, #333)' }}>
-                        <input
-                            type="checkbox"
-                            checked={settings.houseBonus}
-                            onChange={(e) => onSettingsChange({ houseBonus: e.target.checked })}
-                            style={{ transform: 'scale(1.2)' }}
-                        />
-                        <div style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
-                        }}>
-                            <img src={HouseSquareIcon} alt="House Square" style={{ width: '20px', height: '20px', display: 'block' }} />
-                        </div>
-                        <span>House Bonus (+1 dice for controlling most house squares)</span>
-                    </label>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1rem', color: 'var(--text-color, #333)' }}>
-                        <input
-                            type="checkbox"
-                            checked={settings.templeBlessings}
-                            onChange={(e) => onSettingsChange({ templeBlessings: e.target.checked })}
-                            style={{ transform: 'scale(1.2)' }}
-                        />
-                        <div style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
-                        }}>
-                            <img src={TempleSquareIcon} alt="Temple Square" style={{ width: '20px', height: '20px', display: 'block' }} />
-                        </div>
-                        <span>Temple Blessings (0 roll becomes 4 when controlling most temples)</span>
-                    </label>
                     <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1rem', color: 'var(--text-color, #333)' }}>
                         <input
                             type="checkbox"
