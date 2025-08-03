@@ -747,16 +747,6 @@ export class GameState {
 
     // Version of executeMove that returns capture information for animations
     private executeMoveWithCaptureInfo(player: 'white' | 'black', pieceIndex: number, diceRoll: number): { extraTurn: boolean, captureInfo: { player: 'white' | 'black', index: number, fromPosition: number } | null } {
-        // Validate the move first
-        const currentPlayer = this.data.currentPlayer;
-        this.data.currentPlayer = player; // Temporarily set for canPieceMove validation
-        const isValidMove = this.canPieceMove(pieceIndex);
-        this.data.currentPlayer = currentPlayer; // Restore current player
-
-        if (!isValidMove) {
-            return { extraTurn: false, captureInfo: null }; // Invalid move, don't execute
-        }
-
         let extraTurn = false;
         let captureInfo: { player: 'white' | 'black', index: number, fromPosition: number } | null = null;
         const currentPositions = player === 'white' ? this.data.whitePiecePositions : this.data.blackPiecePositions;
