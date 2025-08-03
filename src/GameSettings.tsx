@@ -17,7 +17,6 @@ interface GameSettingsProps {
     isOpen: boolean;
     onClose: () => void;
     settings: {
-        piecesPerPlayer: number;
         houseBonus: boolean;
         templeBlessings: boolean;
         gateKeeper: boolean;
@@ -229,35 +228,6 @@ const GameSettings: React.FC<GameSettingsProps> = ({
             <h3 style={{ marginBottom: '16px', color: 'var(--text-color, #666)', fontSize: '1.2rem' }}>
                 Optional Rules & Variants
             </h3>
-
-            <div style={{ marginBottom: '20px' }}>
-                <h4 style={{ marginBottom: '12px', color: 'var(--text-color, #666)', fontSize: '1.1rem' }}>
-                    Number of Pieces per Player
-                </h4>
-                <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-                    {[3, 5, 7].map(count => (
-                        <button
-                            key={count}
-                            onClick={() => onSettingsChange({ piecesPerPlayer: count })}
-                            style={{
-                                padding: '8px 16px',
-                                fontSize: '1rem',
-                                borderRadius: 6,
-                                cursor: 'pointer',
-                                backgroundColor: settings.piecesPerPlayer === count ? '#4CAF50' : 'var(--button-bg, #f0f0f0)',
-                                color: settings.piecesPerPlayer === count ? '#fff' : 'var(--text-color, #333)',
-                                border: `2px solid ${settings.piecesPerPlayer === count ? '#4CAF50' : '#ccc'}`,
-                                fontWeight: settings.piecesPerPlayer === count ? 'bold' : 'normal'
-                            }}
-                        >
-                            {count}
-                        </button>
-                    ))}
-                </div>
-                <div style={{ marginTop: '8px', fontSize: '0.8rem', color: 'var(--text-color, #666)', textAlign: 'center' }}>
-                    Current: {settings.piecesPerPlayer} pieces per player
-                </div>
-            </div>
 
             <div style={{ marginBottom: '20px' }}>
                 <h4 style={{ marginBottom: '12px', color: 'var(--text-color, #666)', fontSize: '1.1rem' }}>

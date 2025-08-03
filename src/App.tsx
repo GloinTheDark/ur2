@@ -532,7 +532,7 @@ function App() {
           {/* Path Overlay */}
           {showPath && (() => {
             const currentRuleSet = getRuleSetByName(settings.currentRuleSet);
-            const pathOverlaySrc = currentRuleSet ? getPath(currentRuleSet.pathType).overlayImage : '/src/assets/Path.svg';
+            const pathOverlaySrc = getPath(currentRuleSet.pathType).overlayImage;
 
             return (
               <img

@@ -17,7 +17,6 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
     gameState
 }) => {
     const state = gameState.state;
-    const settings = gameState.gameSettings;
     const winner = gameState.checkWinCondition();
     const playerName = gameState.getPlayerName(player);
 
@@ -69,12 +68,12 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
             }}>
                 {playerName || (isWhite ? "White's Home" : "Black's Home")}
                 <span style={{ fontSize: '0.8rem', fontWeight: 'normal', marginLeft: '8px' }}>
-                    (Completed: {completedCount}/{settings.piecesPerPlayer})
+                    (Completed: {completedCount}/{gameState.getPiecesPerPlayer()})
                 </span>
             </h3>
             <div style={{
                 display: 'grid',
-                gridTemplateColumns: `repeat(${settings.piecesPerPlayer}, ${HOME_SQUARE_SIZE}px)`,
+                gridTemplateColumns: `repeat(${gameState.getPiecesPerPlayer()}, ${HOME_SQUARE_SIZE}px)`,
                 gridTemplateRows: `repeat(1, ${HOME_SQUARE_SIZE}px)`,
                 gap: '0px',
                 justifyContent: 'center',
@@ -85,7 +84,7 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
                 width: 'fit-content',
                 margin: '0 auto'
             }}>
-                {Array.from({ length: settings.piecesPerPlayer }).map((_, slotIndex) => {
+                {Array.from({ length: gameState.getPiecesPerPlayer() }).map((_, slotIndex) => {
                     // Determine what goes in this slot
                     let slotContent = null;
                     let clickHandler = null;
@@ -96,12 +95,12 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
                     if (slotIndex < completedCount) {
                         // Left side: completed pieces (spots)
                         slotContent = spotsIcon;
-                    } else if (slotIndex >= settings.piecesPerPlayer - blankPiecesInHome) {
+                    } else if (slotIndex >= gameState.getPiecesPerPlayer() - blankPiecesInHome) {
                         // Right side: blank pieces
                         slotContent = blankIcon;
 
                         // Only the leftmost blank piece (first slot with blank pieces) should be eligible
-                        const isLeftmostBlankSlot = slotIndex === settings.piecesPerPlayer - blankPiecesInHome;
+                        const isLeftmostBlankSlot = slotIndex === gameState.getPiecesPerPlayer() - blankPiecesInHome;
 
                         // Check if this is the leftmost blank piece and it's eligible to move
                         isEligible = isLeftmostBlankSlot &&

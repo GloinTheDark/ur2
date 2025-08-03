@@ -26,10 +26,10 @@ export function getAllRuleSets(): RuleSet[] {
 }
 
 // Get rule set by name
-export function getRuleSetByName(name: string): RuleSet | undefined {
+export function getRuleSetByName(name: string): RuleSet {
     return Object.values(AVAILABLE_RULE_SETS).find(ruleSet =>
         ruleSet.name.toLowerCase() === name.toLowerCase()
-    );
+    ) || DEFAULT_RULE_SET;
 }
 
 // Default rule set

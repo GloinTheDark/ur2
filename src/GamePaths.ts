@@ -51,7 +51,7 @@ export const MASTERS_PATH: GamePath = {
 
 // Registry of all available paths
 export const ALL_PATHS = {
-    finkel: BELL_PATH, // Keep 'finkel' key for backwards compatibility
+    finkel: BELL_PATH,
     burglers: BURGLERS_PATH,
     masters: MASTERS_PATH
 } as const;

@@ -41,14 +41,15 @@ const DiceRoller = forwardRef<DiceRollerRef, DiceRollerProps>(({ gameState }, re
 
         setIsRolling(true);
 
+        // Get dice count from current rule set
+        const currentRuleSet = gameState.getCurrentRuleSet();
+        const diceCount = currentRuleSet.diceCount;
+
         // Start animation with random dice values
         const animationInterval = setInterval(() => {
-            setAnimatedRoll([
-                Math.floor(Math.random() * 2), // 0 or 1 for each die
-                Math.floor(Math.random() * 2),
-                Math.floor(Math.random() * 2),
-                Math.floor(Math.random() * 2)
-            ]);
+            setAnimatedRoll(
+                Array.from({ length: diceCount }, () => Math.floor(Math.random() * 2)) // 0 or 1 for each die
+            );
         }, FRAME_DURATION);
 
         // Stop animation and show final result

@@ -11,6 +11,7 @@ import {
 } from './BoardLayout';
 import { getPathPair } from './GamePaths';
 import { getRuleSetByName } from './RuleSets';
+import type { RuleSet } from './RuleSet';
 import { HumanPlayerAgent, ComputerPlayerAgent } from './PlayerAgent';
 import type { PlayerAgent, PlayerType } from './PlayerAgent';
 import type { DiceRollerRef } from './DiceRoller';
@@ -23,7 +24,6 @@ export interface PlayerConfiguration {
 }
 
 export interface GameSettings {
-    piecesPerPlayer: number;
     houseBonus: boolean;
     templeBlessings: boolean;
     gateKeeper: boolean;
@@ -89,12 +89,9 @@ export class GameState {
     // Update paths based on current rule set
     private updatePathsFromRuleSet(): void {
         const ruleSet = getRuleSetByName(this.settings.currentRuleSet);
-        if (ruleSet) {
-            const paths = getPathPair(ruleSet.pathType);
-            this.whitePath = paths.white;
-            this.blackPath = paths.black;
-        }
-        // If rule set not found, keep default paths from BoardLayout
+        const paths = getPathPair(ruleSet.pathType);
+        this.whitePath = paths.white;
+        this.blackPath = paths.black;
     }
 
     // Get current paths (for debugging/inspection)
@@ -103,8 +100,19 @@ export class GameState {
         return {
             white: [...this.whitePath],
             black: [...this.blackPath],
-            pathType: ruleSet?.pathType || 'unknown'
+            pathType: ruleSet.pathType
         };
+    }
+
+    // Get pieces per player from current rule set
+    getPiecesPerPlayer(): number {
+        const ruleSet = getRuleSetByName(this.settings.currentRuleSet);
+        return ruleSet.piecesPerPlayer;
+    }
+
+    // Get current rule set
+    getCurrentRuleSet(): RuleSet {
+        return getRuleSetByName(this.settings.currentRuleSet);
     }
 
     // Helper methods for position conversion
@@ -204,12 +212,13 @@ export class GameState {
     }
 
     private createInitialState(): GameStateData {
+        const piecesPerPlayer = this.getPiecesPerPlayer();
         return {
             currentPlayer: 'white',
-            whitePieces: Array(this.settings.piecesPerPlayer).fill('blank'),
-            blackPieces: Array(this.settings.piecesPerPlayer).fill('blank'),
-            whitePiecePositions: Array(this.settings.piecesPerPlayer).fill('start'),
-            blackPiecePositions: Array(this.settings.piecesPerPlayer).fill('start'),
+            whitePieces: Array(piecesPerPlayer).fill('blank'),
+            blackPieces: Array(piecesPerPlayer).fill('blank'),
+            whitePiecePositions: Array(piecesPerPlayer).fill('start'),
+            blackPiecePositions: Array(piecesPerPlayer).fill('start'),
             selectedPiece: null,
             gameStarted: false,
             gamePhase: 'initial-roll',
@@ -399,10 +408,11 @@ export class GameState {
 
         if (!this.data.gameStarted) {
             // Reset piece arrays if game hasn't started
-            this.data.whitePieces = Array(this.settings.piecesPerPlayer).fill('blank');
-            this.data.blackPieces = Array(this.settings.piecesPerPlayer).fill('blank');
-            this.data.whitePiecePositions = Array(this.settings.piecesPerPlayer).fill('start');
-            this.data.blackPiecePositions = Array(this.settings.piecesPerPlayer).fill('start');
+            const piecesPerPlayer = this.getPiecesPerPlayer();
+            this.data.whitePieces = Array(piecesPerPlayer).fill('blank');
+            this.data.blackPieces = Array(piecesPerPlayer).fill('blank');
+            this.data.whitePiecePositions = Array(piecesPerPlayer).fill('start');
+            this.data.blackPiecePositions = Array(piecesPerPlayer).fill('start');
             this.data.selectedPiece = null;
             this.data.eligiblePieces = [];
         }
@@ -416,8 +426,8 @@ export class GameState {
             try {
                 const parsed = JSON.parse(saved);
                 // Ensure diceAnimations and pieceAnimations are included for backward compatibility
+                const { piecesPerPlayer, ...validSettings } = parsed; // Remove piecesPerPlayer if it exists
                 return {
-                    piecesPerPlayer: 3,
                     houseBonus: false,
                     templeBlessings: false,
                     gateKeeper: true,
@@ -425,7 +435,7 @@ export class GameState {
                     diceAnimations: true,
                     pieceAnimations: true,
                     currentRuleSet: 'Finkel',
-                    ...parsed
+                    ...validSettings
                 };
             } catch {
                 return GameState.getDefaultSettings();
@@ -436,7 +446,6 @@ export class GameState {
 
     static getDefaultSettings(): GameSettings {
         return {
-            piecesPerPlayer: 3,
             houseBonus: false,
             templeBlessings: false,
             gateKeeper: true,
@@ -463,15 +472,21 @@ export class GameState {
             return;
         }
 
-        // Generate 4 independent dice rolls, each die can roll a 0 or a 1
-        const newRolls = Array.from({ length: 4 }, () => Math.floor(Math.random() * 2));
+        // Get dice count from current rule set
+        const ruleSet = this.getCurrentRuleSet();
+        const diceCount = ruleSet.diceCount;
+
+        // Generate dice rolls based on rule set, each die can roll a 0 or a 1
+        const newRolls = Array.from({ length: diceCount }, () => Math.floor(Math.random() * 2));
+
+
         const baseTotal = newRolls.reduce((sum, roll) => sum + roll, 0);
 
         // Apply temple blessings first (only if base roll is 0 and player has temple control)
         let total = baseTotal;
         let templeBlessingApplied = false;
         if (baseTotal === 0 && this.getTempleBlessings(this.data.currentPlayer).hasControl) {
-            total = 4;
+            total = diceCount; // Set to maximum possible roll for this rule set
             templeBlessingApplied = true;
         }
 
@@ -487,6 +502,7 @@ export class GameState {
         this.data.diceTotal = total;
         this.data.houseBonusApplied = houseBonusApplied;
         this.data.templeBlessingApplied = templeBlessingApplied;
+
         this.data.selectedPiece = null; // Reset selection on new roll
         this.calculateEligiblePieces();
         this.notify();

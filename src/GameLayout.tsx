@@ -71,7 +71,6 @@ const GameLayout: React.FC<GameLayoutProps> = ({
         const state = gameState.state;
         const pieces = player === 'white' ? state.whitePieces : state.blackPieces;
         const positions = player === 'white' ? state.whitePiecePositions : state.blackPiecePositions;
-        const settings = gameState.gameSettings;
 
         const piece = pieces[pieceIndex];
         const position = positions[pieceIndex];
@@ -133,7 +132,7 @@ const GameLayout: React.FC<GameLayoutProps> = ({
 
             // The rightmost empty slot is just before the existing blank pieces
             // Layout: [Completed][Completed][Empty][Empty][CAPTURE HERE][Blank][Blank]
-            targetSlot = settings.piecesPerPlayer - existingBlankCount - 1;
+            targetSlot = gameState.getPiecesPerPlayer() - existingBlankCount - 1;
         } else if (piece === 'spots') {
             // Completed pieces go on the left
             if (isAnimatingToStart) {
@@ -180,7 +179,7 @@ const GameLayout: React.FC<GameLayoutProps> = ({
                 .sort((a, b) => a.index - b.index); // Sort by original index for consistency
 
             const thisBlankIndex = blankPieces.findIndex(item => item.index === pieceIndex);
-            targetSlot = settings.piecesPerPlayer - blankPiecesInHome + (thisBlankIndex >= 0 ? thisBlankIndex : 0);
+            targetSlot = gameState.getPiecesPerPlayer() - blankPiecesInHome + (thisBlankIndex >= 0 ? thisBlankIndex : 0);
         }
 
         // Calculate position within the home grid
