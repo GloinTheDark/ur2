@@ -3,6 +3,9 @@
  * 
  * Centralizes all board square definitions and layout information for the Royal Game of Ur.
  * This eliminates magic numbers and provides a single source of truth for board configuration.
+ * 
+ * NOTE: The board layout (square types and positions) is constant across all rule sets.
+ * Only the paths through the board vary by rule set - those are defined in each RuleSet class.
  */
 
 // Board dimensions and layout

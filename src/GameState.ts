@@ -9,6 +9,8 @@ import {
     BLACK_PATH,
     TREASURY_SQUARES
 } from './BoardLayout';
+import { getPathPair } from './GamePaths';
+import { getRuleSetByName } from './RuleSets';
 import { HumanPlayerAgent, ComputerPlayerAgent } from './PlayerAgent';
 import type { PlayerAgent, PlayerType } from './PlayerAgent';
 import type { DiceRollerRef } from './DiceRoller';
@@ -28,6 +30,7 @@ export interface GameSettings {
     safeMarkets: boolean;
     diceAnimations: boolean;
     pieceAnimations: boolean;
+    currentRuleSet: string;
 }
 
 export interface GameStateData {
@@ -73,13 +76,35 @@ export class GameState {
     private playerManagerActive: boolean = false;
     private diceRollerRef: React.RefObject<DiceRollerRef | null> | null = null;
 
-    // Game paths
-    private readonly whitePath = [...WHITE_PATH];
-    private readonly blackPath = [...BLACK_PATH];
+    // Game paths - dynamically loaded from current rule set
+    private whitePath: number[] = [...WHITE_PATH]; // Fallback to default
+    private blackPath: number[] = [...BLACK_PATH]; // Fallback to default
 
     constructor(settings: GameSettings) {
         this.settings = settings;
         this.data = this.createInitialState();
+        this.updatePathsFromRuleSet();
+    }
+
+    // Update paths based on current rule set
+    private updatePathsFromRuleSet(): void {
+        const ruleSet = getRuleSetByName(this.settings.currentRuleSet);
+        if (ruleSet) {
+            const paths = getPathPair(ruleSet.pathType);
+            this.whitePath = paths.white;
+            this.blackPath = paths.black;
+        }
+        // If rule set not found, keep default paths from BoardLayout
+    }
+
+    // Get current paths (for debugging/inspection)
+    getCurrentPaths(): { white: number[], black: number[], pathType: string } {
+        const ruleSet = getRuleSetByName(this.settings.currentRuleSet);
+        return {
+            white: [...this.whitePath],
+            black: [...this.blackPath],
+            pathType: ruleSet?.pathType || 'unknown'
+        };
     }
 
     // Helper methods for position conversion
@@ -126,6 +151,56 @@ export class GameState {
         }
 
         return waypoints;
+    }
+
+    // Get pieces on a specific board square
+    getPiecesOnSquare(squareNumber: number): { white: number[], black: number[] } {
+        const whitePieces: number[] = [];
+        const blackPieces: number[] = [];
+
+        // Check white pieces
+        this.data.whitePiecePositions.forEach((pos, index) => {
+            if (pos !== 'start' && pos !== 'moving') {
+                const square = this.getSquareFromPathIndex('white', pos as number);
+                if (square === squareNumber) {
+                    whitePieces.push(index);
+                }
+            }
+        });
+
+        // Check black pieces
+        this.data.blackPiecePositions.forEach((pos, index) => {
+            if (pos !== 'start' && pos !== 'moving') {
+                const square = this.getSquareFromPathIndex('black', pos as number);
+                if (square === squareNumber) {
+                    blackPieces.push(index);
+                }
+            }
+        });
+
+        return { white: whitePieces, black: blackPieces };
+    }
+
+    // Check if any pieces on a square are eligible to move
+    hasEligiblePieceOnSquare(squareNumber: number): boolean {
+        if (!this.data.gameStarted || this.isAnimating()) return false;
+
+        const piecesOnSquare = this.getPiecesOnSquare(squareNumber);
+        const currentPlayerPieces = this.data.currentPlayer === 'white' ? piecesOnSquare.white : piecesOnSquare.black;
+
+        return currentPlayerPieces.some(pieceIndex => this.data.eligiblePieces.includes(pieceIndex));
+    }
+
+    // Check if any pieces on a square are selected
+    hasSelectedPieceOnSquare(squareNumber: number): boolean {
+        if (!this.data.selectedPiece) return false;
+
+        const piecesOnSquare = this.getPiecesOnSquare(squareNumber);
+        const selectedPlayerPieces = this.data.selectedPiece.player === 'white' ? piecesOnSquare.white : piecesOnSquare.black;
+
+        return selectedPlayerPieces.some(pieceIndex =>
+            this.data.selectedPiece!.index === pieceIndex
+        );
     }
 
     private createInitialState(): GameStateData {
@@ -314,7 +389,14 @@ export class GameState {
     }
 
     updateSettings(newSettings: Partial<GameSettings>): void {
+        const oldRuleSet = this.settings.currentRuleSet;
         this.settings = { ...this.settings, ...newSettings };
+
+        // Update paths if rule set changed
+        if (newSettings.currentRuleSet && newSettings.currentRuleSet !== oldRuleSet) {
+            this.updatePathsFromRuleSet();
+        }
+
         if (!this.data.gameStarted) {
             // Reset piece arrays if game hasn't started
             this.data.whitePieces = Array(this.settings.piecesPerPlayer).fill('blank');
@@ -342,6 +424,7 @@ export class GameState {
                     safeMarkets: true,
                     diceAnimations: true,
                     pieceAnimations: true,
+                    currentRuleSet: 'Finkel',
                     ...parsed
                 };
             } catch {
@@ -359,7 +442,8 @@ export class GameState {
             gateKeeper: true,
             safeMarkets: true,
             diceAnimations: true,
-            pieceAnimations: true
+            pieceAnimations: true,
+            currentRuleSet: 'Finkel'
         };
     }
 

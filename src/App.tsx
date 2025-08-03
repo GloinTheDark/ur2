@@ -8,7 +8,9 @@ import GameSettings from './GameSettings'
 import PlayerHome from './PlayerHome'
 import GameLayout from './GameLayout'
 import type { PlayerType } from './PlayerAgent'
-import { BoardUtils, BOARD_COLUMNS, BOARD_ROWS, TOTAL_SQUARES, WHITE_PATH, BLACK_PATH } from './BoardLayout'
+import { BoardUtils, BOARD_COLUMNS, BOARD_ROWS, TOTAL_SQUARES } from './BoardLayout'
+import { getRuleSetByName } from './RuleSets'
+import { getPath } from './GamePaths'
 import { PIECE_SIZE, HIGHLIGHT_CIRCLE_SIZE, SQUARE_SIZE, BOARD_GAP } from './UIConstants'
 import rosetteSquare from './assets/RosetteSquare.svg'
 import gateSquare from './assets/GateSquare.svg'
@@ -17,7 +19,6 @@ import templeSquare from './assets/TempleSquare.svg'
 import houseSquare from './assets/HouseSquare.svg'
 import treasurySquare from './assets/TreasurySquare.svg'
 import goToSquare from './assets/GoTo.svg'
-import pathOverlay from './assets/Path.svg'
 import whiteBlank from './assets/WhiteBlank.svg'
 import whiteSpots from './assets/WhiteSpots.svg'
 import blackBlank from './assets/BlackBlank.svg'
@@ -284,26 +285,16 @@ function App() {
               const destinationSquare = gameState.getDestinationSquare();
               const isDestinationSquare = destinationSquare === squareNumber;
 
-              // Check if any pieces are on this square (excluding moving pieces)
-              const whitePiecesOnSquare = state.whitePiecePositions.map((pos, index) => {
-                if (pos === 'start' || pos === 'moving') return null;
-                return WHITE_PATH[pos as number] === squareNumber ? index : null;
-              }).filter(p => p !== null);
-              const blackPiecesOnSquare = state.blackPiecePositions.map((pos, index) => {
-                if (pos === 'start' || pos === 'moving') return null;
-                return BLACK_PATH[pos as number] === squareNumber ? index : null;
-              }).filter(p => p !== null);
+              // Get pieces on this square (excluding moving pieces)
+              const piecesOnSquare = gameState.getPiecesOnSquare(squareNumber);
+              const whitePiecesOnSquare = piecesOnSquare.white;
+              const blackPiecesOnSquare = piecesOnSquare.black;
 
               // Check if any piece on this square is eligible to move (only during active gameplay and not during animation)
-              const hasEligiblePiece = state.gameStarted && !winner && !gameState.isAnimating() && (state.currentPlayer === 'white' ? whitePiecesOnSquare : blackPiecesOnSquare).some(pieceIndex =>
-                state.eligiblePieces.includes(pieceIndex as number)
-              );
+              const hasEligiblePiece = gameState.hasEligiblePieceOnSquare(squareNumber) && !winner;
 
               // Check if any piece on this square is selected
-              const hasSelectedPiece = state.selectedPiece !== null &&
-                (state.currentPlayer === 'white' ? whitePiecesOnSquare : blackPiecesOnSquare).some(pieceIndex =>
-                  state.selectedPiece!.player === state.currentPlayer && state.selectedPiece!.index === pieceIndex
-                );
+              const hasSelectedPiece = gameState.hasSelectedPieceOnSquare(squareNumber);
 
               return (
                 <div
@@ -436,7 +427,7 @@ function App() {
                         />
                       )}
                       {whitePiecesOnSquare.map((pieceIndex) => {
-                        const isEligible = state.gameStarted && !winner && state.currentPlayer === 'white' && !gameState.isAnimating() && state.eligiblePieces.includes(pieceIndex as number);
+                        const isEligible = state.gameStarted && !winner && state.currentPlayer === 'white' && !gameState.isAnimating() && state.eligiblePieces.includes(pieceIndex);
                         const isSelected = state.selectedPiece !== null && state.selectedPiece.player === 'white' && state.selectedPiece.index === pieceIndex;
                         return (
                           <div
@@ -468,8 +459,8 @@ function App() {
                               />
                             )}
                             <img
-                              src={state.whitePieces[pieceIndex as number] === 'blank' ? whiteBlank : whiteSpots}
-                              alt={`White piece ${(pieceIndex as number) + 1}`}
+                              src={state.whitePieces[pieceIndex] === 'blank' ? whiteBlank : whiteSpots}
+                              alt={`White piece ${pieceIndex + 1}`}
                               style={{
                                 width: `${PIECE_SIZE}px`,
                                 height: `${PIECE_SIZE}px`,
@@ -484,7 +475,7 @@ function App() {
                         );
                       })}
                       {blackPiecesOnSquare.map((pieceIndex) => {
-                        const isEligible = state.gameStarted && !winner && state.currentPlayer === 'black' && !gameState.isAnimating() && state.eligiblePieces.includes(pieceIndex as number);
+                        const isEligible = state.gameStarted && !winner && state.currentPlayer === 'black' && !gameState.isAnimating() && state.eligiblePieces.includes(pieceIndex);
                         const isSelected = state.selectedPiece !== null && state.selectedPiece.player === 'black' && state.selectedPiece.index === pieceIndex;
                         return (
                           <div
@@ -516,8 +507,8 @@ function App() {
                               />
                             )}
                             <img
-                              src={state.blackPieces[pieceIndex as number] === 'blank' ? blackBlank : blackSpots}
-                              alt={`Black piece ${(pieceIndex as number) + 1}`}
+                              src={state.blackPieces[pieceIndex] === 'blank' ? blackBlank : blackSpots}
+                              alt={`Black piece ${pieceIndex + 1}`}
                               style={{
                                 width: `${PIECE_SIZE}px`,
                                 height: `${PIECE_SIZE}px`,
@@ -539,23 +530,28 @@ function App() {
           </div>
 
           {/* Path Overlay */}
-          {showPath && (
-            <img
-              src={pathOverlay}
-              alt="Path Overlay"
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: '100%',
-                pointerEvents: 'none',
-                zIndex: 5,
-                opacity: 0.7,
-                transform: state.currentPlayer === 'black' ? 'scaleY(-1)' : 'none'
-              }}
-            />
-          )}
+          {showPath && (() => {
+            const currentRuleSet = getRuleSetByName(settings.currentRuleSet);
+            const pathOverlaySrc = currentRuleSet ? getPath(currentRuleSet.pathType).overlayImage : '/src/assets/Path.svg';
+
+            return (
+              <img
+                src={pathOverlaySrc}
+                alt="Path Overlay"
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: '100%',
+                  pointerEvents: 'none',
+                  zIndex: 5,
+                  opacity: 0.7,
+                  transform: state.currentPlayer === 'black' ? 'scaleY(-1)' : 'none'
+                }}
+              />
+            );
+          })()}
         </div>
       </GameLayout>
 

@@ -11,6 +11,7 @@ import whiteBlank from './assets/WhiteBlank.svg';
 import whiteSpots from './assets/WhiteSpots.svg';
 import blackBlank from './assets/BlackBlank.svg';
 import blackSpots from './assets/BlackSpots.svg';
+import { AVAILABLE_RULE_SETS } from './RuleSets';
 
 interface GameSettingsProps {
     isOpen: boolean;
@@ -23,11 +24,12 @@ interface GameSettingsProps {
         safeMarkets: boolean;
         diceAnimations: boolean;
         pieceAnimations: boolean;
+        currentRuleSet: string; // Add current rule set
     };
     onSettingsChange: (newSettings: Partial<GameSettingsProps['settings']>) => void;
 }
 
-type TabType = 'rules' | 'optional' | 'preferences';
+type TabType = 'rules' | 'rulesets' | 'optional' | 'preferences';
 
 const GameSettings: React.FC<GameSettingsProps> = ({
     isOpen,
@@ -38,6 +40,9 @@ const GameSettings: React.FC<GameSettingsProps> = ({
     const [activeTab, setActiveTab] = useState<TabType>('rules');
 
     if (!isOpen) return null;
+
+    // Get rule sets for the tab
+    const ruleSets = Object.values(AVAILABLE_RULE_SETS);
 
     const tabStyle = (isActive: boolean) => ({
         padding: '8px 16px',
@@ -140,6 +145,81 @@ const GameSettings: React.FC<GameSettingsProps> = ({
                         <li>Pieces automatically complete their journey and return home when they pass the final square</li>
                     </ul>
                 </div>
+            </div>
+        </div>
+    );
+
+    const renderRuleSetsTab = () => (
+        <div style={{ padding: '20px 0' }}>
+            <h3 style={{ marginBottom: '16px', color: 'var(--text-color, #666)', fontSize: '1.2rem' }}>
+                Rule Set Selection
+            </h3>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center' }}>
+                {ruleSets.map((ruleSet) => (
+                    <div
+                        key={ruleSet.name}
+                        onClick={() => onSettingsChange({ currentRuleSet: ruleSet.name })}
+                        style={{
+                            padding: '16px',
+                            borderRadius: '8px',
+                            border: `2px solid ${settings.currentRuleSet === ruleSet.name ? '#4CAF50' : '#ddd'}`,
+                            backgroundColor: settings.currentRuleSet === ruleSet.name ? '#e8f5e8' : 'var(--button-bg, #f9f9f9)',
+                            cursor: 'pointer',
+                            width: '100%',
+                            maxWidth: '500px',
+                            textAlign: 'left',
+                            transition: 'all 0.2s ease'
+                        }}
+                    >
+                        <div style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            marginBottom: '8px'
+                        }}>
+                            <h4 style={{
+                                margin: '0',
+                                color: 'var(--text-color, #333)',
+                                fontSize: '1.1rem',
+                                fontWeight: settings.currentRuleSet === ruleSet.name ? 'bold' : 'normal'
+                            }}>
+                                {ruleSet.name}
+                            </h4>
+                            <div style={{
+                                fontSize: '0.9rem',
+                                color: 'var(--text-color, #666)',
+                                display: 'flex',
+                                gap: '12px'
+                            }}>
+                                <span>{ruleSet.piecesPerPlayer} pieces</span>
+                                <span>{ruleSet.diceCount} dice</span>
+                            </div>
+                        </div>
+                        <p style={{
+                            margin: '0',
+                            color: 'var(--text-color, #666)',
+                            fontSize: '0.9rem',
+                            lineHeight: '1.4'
+                        }}>
+                            {ruleSet.description}
+                        </p>
+                    </div>
+                ))}
+            </div>
+
+            <div style={{
+                marginTop: '16px',
+                padding: '12px',
+                backgroundColor: 'var(--info-box-bg, #f8f9fa)',
+                borderRadius: '6px',
+                border: '1px solid var(--border-color, #ddd)',
+                fontSize: '0.9rem',
+                color: 'var(--text-color, #666)',
+                textAlign: 'center'
+            }}>
+                Each rule set has unique mechanics, paths, and victory conditions.
+                Select a rule set to automatically configure game settings.
             </div>
         </div>
     );
@@ -328,6 +408,12 @@ const GameSettings: React.FC<GameSettingsProps> = ({
                             Rules
                         </button>
                         <button
+                            onClick={() => setActiveTab('rulesets')}
+                            style={tabStyle(activeTab === 'rulesets')}
+                        >
+                            Rule Sets
+                        </button>
+                        <button
                             onClick={() => setActiveTab('optional')}
                             style={tabStyle(activeTab === 'optional')}
                         >
@@ -349,6 +435,7 @@ const GameSettings: React.FC<GameSettingsProps> = ({
                     overflowY: 'auto'
                 }}>
                     {activeTab === 'rules' && renderRulesTab()}
+                    {activeTab === 'rulesets' && renderRuleSetsTab()}
                     {activeTab === 'optional' && renderOptionalTab()}
                     {activeTab === 'preferences' && renderPreferencesTab()}
                 </div>
