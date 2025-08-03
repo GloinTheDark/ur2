@@ -8,6 +8,7 @@ import GameSettings from './GameSettings'
 import PlayerHome from './PlayerHome'
 import GameLayout from './GameLayout'
 import type { PlayerType } from './PlayerAgent'
+import type { GameSettings as GameSettingsType } from './GameState'
 import { BoardUtils, BOARD_COLUMNS, BOARD_ROWS, TOTAL_SQUARES } from './BoardLayout'
 import { getRuleSetByName } from './RuleSets'
 import { getPath } from './GamePaths'
@@ -53,7 +54,7 @@ function App() {
   };
 
   // Save settings to localStorage
-  const saveSettings = (newSettings: any) => {
+  const saveSettings = (newSettings: Partial<GameSettingsType>) => {
     gameState.updateAndSaveSettings(newSettings);
   };
 

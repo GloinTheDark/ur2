@@ -27,6 +27,7 @@ export class MastersRuleSet extends RuleSet {
     }
 
     // Masters-specific dice roll calculation - zero roll gives 4 movement
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     calculateDiceRoll(diceValues: number[], _gameState: GameState): {
         total: number;
         templeBlessingApplied: boolean;

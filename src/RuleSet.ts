@@ -42,6 +42,7 @@ export abstract class RuleSet {
     }
 
     // Dice roll calculation and UI feedback
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     calculateDiceRoll(diceValues: number[], _gameState: GameState): {
         total: number;
         templeBlessingApplied: boolean;

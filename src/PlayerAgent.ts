@@ -36,20 +36,24 @@ export class HumanPlayerAgent implements PlayerAgent {
         this.color = color;
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     async onTurnStart(_gameState: GameState): Promise<void> {
         // For human players, the UI handles dice rolling
         // This is a no-op since humans interact directly with the UI
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     async onMoveRequired(_gameState: GameState): Promise<void> {
         // For human players, the UI handles piece selection and movement
         // This is a no-op since humans interact directly with the UI
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     async onTurnEnd(_gameState: GameState): Promise<void> {
         // No special action needed for human players
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     async onGameEnd(_gameState: GameState, _winner: 'white' | 'black' | null): Promise<void> {
         // Could show a message or update UI, but for now just a no-op
     }
@@ -141,10 +145,12 @@ export class ComputerPlayerAgent implements PlayerAgent {
         gameState.movePiece(selectedPieceIndex);
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     async onTurnEnd(_gameState: GameState): Promise<void> {
         // No special action needed
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     async onGameEnd(_gameState: GameState, _winner: 'white' | 'black' | null): Promise<void> {
         // Game ended notification for computer player
     }

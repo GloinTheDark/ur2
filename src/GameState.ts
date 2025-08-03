@@ -437,6 +437,7 @@ export class GameState {
             try {
                 const parsed = JSON.parse(saved);
                 // Remove deprecated settings and ensure all current settings are included
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
                 const { piecesPerPlayer: _piecesPerPlayer, houseBonus: _houseBonus, templeBlessings: _templeBlessings, safeMarkets: _safeMarkets, ...validSettings } = parsed;
                 return {
                     gateKeeper: true,
@@ -642,7 +643,7 @@ export class GameState {
         if (fromPosition === 'start' && toPosition !== 'start') {
             // Moving from start - check if we pass through any treasury squares
             for (let i = 0; i < originalDiceRoll; i++) {
-                if (TREASURY_SQUARES.includes(playerPath[i] as any)) {
+                if ((TREASURY_SQUARES as readonly number[]).includes(playerPath[i])) {
                     if (player === 'white') {
                         this.data.whitePieces[index] = 'spots';
                     } else {
@@ -656,7 +657,7 @@ export class GameState {
             const fromIndex = fromPosition as number;
             const toIndex = toPosition as number;
             for (let i = fromIndex + 1; i <= toIndex; i++) {
-                if (TREASURY_SQUARES.includes(playerPath[i] as any)) {
+                if ((TREASURY_SQUARES as readonly number[]).includes(playerPath[i])) {
                     if (player === 'white') {
                         this.data.whitePieces[index] = 'spots';
                     } else {
@@ -677,7 +678,7 @@ export class GameState {
         // Check for rosette landing
         if (toPosition !== 'start') {
             const destinationSquare = playerPath[toPosition as number];
-            if (ROSETTE_SQUARES.includes(destinationSquare as any)) {
+            if ((ROSETTE_SQUARES as readonly number[]).includes(destinationSquare)) {
                 landedOnRosette = true;
             }
         }
@@ -822,13 +823,13 @@ export class GameState {
                     this.data.whitePiecePositions[pieceIndex] = destinationPathIndex;
 
                     // Check if piece landed on a rosette square
-                    if (ROSETTE_SQUARES.includes(destinationSquare as any)) {
+                    if ((ROSETTE_SQUARES as readonly number[]).includes(destinationSquare)) {
                         landedOnRosette = true;
                     }
 
                     // Check if piece lands on or passes through a treasury square and change to spots
                     for (let i = 0; i < diceRoll; i++) {
-                        if (TREASURY_SQUARES.includes(this.whitePath[i] as any)) {
+                        if ((TREASURY_SQUARES as readonly number[]).includes(this.whitePath[i])) {
                             this.data.whitePieces[pieceIndex] = 'spots';
                             break;
                         }
@@ -863,13 +864,13 @@ export class GameState {
                     this.data.whitePiecePositions[pieceIndex] = destinationPathIndex;
 
                     // Check if piece landed on a rosette square
-                    if (ROSETTE_SQUARES.includes(destinationSquare as any)) {
+                    if ((ROSETTE_SQUARES as readonly number[]).includes(destinationSquare)) {
                         landedOnRosette = true;
                     }
 
                     // Check if piece lands on or passes through a treasury square and change to spots
                     for (let i = currentPathIndex + 1; i <= newPathIndex; i++) {
-                        if (TREASURY_SQUARES.includes(this.whitePath[i] as any)) {
+                        if ((TREASURY_SQUARES as readonly number[]).includes(this.whitePath[i])) {
                             this.data.whitePieces[pieceIndex] = 'spots';
                             break;
                         }
@@ -900,12 +901,12 @@ export class GameState {
                     destinationSquare = this.blackPath[destinationPathIndex];
                     this.data.blackPiecePositions[pieceIndex] = destinationPathIndex;
 
-                    if (ROSETTE_SQUARES.includes(destinationSquare as any)) {
+                    if ((ROSETTE_SQUARES as readonly number[]).includes(destinationSquare)) {
                         landedOnRosette = true;
                     }
 
                     for (let i = 0; i < diceRoll; i++) {
-                        if (TREASURY_SQUARES.includes(this.blackPath[i] as any)) {
+                        if ((TREASURY_SQUARES as readonly number[]).includes(this.blackPath[i])) {
                             this.data.blackPieces[pieceIndex] = 'spots';
                             break;
                         }
@@ -936,12 +937,12 @@ export class GameState {
                     destinationSquare = this.blackPath[destinationPathIndex];
                     this.data.blackPiecePositions[pieceIndex] = destinationPathIndex;
 
-                    if (ROSETTE_SQUARES.includes(destinationSquare as any)) {
+                    if ((ROSETTE_SQUARES as readonly number[]).includes(destinationSquare)) {
                         landedOnRosette = true;
                     }
 
                     for (let i = currentPathIndex + 1; i <= newPathIndex; i++) {
-                        if (TREASURY_SQUARES.includes(this.blackPath[i] as any)) {
+                        if ((TREASURY_SQUARES as readonly number[]).includes(this.blackPath[i])) {
                             this.data.blackPieces[pieceIndex] = 'spots';
                             break;
                         }
