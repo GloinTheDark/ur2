@@ -68,7 +68,7 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
             }}>
                 {playerName || (isWhite ? "White's Home" : "Black's Home")}
                 <span style={{ fontSize: '0.8rem', fontWeight: 'normal', marginLeft: '8px' }}>
-                    (Completed: {completedCount}/{gameState.getPiecesPerPlayer()})
+                    (Completed: {completedCount}/{gameState.getCurrentRuleSet().getPiecesToWin()})
                 </span>
             </h3>
             <div style={{

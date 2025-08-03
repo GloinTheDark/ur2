@@ -1,6 +1,7 @@
 // Base class for all rule sets in the Royal Game of Ur
 import type { PathType } from './GamePaths';
 import type { GameState } from './GameState';
+import { TEMPLE_SQUARES } from './BoardLayout';
 
 export abstract class RuleSet {
     abstract readonly name: string;
@@ -40,6 +41,11 @@ export abstract class RuleSet {
     // Safe squares - squares where pieces cannot be captured
     getSafeSquares(): number[] {
         return []; // Default: no safe squares (except rosettes handled separately)
+    }
+
+    // Flip squares - squares where pieces flip to spotted side
+    getFlipSquares(): number[] {
+        return [...TEMPLE_SQUARES]; // Default: pieces flip on temple squares
     }
 
     // Dice roll calculation and UI feedback

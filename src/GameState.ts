@@ -3,8 +3,7 @@ import {
     ROSETTE_SQUARES,
     GATE_SQUARE,
     TEMPLE_SQUARES,
-    HOUSE_SQUARES,
-    TREASURY_SQUARES
+    HOUSE_SQUARES
 } from './BoardLayout';
 import { getPathPair } from './GamePaths';
 import { getRuleSetByName, DEFAULT_RULE_SET } from './RuleSets';
@@ -770,11 +769,14 @@ export class GameState {
             extraTurn = true;
         }
 
-        // Handle treasury squares (piece becomes spots)
+        // Handle flip squares (piece becomes spots)
+        const ruleSet = this.getCurrentRuleSet();
+        const flipSquares = ruleSet.getFlipSquares();
+
         if (currentPos === 'start') {
             // Check all squares from start to destination
             for (let i = 0; i < diceRoll; i++) {
-                if ((TREASURY_SQUARES as readonly number[]).includes(playerPath[i])) {
+                if (flipSquares.includes(playerPath[i])) {
                     currentPieces[pieceIndex] = 'spots';
                     break;
                 }
@@ -784,7 +786,7 @@ export class GameState {
             const currentPathIndex = currentPos as number;
             const newPathIndex = destinationPathIndex!;
             for (let i = currentPathIndex + 1; i <= newPathIndex; i++) {
-                if ((TREASURY_SQUARES as readonly number[]).includes(playerPath[i])) {
+                if (flipSquares.includes(playerPath[i])) {
                     currentPieces[pieceIndex] = 'spots';
                     break;
                 }
@@ -1044,13 +1046,20 @@ export class GameState {
 
     // Check for win condition
     checkWinCondition(): 'white' | 'black' | null {
-        const whiteWon = this.data.whitePieces.every(piece => piece === 'spots') &&
-            this.data.whitePiecePositions.every(pos => pos === 'start');
-        const blackWon = this.data.blackPieces.every(piece => piece === 'spots') &&
-            this.data.blackPiecePositions.every(pos => pos === 'start');
+        const ruleSet = this.getCurrentRuleSet();
+        const piecesToWin = ruleSet.getPiecesToWin();
 
-        if (whiteWon) return 'white';
-        if (blackWon) return 'black';
+        // Count completed pieces for each player (spotted pieces that are back at start)
+        const whiteCompletedPieces = this.data.whitePieces.filter((piece, index) =>
+            piece === 'spots' && this.data.whitePiecePositions[index] === 'start'
+        ).length;
+
+        const blackCompletedPieces = this.data.blackPieces.filter((piece, index) =>
+            piece === 'spots' && this.data.blackPiecePositions[index] === 'start'
+        ).length;
+
+        if (whiteCompletedPieces >= piecesToWin) return 'white';
+        if (blackCompletedPieces >= piecesToWin) return 'black';
         return null;
     }
 
