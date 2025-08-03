@@ -55,7 +55,7 @@ export interface GameStateData {
         index: number,
         fromPosition: number, // path index
         isAnimating: boolean,
-        originalMoveLandedOnRosette: boolean
+        originalMoveGaveExtraTurn: boolean
     } | null;
 }
 
@@ -532,20 +532,20 @@ export class GameState {
 
     // Immediate move (no animation)
     private executeMoveImmediately(player: 'white' | 'black', pieceIndex: number, diceRoll: number): boolean {
-        const landedOnRosette = this.executeMove(player, pieceIndex, diceRoll);
+        const extraTurn = this.executeMove(player, pieceIndex, diceRoll);
 
         // Reset dice state
         this.resetDice();
 
-        // Switch player if didn't land on rosette
-        if (!landedOnRosette) {
+        // Switch player if didn't get extra turn
+        if (!extraTurn) {
             this.data.currentPlayer = this.data.currentPlayer === 'white' ? 'black' : 'white';
         }
 
         // Single notification after all state changes are complete
         this.notify();
 
-        return landedOnRosette;
+        return extraTurn;
     }
 
     // Animation methods
@@ -630,7 +630,7 @@ export class GameState {
 
         const { player, index, fromPosition, toPosition, originalDiceRoll } = this.data.animatingPiece;
         const playerPath = player === 'white' ? this.whitePath : this.blackPath;
-        let landedOnRosette = false;
+        let extraTurn = false;
 
         // Set the piece to its final position
         if (player === 'white') {
@@ -679,7 +679,7 @@ export class GameState {
         if (toPosition !== 'start') {
             const destinationSquare = playerPath[toPosition as number];
             if ((ROSETTE_SQUARES as readonly number[]).includes(destinationSquare)) {
-                landedOnRosette = true;
+                extraTurn = true;
             }
         }
 
@@ -708,7 +708,7 @@ export class GameState {
                         index: capturedPieceIndex,
                         fromPosition: opponentPositions[capturedPieceIndex] as number,
                         isAnimating: true,
-                        originalMoveLandedOnRosette: landedOnRosette
+                        originalMoveGaveExtraTurn: extraTurn
                     };
 
                     // Set captured piece position to 'moving' during animation
@@ -726,20 +726,20 @@ export class GameState {
 
         // If there's no captured piece animation, complete the turn immediately
         if (!this.data.animatingCapturedPiece?.isAnimating) {
-            this.completeTurn(landedOnRosette);
+            this.completeTurn(extraTurn);
         }
 
         this.notify();
-        return landedOnRosette;
+        return extraTurn;
     }
 
     // Complete the turn (called after all animations finish)
-    private completeTurn(landedOnRosette: boolean): void {
+    private completeTurn(extraTurn: boolean): void {
         // Reset dice state
         this.resetDice();
 
-        // Switch player if didn't land on rosette
-        if (!landedOnRosette) {
+        // Switch player if didn't get extra turn
+        if (!extraTurn) {
             this.data.currentPlayer = this.data.currentPlayer === 'white' ? 'black' : 'white';
         }
 
@@ -789,7 +789,7 @@ export class GameState {
             return;
         }
 
-        const { player, index, originalMoveLandedOnRosette } = this.data.animatingCapturedPiece;
+        const { player, index, originalMoveGaveExtraTurn } = this.data.animatingCapturedPiece;
 
         // Move captured piece to start position
         if (player === 'white') {
@@ -801,169 +801,104 @@ export class GameState {
         // Clear captured piece animation state
         this.data.animatingCapturedPiece = null;
 
-        // Complete the turn with the preserved rosette information
-        this.completeTurn(originalMoveLandedOnRosette);
+        // Complete the turn with the preserved extra turn information
+        this.completeTurn(originalMoveGaveExtraTurn);
 
         this.notify();
     }
 
     private executeMove(player: 'white' | 'black', pieceIndex: number, diceRoll: number): boolean {
-        let landedOnRosette = false;
+        // Validate the move first
+        const currentPlayer = this.data.currentPlayer;
+        this.data.currentPlayer = player; // Temporarily set for canPieceMove validation
+        const isValidMove = this.canPieceMove(pieceIndex);
+        this.data.currentPlayer = currentPlayer; // Restore current player
 
-        if (player === 'white') {
-            const currentPos = this.data.whitePiecePositions[pieceIndex];
-            let destinationPathIndex: number | undefined;
-            let destinationSquare: number | undefined;
+        if (!isValidMove) {
+            return false; // Invalid move, don't execute
+        }
 
-            if (currentPos === 'start') {
-                // Move from start to first position
-                if (diceRoll <= this.whitePath.length) {
-                    destinationPathIndex = diceRoll - 1; // Convert to 0-based index
-                    destinationSquare = this.whitePath[destinationPathIndex];
-                    this.data.whitePiecePositions[pieceIndex] = destinationPathIndex;
+        let extraTurn = false;
+        const currentPositions = player === 'white' ? this.data.whitePiecePositions : this.data.blackPiecePositions;
+        const currentPieces = player === 'white' ? this.data.whitePieces : this.data.blackPieces;
+        const playerPath = player === 'white' ? this.whitePath : this.blackPath;
+        const currentPos = currentPositions[pieceIndex];
 
-                    // Check if piece landed on a rosette square
-                    if ((ROSETTE_SQUARES as readonly number[]).includes(destinationSquare)) {
-                        landedOnRosette = true;
-                    }
+        let destinationPathIndex: number | undefined;
+        let destinationSquare: number | undefined;
 
-                    // Check if piece lands on or passes through a treasury square and change to spots
-                    for (let i = 0; i < diceRoll; i++) {
-                        if ((TREASURY_SQUARES as readonly number[]).includes(this.whitePath[i])) {
-                            this.data.whitePieces[pieceIndex] = 'spots';
-                            break;
-                        }
-                    }
-                }
+        if (currentPos === 'start') {
+            // Move from start
+            destinationPathIndex = diceRoll - 1; // Convert to 0-based index
+            destinationSquare = playerPath[destinationPathIndex];
+            currentPositions[pieceIndex] = destinationPathIndex;
+        } else {
+            // Move along the path
+            const currentPathIndex = currentPos as number;
+            const newPathIndex = currentPathIndex + diceRoll;
+
+            if (newPathIndex >= playerPath.length) {
+                // Bear off - piece completes the circuit
+                currentPositions[pieceIndex] = 'start';
+                currentPieces[pieceIndex] = 'spots'; // Keep spots state to indicate completion
+                return extraTurn; // No extra turn when bearing off
             } else {
-                // Move along the path
-                const currentPathIndex = currentPos as number;
-                const newPathIndex = currentPathIndex + diceRoll;
-
-                if (newPathIndex >= this.whitePath.length) {
-                    // Attempting to bear off - check exact roll requirement
-                    const ruleSet = this.getCurrentRuleSet();
-                    const shouldBearOff = !ruleSet.getExactRollNeededToBearOff() ||
-                        (diceRoll === this.whitePath.length - currentPathIndex);
-
-                    if (shouldBearOff) {
-                        // Check if gate square is occupied by opponent piece (only if gate keeper rule is enabled)
-                        const isGateBlocked = this.settings.gateKeeper && this.data.blackPiecePositions.some(pos => {
-                            if (pos === 'start' || pos === 'moving') return false;
-                            return this.blackPath[pos as number] === GATE_SQUARE;
-                        });
-                        if (!isGateBlocked) {
-                            // Piece completes the circuit and returns to start
-                            this.data.whitePiecePositions[pieceIndex] = 'start';
-                            this.data.whitePieces[pieceIndex] = 'spots'; // Keep spots state to indicate completion
-                        }
-                    }
-                } else {
-                    destinationPathIndex = newPathIndex;
-                    destinationSquare = this.whitePath[destinationPathIndex];
-                    this.data.whitePiecePositions[pieceIndex] = destinationPathIndex;
-
-                    // Check if piece landed on a rosette square
-                    if ((ROSETTE_SQUARES as readonly number[]).includes(destinationSquare)) {
-                        landedOnRosette = true;
-                    }
-
-                    // Check if piece lands on or passes through a treasury square and change to spots
-                    for (let i = currentPathIndex + 1; i <= newPathIndex; i++) {
-                        if ((TREASURY_SQUARES as readonly number[]).includes(this.whitePath[i])) {
-                            this.data.whitePieces[pieceIndex] = 'spots';
-                            break;
-                        }
-                    }
-                }
+                destinationPathIndex = newPathIndex;
+                destinationSquare = playerPath[destinationPathIndex];
+                currentPositions[pieceIndex] = destinationPathIndex;
             }
+        }
 
-            // Check for opponent piece capture
-            if (destinationSquare !== undefined) {
-                const capturedPieceIndex = this.data.blackPiecePositions.findIndex(pos => {
-                    if (pos === 'start' || pos === 'moving') return false;
-                    return this.blackPath[pos as number] === destinationSquare;
-                });
-                if (capturedPieceIndex !== -1) {
-                    this.data.blackPiecePositions[capturedPieceIndex] = 'start';
-                    this.data.blackPieces[capturedPieceIndex] = 'blank';
+        // Check if piece landed on a rosette square
+        if (destinationSquare !== undefined && (ROSETTE_SQUARES as readonly number[]).includes(destinationSquare)) {
+            extraTurn = true;
+        }
+
+        // Handle treasury squares (piece becomes spots)
+        if (currentPos === 'start') {
+            // Check all squares from start to destination
+            for (let i = 0; i < diceRoll; i++) {
+                if ((TREASURY_SQUARES as readonly number[]).includes(playerPath[i])) {
+                    currentPieces[pieceIndex] = 'spots';
+                    break;
                 }
             }
         } else {
-            // Similar logic for black player
-            const currentPos = this.data.blackPiecePositions[pieceIndex];
-            let destinationPathIndex: number | undefined;
-            let destinationSquare: number | undefined;
-
-            if (currentPos === 'start') {
-                if (diceRoll <= this.blackPath.length) {
-                    destinationPathIndex = diceRoll - 1; // Convert to 0-based index
-                    destinationSquare = this.blackPath[destinationPathIndex];
-                    this.data.blackPiecePositions[pieceIndex] = destinationPathIndex;
-
-                    if ((ROSETTE_SQUARES as readonly number[]).includes(destinationSquare)) {
-                        landedOnRosette = true;
-                    }
-
-                    for (let i = 0; i < diceRoll; i++) {
-                        if ((TREASURY_SQUARES as readonly number[]).includes(this.blackPath[i])) {
-                            this.data.blackPieces[pieceIndex] = 'spots';
-                            break;
-                        }
-                    }
-                }
-            } else {
-                const currentPathIndex = currentPos as number;
-                const newPathIndex = currentPathIndex + diceRoll;
-
-                if (newPathIndex >= this.blackPath.length) {
-                    // Attempting to bear off - check exact roll requirement
-                    const ruleSet = this.getCurrentRuleSet();
-                    const shouldBearOff = !ruleSet.getExactRollNeededToBearOff() ||
-                        (diceRoll === this.blackPath.length - currentPathIndex);
-
-                    if (shouldBearOff) {
-                        const isGateBlocked = this.settings.gateKeeper && this.data.whitePiecePositions.some(pos => {
-                            if (pos === 'start' || pos === 'moving') return false;
-                            return this.whitePath[pos as number] === GATE_SQUARE;
-                        });
-                        if (!isGateBlocked) {
-                            this.data.blackPiecePositions[pieceIndex] = 'start';
-                            this.data.blackPieces[pieceIndex] = 'spots';
-                        }
-                    }
-                } else {
-                    destinationPathIndex = newPathIndex;
-                    destinationSquare = this.blackPath[destinationPathIndex];
-                    this.data.blackPiecePositions[pieceIndex] = destinationPathIndex;
-
-                    if ((ROSETTE_SQUARES as readonly number[]).includes(destinationSquare)) {
-                        landedOnRosette = true;
-                    }
-
-                    for (let i = currentPathIndex + 1; i <= newPathIndex; i++) {
-                        if ((TREASURY_SQUARES as readonly number[]).includes(this.blackPath[i])) {
-                            this.data.blackPieces[pieceIndex] = 'spots';
-                            break;
-                        }
-                    }
-                }
-            }
-
-            // Check for opponent piece capture
-            if (destinationSquare !== undefined) {
-                const capturedPieceIndex = this.data.whitePiecePositions.findIndex(pos => {
-                    if (pos === 'start' || pos === 'moving') return false;
-                    return this.whitePath[pos as number] === destinationSquare;
-                });
-                if (capturedPieceIndex !== -1) {
-                    this.data.whitePiecePositions[capturedPieceIndex] = 'start';
-                    this.data.whitePieces[capturedPieceIndex] = 'blank';
+            // Check squares from current position to destination
+            const currentPathIndex = currentPos as number;
+            const newPathIndex = destinationPathIndex!;
+            for (let i = currentPathIndex + 1; i <= newPathIndex; i++) {
+                if ((TREASURY_SQUARES as readonly number[]).includes(playerPath[i])) {
+                    currentPieces[pieceIndex] = 'spots';
+                    break;
                 }
             }
         }
 
-        return landedOnRosette;
+        // Handle opponent piece capture
+        if (destinationSquare !== undefined) {
+            const opponentPositions = player === 'white' ? this.data.blackPiecePositions : this.data.whitePiecePositions;
+            const opponentPieces = player === 'white' ? this.data.blackPieces : this.data.whitePieces;
+            const opponentPath = player === 'white' ? this.blackPath : this.whitePath;
+
+            const capturedPieceIndex = opponentPositions.findIndex(pos => {
+                if (pos === 'start' || pos === 'moving') return false;
+                return opponentPath[pos as number] === destinationSquare;
+            });
+
+            if (capturedPieceIndex !== -1) {
+                opponentPositions[capturedPieceIndex] = 'start';
+                opponentPieces[capturedPieceIndex] = 'blank';
+
+                // Check if this ruleset grants extra turns on capture
+                const ruleSet = this.getCurrentRuleSet();
+                if (ruleSet.getExtraTurnOnCapture()) {
+                    extraTurn = true;
+                }
+            }
+        }
+
+        return extraTurn;
     }
 
     // Calculate eligible pieces
