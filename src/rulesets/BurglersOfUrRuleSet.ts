@@ -1,5 +1,5 @@
 import { RuleSet } from '../RuleSet';
-import { TEMPLE_SQUARES, HOUSE_SQUARES } from '../BoardLayout';
+import type { GameState } from '../GameState';
 
 // Action-packed variant with more aggressive gameplay
 export class BurglersOfUrRuleSet extends RuleSet {
@@ -12,11 +12,6 @@ export class BurglersOfUrRuleSet extends RuleSet {
 
     // Use the extended Burglers path
     readonly pathType = "burglers" as const;
-
-    // Aggressive rule variations
-    readonly gateKeeper = false; // No gatekeeper - more aggressive endgame
-    readonly pieceAnimations = true;
-    readonly soundEffects = true;
 
     // Aggressive game mechanics
     canCaptureOnRosette(): boolean {
@@ -32,51 +27,42 @@ export class BurglersOfUrRuleSet extends RuleSet {
     }
 
     // Burglers-specific dice roll calculation with temple blessing and house bonus
-    calculateDiceRoll(diceValues: number[], gameState?: any): {
+    calculateDiceRoll(diceValues: number[], gameState: GameState): {
         total: number;
+        templeBlessingApplied: boolean;
+        houseBonusApplied: boolean;
         flags: {
             canMove: boolean;
             extraTurn?: boolean;
             specialMessage?: string;
         };
     } {
-        const diceTotal = diceValues.reduce((sum, value) => sum + value, 0);
-        let total = diceTotal;
-        let specialMessage: string | undefined;
+        const baseTotal = diceValues.reduce((sum, value) => sum + value, 0);
 
-        // Temple blessing and house bonus rules would need game state
-        // For now, implement basic rules that can be enhanced later
-        if (gameState?.currentPlayer && gameState?.playerPieces) {
-            const playerPieces = gameState.playerPieces[gameState.currentPlayer];
+        // Apply temple blessings first (only if base roll is 0 and player has temple control)
+        let total = baseTotal;
+        let templeBlessingApplied = false;
+        if (baseTotal === 0 && gameState.getTempleBlessings(gameState.state.currentPlayer).hasControl) {
+            total = this.diceCount; // Set to maximum possible roll for this rule set
+            templeBlessingApplied = true;
+        }
 
-            // Temple blessing: if player has pieces on temple squares, bonus movement
-            const piecesOnTemples = playerPieces?.filter((piece: any) =>
-                piece.position && TEMPLE_SQUARES.includes(piece.position)
-            ).length || 0;
-
-            // House bonus: if player has pieces on house squares, bonus movement  
-            const piecesOnHouses = playerPieces?.filter((piece: any) =>
-                piece.position && HOUSE_SQUARES.includes(piece.position)
-            ).length || 0;
-
-            const templeBonus = piecesOnTemples;
-            const houseBonus = Math.floor(piecesOnHouses / 2); // Bonus for every 2 pieces on houses
-
-            if (templeBonus > 0 || houseBonus > 0) {
-                total += templeBonus + houseBonus;
-                const bonusMessages = [];
-                if (templeBonus > 0) bonusMessages.push(`Temple blessing +${templeBonus}`);
-                if (houseBonus > 0) bonusMessages.push(`House bonus +${houseBonus}`);
-                specialMessage = bonusMessages.join(', ');
-            }
+        // Apply house bonus second
+        let houseBonusApplied = false;
+        const houseBonus = gameState.getHouseBonus(gameState.state.currentPlayer);
+        if (houseBonus > 0) {
+            total += houseBonus;
+            houseBonusApplied = true;
         }
 
         return {
             total,
+            templeBlessingApplied,
+            houseBonusApplied,
             flags: {
                 canMove: total > 0,
                 extraTurn: false, // Will be determined by game logic
-                specialMessage
+                specialMessage: undefined
             }
         };
     }

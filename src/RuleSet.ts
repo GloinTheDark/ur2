@@ -1,5 +1,6 @@
 // Base class for all rule sets in the Royal Game of Ur
 import type { PathType } from './GamePaths';
+import type { GameState } from './GameState';
 
 export abstract class RuleSet {
     abstract readonly name: string;
@@ -11,11 +12,6 @@ export abstract class RuleSet {
 
     // Path type (the main thing that varies by ruleset)
     abstract readonly pathType: PathType;
-
-    // Rule variations
-    abstract readonly gateKeeper: boolean;
-    abstract readonly pieceAnimations: boolean;
-    abstract readonly soundEffects: boolean;
 
     // Bear off mechanics
     getExactRollNeededToBearOff(): boolean {
@@ -41,8 +37,10 @@ export abstract class RuleSet {
     }
 
     // Dice roll calculation and UI feedback
-    calculateDiceRoll(diceValues: number[], _gameState?: any): {
+    calculateDiceRoll(diceValues: number[], _gameState: GameState): {
         total: number;
+        templeBlessingApplied: boolean;
+        houseBonusApplied: boolean;
         flags: {
             canMove: boolean;
             extraTurn?: boolean;
@@ -55,6 +53,8 @@ export abstract class RuleSet {
 
         return {
             total,
+            templeBlessingApplied: false,
+            houseBonusApplied: false,
             flags: {
                 canMove: total > 0,
                 extraTurn: false, // Will be determined by game logic based on landing position
@@ -71,16 +71,10 @@ export abstract class RuleSet {
     // Convert rule set to game settings format
     toGameSettings(): {
         piecesPerPlayer: number;
-        gateKeeper: boolean;
-        pieceAnimations: boolean;
-        soundEffects: boolean;
         diceCount: number;
     } {
         return {
             piecesPerPlayer: this.piecesPerPlayer,
-            gateKeeper: this.gateKeeper,
-            pieceAnimations: this.pieceAnimations,
-            soundEffects: this.soundEffects,
             diceCount: this.diceCount
         };
     }

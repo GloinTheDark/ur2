@@ -1,4 +1,5 @@
 import { RuleSet } from '../RuleSet';
+import type { GameState } from '../GameState';
 
 // Masters rule set by James Masters
 export class MastersRuleSet extends RuleSet {
@@ -11,11 +12,6 @@ export class MastersRuleSet extends RuleSet {
 
     // Use the balanced Masters path
     readonly pathType = "masters" as const;
-
-    // Masters rule variations
-    readonly gateKeeper = true;
-    readonly pieceAnimations = true;
-    readonly soundEffects = true;
 
     // Masters game mechanics
     canCaptureOnRosette(): boolean {
@@ -31,8 +27,10 @@ export class MastersRuleSet extends RuleSet {
     }
 
     // Masters-specific dice roll calculation - zero roll gives 4 movement
-    calculateDiceRoll(diceValues: number[], _gameState?: any): {
+    calculateDiceRoll(diceValues: number[], _gameState: GameState): {
         total: number;
+        templeBlessingApplied: boolean;
+        houseBonusApplied: boolean;
         flags: {
             canMove: boolean;
             extraTurn?: boolean;
@@ -49,6 +47,8 @@ export class MastersRuleSet extends RuleSet {
 
         return {
             total,
+            templeBlessingApplied: false, // Masters doesn't use temple blessings
+            houseBonusApplied: false,     // Masters doesn't use house bonus
             flags: {
                 canMove: true, // Always can move in Masters
                 extraTurn: false, // Will be determined by game logic

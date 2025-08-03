@@ -6,9 +6,6 @@ import { getPathPair } from './GamePaths';
 
 export interface RuleSetGameSettings {
     piecesPerPlayer: number;
-    gateKeeper: boolean;
-    pieceAnimations: boolean;
-    soundEffects: boolean;
     diceCount: number;
     // Rule set specific
     ruleSet: RuleSet;
@@ -18,9 +15,6 @@ export interface RuleSetGameSettings {
 export function createGameSettingsFromRuleSet(ruleSet: RuleSet): RuleSetGameSettings {
     return {
         piecesPerPlayer: ruleSet.piecesPerPlayer,
-        gateKeeper: ruleSet.gateKeeper,
-        pieceAnimations: ruleSet.pieceAnimations,
-        soundEffects: ruleSet.soundEffects,
         diceCount: ruleSet.diceCount,
         ruleSet: ruleSet
     };
@@ -70,10 +64,6 @@ export function compareRuleSets(ruleSet1: RuleSet, ruleSet2: RuleSet): {
 
     if (ruleSet1.diceCount !== ruleSet2.diceCount) {
         differences.push(`Dice count: ${ruleSet1.diceCount} vs ${ruleSet2.diceCount}`);
-    }
-
-    if (ruleSet1.gateKeeper !== ruleSet2.gateKeeper) {
-        differences.push(`Gate keeper: ${ruleSet1.gateKeeper} vs ${ruleSet2.gateKeeper}`);
     }
 
     if (ruleSet1.pathType !== ruleSet2.pathType) {

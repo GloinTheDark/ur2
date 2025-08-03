@@ -12,11 +12,6 @@ export class FinkelRuleSet extends RuleSet {
     // Use the classic Finkel path
     readonly pathType = "finkel" as const;
 
-    // Traditional rule variations
-    readonly gateKeeper = true;
-    readonly pieceAnimations = true;
-    readonly soundEffects = true;
-
     // Traditional game mechanics
     canCaptureOnRosette(): boolean {
         return false; // Pieces on rosettes are safe from capture

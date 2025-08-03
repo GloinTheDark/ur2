@@ -487,36 +487,20 @@ export class GameState {
             return;
         }
 
-        // Get dice count from current rule set
+        // Get rule set and dice count
         const ruleSet = this.getCurrentRuleSet();
         const diceCount = ruleSet.diceCount;
 
-        // Generate dice rolls based on rule set, each die can roll a 0 or a 1
+        // Generate raw dice rolls (each die can roll a 0 or a 1)
         const newRolls = Array.from({ length: diceCount }, () => Math.floor(Math.random() * 2));
 
-
-        const baseTotal = newRolls.reduce((sum, roll) => sum + roll, 0);
-
-        // Apply temple blessings first (only if base roll is 0 and player has temple control)
-        let total = baseTotal;
-        let templeBlessingApplied = false;
-        if (baseTotal === 0 && this.getTempleBlessings(this.data.currentPlayer).hasControl) {
-            total = diceCount; // Set to maximum possible roll for this rule set
-            templeBlessingApplied = true;
-        }
-
-        // Apply house bonus second
-        let houseBonusApplied = false;
-        const houseBonus = this.getHouseBonus(this.data.currentPlayer);
-        if (houseBonus > 0) {
-            total += houseBonus;
-            houseBonusApplied = true;
-        }
+        // Use rule set to calculate the final total and apply any modifiers
+        const rollResult = ruleSet.calculateDiceRoll(newRolls, this);
 
         this.data.diceRolls = newRolls;
-        this.data.diceTotal = total;
-        this.data.houseBonusApplied = houseBonusApplied;
-        this.data.templeBlessingApplied = templeBlessingApplied;
+        this.data.diceTotal = rollResult.total;
+        this.data.houseBonusApplied = rollResult.houseBonusApplied;
+        this.data.templeBlessingApplied = rollResult.templeBlessingApplied;
 
         this.data.selectedPiece = null; // Reset selection on new roll
         this.calculateEligiblePieces();

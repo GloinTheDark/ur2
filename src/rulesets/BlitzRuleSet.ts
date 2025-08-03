@@ -12,11 +12,6 @@ export class BlitzRuleSet extends RuleSet {
     // Use the balanced Masters path
     readonly pathType = "masters" as const;
 
-    // Speed-focused rule variations
-    readonly gateKeeper = false; // No gatekeeper for faster endgame
-    readonly pieceAnimations = false; // Disabled for speed
-    readonly soundEffects = true;
-
     // Blitz game mechanics
     canCaptureOnRosette(): boolean {
         return false; // Keep rosettes safe for strategic positioning
@@ -28,27 +23,6 @@ export class BlitzRuleSet extends RuleSet {
 
     getExtraTurnOnCapture(): boolean {
         return true; // Captures grant extra turns in Blitz for faster gameplay
-    }
-
-    // Blitz-specific dice roll calculation (simple total)
-    calculateDiceRoll(diceValues: number[], _gameState?: any): {
-        total: number;
-        flags: {
-            canMove: boolean;
-            extraTurn?: boolean;
-            specialMessage?: string;
-        };
-    } {
-        const total = diceValues.reduce((sum, value) => sum + value, 0);
-
-        return {
-            total,
-            flags: {
-                canMove: total > 0,
-                extraTurn: false, // Will be determined by game logic
-                specialMessage: total === 0 ? "No movement possible" : undefined
-            }
-        };
     }
 
     // Victory condition: all pieces must complete
