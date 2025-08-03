@@ -24,10 +24,6 @@ export const TREASURY_SQUARES = [8, 24] as const;
 // Squares that don't appear on the board (blacked out)
 export const BLACKED_OUT_SQUARES = [5, 6, 21, 22] as const;
 
-// Player paths through the board
-export const WHITE_PATH = [4, 3, 2, 1, 9, 10, 11, 12, 13, 14, 15, 7, 8, 16, 24, 23, 15, 14, 13, 12, 11, 10, 9];
-export const BLACK_PATH = [20, 19, 18, 17, 9, 10, 11, 12, 13, 14, 15, 23, 24, 16, 8, 7, 15, 14, 13, 12, 11, 10, 9];
-
 /**
  * Type guards and utility functions for board squares
  */

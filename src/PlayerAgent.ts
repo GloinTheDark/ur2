@@ -1,6 +1,6 @@
 import React from 'react';
 import { GameState } from './GameState';
-import { WHITE_PATH, BLACK_PATH, BoardUtils } from './BoardLayout';
+import { BoardUtils } from './BoardLayout';
 import type { DiceRollerRef } from './DiceRoller';
 
 export type PlayerType = 'human' | 'computer';
@@ -184,7 +184,7 @@ export class ComputerPlayerAgent implements PlayerAgent {
         const opponentPositions = this.color === 'white' ? gameState.state.blackPiecePositions : gameState.state.whitePiecePositions;
 
         for (const pieceIndex of eligiblePieces) {
-            const evaluation = this.evaluateMove(pieceIndex, diceTotal, myPositions, opponentPositions);
+            const evaluation = this.evaluateMove(gameState, pieceIndex, diceTotal, myPositions, opponentPositions);
             moves.push(evaluation);
         }
 
@@ -193,6 +193,7 @@ export class ComputerPlayerAgent implements PlayerAgent {
     }
 
     private evaluateMove(
+        gameState: GameState,
         pieceIndex: number,
         diceTotal: number,
         myPositions: (number | 'start' | 'moving')[],
@@ -212,7 +213,7 @@ export class ComputerPlayerAgent implements PlayerAgent {
         }
 
         // Get the path for this player
-        const path = this.color === 'white' ? WHITE_PATH : BLACK_PATH;
+        const path = gameState.getPlayerPath(this.color);
 
         // Calculate destination position
         let destinationSquare: number | undefined;
@@ -268,7 +269,7 @@ export class ComputerPlayerAgent implements PlayerAgent {
             // Avoid moves that put piece in danger (near opponent pieces)
             const isDangerous = opponentPositions.some(pos => {
                 if (pos === 'start' || pos === 'moving' || pos === destinationSquare) return false;
-                const opponentPath = this.color === 'white' ? BLACK_PATH : WHITE_PATH;
+                const opponentPath = gameState.getPlayerPath(this.color === 'white' ? 'black' : 'white');
                 const opponentIndex = opponentPath.indexOf(pos as number);
                 if (opponentIndex === -1) return false;
 

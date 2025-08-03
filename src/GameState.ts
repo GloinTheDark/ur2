@@ -5,12 +5,10 @@ import {
     MARKET_SQUARES,
     TEMPLE_SQUARES,
     HOUSE_SQUARES,
-    WHITE_PATH,
-    BLACK_PATH,
     TREASURY_SQUARES
 } from './BoardLayout';
 import { getPathPair } from './GamePaths';
-import { getRuleSetByName } from './RuleSets';
+import { getRuleSetByName, DEFAULT_RULE_SET } from './RuleSets';
 import type { RuleSet } from './RuleSet';
 import { HumanPlayerAgent, ComputerPlayerAgent } from './PlayerAgent';
 import type { PlayerAgent, PlayerType } from './PlayerAgent';
@@ -37,8 +35,8 @@ export interface GameStateData {
     currentPlayer: 'white' | 'black';
     whitePieces: ('blank' | 'spots')[];
     blackPieces: ('blank' | 'spots')[];
-    whitePiecePositions: (number | 'start' | 'moving')[]; // numbers represent indices into WHITE_PATH
-    blackPiecePositions: (number | 'start' | 'moving')[]; // numbers represent indices into BLACK_PATH
+    whitePiecePositions: (number | 'start' | 'moving')[]; // numbers represent indices into the current rule set's white path
+    blackPiecePositions: (number | 'start' | 'moving')[]; // numbers represent indices into the current rule set's black path
     selectedPiece: { player: 'white' | 'black', index: number } | null;
     gameStarted: boolean;
     gamePhase: 'initial-roll' | 'playing';
@@ -77,11 +75,15 @@ export class GameState {
     private diceRollerRef: React.RefObject<DiceRollerRef | null> | null = null;
 
     // Game paths - dynamically loaded from current rule set
-    private whitePath: number[] = [...WHITE_PATH]; // Fallback to default
-    private blackPath: number[] = [...BLACK_PATH]; // Fallback to default
+    private whitePath: number[] = [];
+    private blackPath: number[] = [];
 
     constructor(settings: GameSettings) {
         this.settings = settings;
+        // Initialize paths with default rule set if current rule set is invalid
+        const defaultPaths = getPathPair(DEFAULT_RULE_SET.pathType);
+        this.whitePath = [...defaultPaths.white];
+        this.blackPath = [...defaultPaths.black];
         this.data = this.createInitialState();
         this.updatePathsFromRuleSet();
     }
@@ -113,6 +115,19 @@ export class GameState {
     // Get current rule set
     getCurrentRuleSet(): RuleSet {
         return getRuleSetByName(this.settings.currentRuleSet);
+    }
+
+    // Get current paths
+    getWhitePath(): number[] {
+        return [...this.whitePath];
+    }
+
+    getBlackPath(): number[] {
+        return [...this.blackPath];
+    }
+
+    getPlayerPath(player: 'white' | 'black'): number[] {
+        return player === 'white' ? this.getWhitePath() : this.getBlackPath();
     }
 
     // Helper methods for position conversion
