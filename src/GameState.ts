@@ -572,6 +572,15 @@ export class GameState {
             const newPathIndex = currentPathIndex + diceRoll;
 
             if (newPathIndex >= playerPath.length) {
+                // Attempting to bear off - check exact roll requirement
+                const ruleSet = this.getCurrentRuleSet();
+                if (ruleSet.getExactRollNeededToBearOff()) {
+                    const exactRollNeeded = playerPath.length - currentPathIndex;
+                    if (diceRoll !== exactRollNeeded) {
+                        return false; // Must have exact roll to bear off
+                    }
+                }
+
                 // Check if gate is blocked
                 const opponentPositions = player === 'white' ? this.data.blackPiecePositions : this.data.whitePiecePositions;
                 const isGateBlocked = this.settings.gateKeeper && opponentPositions.some(pos => {
@@ -831,15 +840,22 @@ export class GameState {
                 const newPathIndex = currentPathIndex + diceRoll;
 
                 if (newPathIndex >= this.whitePath.length) {
-                    // Check if gate square is occupied by opponent piece (only if gate keeper rule is enabled)
-                    const isGateBlocked = this.settings.gateKeeper && this.data.blackPiecePositions.some(pos => {
-                        if (pos === 'start' || pos === 'moving') return false;
-                        return this.blackPath[pos as number] === GATE_SQUARE;
-                    });
-                    if (!isGateBlocked) {
-                        // Piece completes the circuit and returns to start
-                        this.data.whitePiecePositions[pieceIndex] = 'start';
-                        this.data.whitePieces[pieceIndex] = 'spots'; // Keep spots state to indicate completion
+                    // Attempting to bear off - check exact roll requirement
+                    const ruleSet = this.getCurrentRuleSet();
+                    const shouldBearOff = !ruleSet.getExactRollNeededToBearOff() ||
+                        (diceRoll === this.whitePath.length - currentPathIndex);
+
+                    if (shouldBearOff) {
+                        // Check if gate square is occupied by opponent piece (only if gate keeper rule is enabled)
+                        const isGateBlocked = this.settings.gateKeeper && this.data.blackPiecePositions.some(pos => {
+                            if (pos === 'start' || pos === 'moving') return false;
+                            return this.blackPath[pos as number] === GATE_SQUARE;
+                        });
+                        if (!isGateBlocked) {
+                            // Piece completes the circuit and returns to start
+                            this.data.whitePiecePositions[pieceIndex] = 'start';
+                            this.data.whitePieces[pieceIndex] = 'spots'; // Keep spots state to indicate completion
+                        }
                     }
                 } else {
                     destinationPathIndex = newPathIndex;
@@ -900,13 +916,20 @@ export class GameState {
                 const newPathIndex = currentPathIndex + diceRoll;
 
                 if (newPathIndex >= this.blackPath.length) {
-                    const isGateBlocked = this.settings.gateKeeper && this.data.whitePiecePositions.some(pos => {
-                        if (pos === 'start' || pos === 'moving') return false;
-                        return this.whitePath[pos as number] === GATE_SQUARE;
-                    });
-                    if (!isGateBlocked) {
-                        this.data.blackPiecePositions[pieceIndex] = 'start';
-                        this.data.blackPieces[pieceIndex] = 'spots';
+                    // Attempting to bear off - check exact roll requirement
+                    const ruleSet = this.getCurrentRuleSet();
+                    const shouldBearOff = !ruleSet.getExactRollNeededToBearOff() ||
+                        (diceRoll === this.blackPath.length - currentPathIndex);
+
+                    if (shouldBearOff) {
+                        const isGateBlocked = this.settings.gateKeeper && this.data.whitePiecePositions.some(pos => {
+                            if (pos === 'start' || pos === 'moving') return false;
+                            return this.whitePath[pos as number] === GATE_SQUARE;
+                        });
+                        if (!isGateBlocked) {
+                            this.data.blackPiecePositions[pieceIndex] = 'start';
+                            this.data.blackPieces[pieceIndex] = 'spots';
+                        }
                     }
                 } else {
                     destinationPathIndex = newPathIndex;
@@ -1004,6 +1027,17 @@ export class GameState {
             const newPathIndex = currentPathIndex + this.data.diceTotal;
 
             if (newPathIndex >= currentPlayerPath.length) {
+                // Attempting to bear off (complete the circuit)
+                const ruleSet = this.getCurrentRuleSet();
+
+                // Check if exact roll is required to bear off
+                if (ruleSet.getExactRollNeededToBearOff()) {
+                    const exactRollNeeded = currentPlayerPath.length - currentPathIndex;
+                    if (this.data.diceTotal !== exactRollNeeded) {
+                        return false; // Must have exact roll to bear off
+                    }
+                }
+
                 // Check if gate square is occupied by opponent piece (only if gate keeper rule is enabled)
                 const opponentPositions = currentPlayer === 'white' ? this.data.blackPiecePositions : this.data.whitePiecePositions;
                 const opponentPath = currentPlayer === 'white' ? this.blackPath : this.whitePath;
@@ -1014,7 +1048,7 @@ export class GameState {
                 if (isGateBlocked) {
                     return false; // Cannot complete path if gate is blocked
                 }
-                return true; // Can return to start if gate is clear
+                return true; // Can return to start if gate is clear and exact roll conditions are met
             } else {
                 destinationSquare = currentPlayerPath[newPathIndex];
             }
