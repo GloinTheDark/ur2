@@ -1,4 +1,5 @@
 import { RuleSet } from '../RuleSet';
+import { ROSETTE_SQUARES } from '../BoardLayout';
 
 // Traditional rule set based on R. C. Bell's path and Irving Finkel's rules
 export class FinkelRuleSet extends RuleSet {
@@ -19,6 +20,11 @@ export class FinkelRuleSet extends RuleSet {
 
     getExtraTurnOnRosette(): boolean {
         return true; // Landing on rosette gives extra turn
+    }
+
+    // In Finkel rules, rosettes are safe squares
+    getSafeSquares(): number[] {
+        return [...ROSETTE_SQUARES]; // Rosettes are safe from capture
     }
 
     // Victory condition: all pieces must complete the circuit

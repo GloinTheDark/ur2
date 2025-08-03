@@ -36,6 +36,11 @@ export abstract class RuleSet {
         return false; // Default: captures don't grant extra turns
     }
 
+    // Safe squares - squares where pieces cannot be captured
+    getSafeSquares(): number[] {
+        return []; // Default: no safe squares (except rosettes handled separately)
+    }
+
     // Dice roll calculation and UI feedback
     calculateDiceRoll(diceValues: number[], _gameState: GameState): {
         total: number;

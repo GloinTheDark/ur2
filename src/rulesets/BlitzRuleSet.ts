@@ -3,7 +3,7 @@ import { RuleSet } from '../RuleSet';
 // Fast-paced variant for quick games
 export class BlitzRuleSet extends RuleSet {
     readonly name = "Blitz";
-    readonly description = "Lightning-fast variant with fewer pieces and higher dice values for quick games (inspired by RooyalUr.net)";
+    readonly description = "Lightning-fast variant with fewer pieces and higher dice values for quick games (inspired by RoyalUr.net)";
 
     // Fewer pieces for faster games
     readonly piecesPerPlayer = 5;
@@ -13,10 +13,6 @@ export class BlitzRuleSet extends RuleSet {
     readonly pathType = "masters" as const;
 
     // Blitz game mechanics
-    canCaptureOnRosette(): boolean {
-        return false; // Keep rosettes safe for strategic positioning
-    }
-
     getExtraTurnOnRosette(): boolean {
         return true; // Extra turns help maintain fast pace
     }

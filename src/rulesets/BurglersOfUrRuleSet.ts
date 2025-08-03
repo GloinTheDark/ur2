@@ -1,4 +1,5 @@
 import { RuleSet } from '../RuleSet';
+import { MARKET_SQUARES } from '../BoardLayout';
 import type { GameState } from '../GameState';
 
 // Action-packed variant with more aggressive gameplay
@@ -24,6 +25,11 @@ export class BurglersOfUrRuleSet extends RuleSet {
 
     getExactRollNeededToBearOff(): boolean {
         return false; // Burglers don't need exact roll to bear off - more aggressive gameplay
+    }
+
+    // In Burglers rules, market squares are safe
+    getSafeSquares(): number[] {
+        return [...MARKET_SQUARES]; // Market squares are safe from capture
     }
 
     // Burglers-specific dice roll calculation with temple blessing and house bonus

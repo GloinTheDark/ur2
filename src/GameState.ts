@@ -2,7 +2,6 @@ import React from 'react';
 import {
     ROSETTE_SQUARES,
     GATE_SQUARE,
-    MARKET_SQUARES,
     TEMPLE_SQUARES,
     HOUSE_SQUARES,
     TREASURY_SQUARES
@@ -23,7 +22,6 @@ export interface PlayerConfiguration {
 
 export interface GameSettings {
     gateKeeper: boolean;
-    safeMarkets: boolean;
     diceAnimations: boolean;
     pieceAnimations: boolean;
     currentRuleSet: string;
@@ -439,10 +437,9 @@ export class GameState {
             try {
                 const parsed = JSON.parse(saved);
                 // Remove deprecated settings and ensure all current settings are included
-                const { piecesPerPlayer, houseBonus, templeBlessings, ...validSettings } = parsed;
+                const { piecesPerPlayer: _piecesPerPlayer, houseBonus: _houseBonus, templeBlessings: _templeBlessings, safeMarkets: _safeMarkets, ...validSettings } = parsed;
                 return {
                     gateKeeper: true,
-                    safeMarkets: true,
                     diceAnimations: true,
                     pieceAnimations: true,
                     currentRuleSet: 'Finkel',
@@ -458,7 +455,6 @@ export class GameState {
     static getDefaultSettings(): GameSettings {
         return {
             gateKeeper: true,
-            safeMarkets: true,
             diceAnimations: true,
             pieceAnimations: true,
             currentRuleSet: 'Finkel'
@@ -1030,16 +1026,18 @@ export class GameState {
             return currentPlayerPath[pos as number] === destinationSquare;
         });
 
-        // Check if destination is a market square occupied by opponent piece (safe square)
+        // Check if destination is a safe square occupied by opponent piece
         const opponentPositions = currentPlayer === 'white' ? this.data.blackPiecePositions : this.data.whitePiecePositions;
         const opponentPath = currentPlayer === 'white' ? this.blackPath : this.whitePath;
-        const isMarketSquareBlocked = this.settings.safeMarkets && MARKET_SQUARES.includes(destinationSquare as any) &&
+        const ruleSet = this.getCurrentRuleSet();
+        const safeSquares = ruleSet.getSafeSquares();
+        const isSafeSquareBlocked = safeSquares.includes(destinationSquare) &&
             opponentPositions.some(pos => {
                 if (pos === 'start' || pos === 'moving') return false;
                 return opponentPath[pos as number] === destinationSquare;
             });
 
-        return !isSameColorBlocking && !isMarketSquareBlocked;
+        return !isSameColorBlocking && !isSafeSquareBlocked;
     }
 
     // Get destination square for selected piece

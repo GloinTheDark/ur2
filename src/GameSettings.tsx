@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import GateSquareIcon from './assets/GateSquare.svg';
-import MarketSquareIcon from './assets/MarketSquare.svg';
 import RosetteSquareIcon from './assets/RosetteSquare.svg';
 import TreasurySquareIcon from './assets/TreasurySquare.svg';
 import dieB1 from './assets/DieB1.svg';
@@ -16,7 +15,6 @@ interface GameSettingsProps {
     onClose: () => void;
     settings: {
         gateKeeper: boolean;
-        safeMarkets: boolean;
         diceAnimations: boolean;
         pieceAnimations: boolean;
         currentRuleSet: string; // Add current rule set
@@ -245,22 +243,6 @@ const GameSettings: React.FC<GameSettingsProps> = ({
                             <img src={GateSquareIcon} alt="Gate Square" style={{ width: '20px', height: '20px', display: 'block' }} />
                         </div>
                         <span>Gate Keeper (opponent on gate square blocks path completion)</span>
-                    </label>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1rem', color: 'var(--text-color, #333)' }}>
-                        <input
-                            type="checkbox"
-                            checked={settings.safeMarkets}
-                            onChange={(e) => onSettingsChange({ safeMarkets: e.target.checked })}
-                            style={{ transform: 'scale(1.2)' }}
-                        />
-                        <div style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
-                        }}>
-                            <img src={MarketSquareIcon} alt="Market Square" style={{ width: '20px', height: '20px', display: 'block' }} />
-                        </div>
-                        <span>Safe Markets (pieces on market squares cannot be captured)</span>
                     </label>
                 </div>
             </div>
