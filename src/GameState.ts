@@ -529,7 +529,8 @@ export class GameState {
 
     // Immediate move (no animation)
     private executeMoveImmediately(player: 'white' | 'black', pieceIndex: number, diceRoll: number): boolean {
-        const extraTurn = this.executeMove(player, pieceIndex, diceRoll);
+        const result = this.executeMoveWithCaptureInfo(player, pieceIndex, diceRoll);
+        const extraTurn = result.extraTurn;
 
         // Reset dice state
         this.resetDice();
@@ -603,97 +604,35 @@ export class GameState {
         // Clear selected piece immediately to prevent UI from showing destination marker
         this.data.selectedPiece = null;
 
-        const { player, index, fromPosition, toPosition, originalDiceRoll } = this.data.animatingPiece;
-        const playerPath = player === 'white' ? this.whitePath : this.blackPath;
-        let extraTurn = false;
+        const { player, index, originalDiceRoll } = this.data.animatingPiece;
 
-        // Set the piece to its final position
+        // First, restore the piece to its original position for executeMoveWithCaptureInfo to work correctly
         if (player === 'white') {
-            this.data.whitePiecePositions[index] = toPosition;
+            this.data.whitePiecePositions[index] = this.data.animatingPiece.fromPosition;
         } else {
-            this.data.blackPiecePositions[index] = toPosition;
+            this.data.blackPiecePositions[index] = this.data.animatingPiece.fromPosition;
         }
 
-        // Handle piece type changes (blank to spots when passing treasury)
-        if (fromPosition === 'start' && toPosition !== 'start') {
-            // Moving from start - check if we pass through any treasury squares
-            for (let i = 0; i < originalDiceRoll; i++) {
-                if ((TREASURY_SQUARES as readonly number[]).includes(playerPath[i])) {
-                    if (player === 'white') {
-                        this.data.whitePieces[index] = 'spots';
-                    } else {
-                        this.data.blackPieces[index] = 'spots';
-                    }
-                    break;
-                }
-            }
-        } else if (fromPosition !== 'start' && toPosition !== 'start') {
-            // Moving along the path - check if we pass through any treasury squares
-            const fromIndex = fromPosition as number;
-            const toIndex = toPosition as number;
-            for (let i = fromIndex + 1; i <= toIndex; i++) {
-                if ((TREASURY_SQUARES as readonly number[]).includes(playerPath[i])) {
-                    if (player === 'white') {
-                        this.data.whitePieces[index] = 'spots';
-                    } else {
-                        this.data.blackPieces[index] = 'spots';
-                    }
-                    break;
-                }
-            }
-        } else if (toPosition === 'start') {
-            // Completing the circuit - piece should be spots
-            if (player === 'white') {
-                this.data.whitePieces[index] = 'spots';
-            } else {
-                this.data.blackPieces[index] = 'spots';
-            }
-        }
+        // Use executeMoveWithCaptureInfo to handle all the game logic (captures, extra turns, treasury, etc.)
+        const moveResult = this.executeMoveWithCaptureInfo(player, index, originalDiceRoll);
+        const extraTurn = moveResult.extraTurn;
 
-        // Check for rosette landing
-        if (toPosition !== 'start') {
-            const destinationSquare = playerPath[toPosition as number];
-            if ((ROSETTE_SQUARES as readonly number[]).includes(destinationSquare)) {
-                extraTurn = true;
-            }
-        }
+        // Handle captured piece animation if there was a capture and animations are enabled
+        if (moveResult.captureInfo && this.settings.pieceAnimations) {
+            const { player: capturedPlayer, index: capturedIndex, fromPosition } = moveResult.captureInfo;
+            const capturedPositions = capturedPlayer === 'white' ? this.data.whitePiecePositions : this.data.blackPiecePositions;
 
-        // Handle piece capture - start captured piece animation
-        if (toPosition !== 'start') {
-            const destinationSquare = playerPath[toPosition as number];
-            const opponentPositions = player === 'white' ? this.data.blackPiecePositions : this.data.whitePiecePositions;
-            const opponentPieces = player === 'white' ? this.data.blackPieces : this.data.whitePieces;
-            const opponentPlayer = player === 'white' ? 'black' : 'white';
-            const opponentPath = player === 'white' ? this.blackPath : this.whitePath;
+            // Start captured piece animation
+            this.data.animatingCapturedPiece = {
+                player: capturedPlayer,
+                index: capturedIndex,
+                fromPosition,
+                isAnimating: true,
+                originalMoveGaveExtraTurn: extraTurn
+            };
 
-            const capturedPieceIndex = opponentPositions.findIndex(pos => {
-                if (pos === 'start' || pos === 'moving') return false;
-                return opponentPath[pos as number] === destinationSquare;
-            });
-
-            if (capturedPieceIndex !== -1) {
-                // Start captured piece animation if animations are enabled
-                if (this.settings.pieceAnimations) {
-                    // Set piece to blank immediately (before animation starts)
-                    opponentPieces[capturedPieceIndex] = 'blank';
-
-                    // Start captured piece animation
-                    this.data.animatingCapturedPiece = {
-                        player: opponentPlayer,
-                        index: capturedPieceIndex,
-                        fromPosition: opponentPositions[capturedPieceIndex] as number,
-                        isAnimating: true,
-                        originalMoveGaveExtraTurn: extraTurn
-                    };
-
-                    // Set captured piece position to 'moving' during animation
-                    opponentPositions[capturedPieceIndex] = 'moving';
-                } else {
-                    // Immediate capture without animation
-                    opponentPositions[capturedPieceIndex] = 'start';
-                    opponentPieces[capturedPieceIndex] = 'blank';
-                }
-            }
+            // Set captured piece position to 'moving' during animation
+            capturedPositions[capturedIndex] = 'moving';
         }
 
         // Reset animation state
@@ -782,7 +721,8 @@ export class GameState {
         this.notify();
     }
 
-    private executeMove(player: 'white' | 'black', pieceIndex: number, diceRoll: number): boolean {
+    // Version of executeMove that returns capture information for animations
+    private executeMoveWithCaptureInfo(player: 'white' | 'black', pieceIndex: number, diceRoll: number): { extraTurn: boolean, captureInfo: { player: 'white' | 'black', index: number, fromPosition: number } | null } {
         // Validate the move first
         const currentPlayer = this.data.currentPlayer;
         this.data.currentPlayer = player; // Temporarily set for canPieceMove validation
@@ -790,10 +730,11 @@ export class GameState {
         this.data.currentPlayer = currentPlayer; // Restore current player
 
         if (!isValidMove) {
-            return false; // Invalid move, don't execute
+            return { extraTurn: false, captureInfo: null }; // Invalid move, don't execute
         }
 
         let extraTurn = false;
+        let captureInfo: { player: 'white' | 'black', index: number, fromPosition: number } | null = null;
         const currentPositions = player === 'white' ? this.data.whitePiecePositions : this.data.blackPiecePositions;
         const currentPieces = player === 'white' ? this.data.whitePieces : this.data.blackPieces;
         const playerPath = player === 'white' ? this.whitePath : this.blackPath;
@@ -816,7 +757,7 @@ export class GameState {
                 // Bear off - piece completes the circuit
                 currentPositions[pieceIndex] = 'start';
                 currentPieces[pieceIndex] = 'spots'; // Keep spots state to indicate completion
-                return extraTurn; // No extra turn when bearing off
+                return { extraTurn, captureInfo }; // No capture possible when bearing off
             } else {
                 destinationPathIndex = newPathIndex;
                 destinationSquare = playerPath[destinationPathIndex];
@@ -855,6 +796,7 @@ export class GameState {
             const opponentPositions = player === 'white' ? this.data.blackPiecePositions : this.data.whitePiecePositions;
             const opponentPieces = player === 'white' ? this.data.blackPieces : this.data.whitePieces;
             const opponentPath = player === 'white' ? this.blackPath : this.whitePath;
+            const opponentPlayer = player === 'white' ? 'black' : 'white';
 
             const capturedPieceIndex = opponentPositions.findIndex(pos => {
                 if (pos === 'start' || pos === 'moving') return false;
@@ -862,6 +804,13 @@ export class GameState {
             });
 
             if (capturedPieceIndex !== -1) {
+                // Store capture info before modifying positions
+                captureInfo = {
+                    player: opponentPlayer,
+                    index: capturedPieceIndex,
+                    fromPosition: opponentPositions[capturedPieceIndex] as number
+                };
+
                 opponentPositions[capturedPieceIndex] = 'start';
                 opponentPieces[capturedPieceIndex] = 'blank';
 
@@ -873,7 +822,7 @@ export class GameState {
             }
         }
 
-        return extraTurn;
+        return { extraTurn, captureInfo };
     }
 
     // Calculate eligible pieces
