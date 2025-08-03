@@ -20,6 +20,8 @@ interface AnimationState {
     progress: number;
     duration: number;
     startTime: number;
+    flipWaypointIndex: number | null;
+    hasFlipped: boolean;
 }
 
 const PieceAnimator: React.FC<PieceAnimatorProps> = ({
@@ -35,7 +37,7 @@ const PieceAnimator: React.FC<PieceAnimatorProps> = ({
 
         if (animationData && !animationState) {
             // Start new animation
-            const { player, index, fromPosition, toPosition, waypoints } = animationData;
+            const { player, index, fromPosition, toPosition, waypoints, flipWaypointIndex } = animationData;
 
             let startPos: { x: number; y: number } | null = null;
             let endPos: { x: number; y: number } | null = null;
@@ -91,7 +93,9 @@ const PieceAnimator: React.FC<PieceAnimatorProps> = ({
                     totalDistance,
                     progress: 0,
                     duration: Math.max(800, waypoints.length * 300), // Longer duration for more waypoints
-                    startTime: performance.now()
+                    startTime: performance.now(),
+                    flipWaypointIndex,
+                    hasFlipped: false
                 };
 
                 setAnimationState(newAnimationState);
@@ -111,7 +115,41 @@ const PieceAnimator: React.FC<PieceAnimatorProps> = ({
             // Easing function (ease-out cubic)
             const easedProgress = 1 - Math.pow(1 - progress, 3);
 
-            setAnimationState(prev => prev ? { ...prev, progress: easedProgress } : null);
+            // Check if we should flip the piece based on reaching the flip waypoint
+            let shouldFlip = state.hasFlipped;
+            if (!shouldFlip && state.flipWaypointIndex !== null) {
+                // Calculate which waypoint we've reached based on progress
+                const { waypoints, totalDistance } = state;
+                const targetDistance = easedProgress * totalDistance;
+                let currentDistance = 0;
+                let reachedWaypointIndex = -1;
+
+                // Calculate distances to each waypoint
+                const fullPath = [state.startPosition, ...waypoints, state.endPosition];
+                for (let i = 0; i < fullPath.length - 1; i++) {
+                    const dx = fullPath[i + 1].x - fullPath[i].x;
+                    const dy = fullPath[i + 1].y - fullPath[i].y;
+                    const segmentDistance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (currentDistance + segmentDistance >= targetDistance) {
+                        reachedWaypointIndex = i - 1; // -1 because fullPath includes start position
+                        break;
+                    }
+                    currentDistance += segmentDistance;
+                    reachedWaypointIndex = i - 1;
+                }
+
+                // If we've reached or passed the flip waypoint, flip the piece
+                if (reachedWaypointIndex >= state.flipWaypointIndex) {
+                    shouldFlip = true;
+                }
+            }
+
+            setAnimationState(prev => prev ? {
+                ...prev,
+                progress: easedProgress,
+                hasFlipped: shouldFlip
+            } : null);
 
             if (progress < 1) {
                 animationFrameRef.current = requestAnimationFrame(animate);
@@ -202,10 +240,13 @@ const PieceAnimator: React.FC<PieceAnimatorProps> = ({
 
     // Get the appropriate piece image
     const getPieceImage = () => {
+        // During animation, check if piece should be flipped
+        const shouldShowSpots = animationState?.hasFlipped || pieceType === 'spots';
+
         if (player === 'white') {
-            return pieceType === 'spots' ? whiteSpots : whiteBlank;
+            return shouldShowSpots ? whiteSpots : whiteBlank;
         } else {
-            return pieceType === 'spots' ? blackSpots : blackBlank;
+            return shouldShowSpots ? blackSpots : blackBlank;
         }
     };
 

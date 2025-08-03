@@ -136,17 +136,26 @@ export class GameState {
     }
 
     // Get animation waypoints between two positions
-    getAnimationWaypoints(player: 'white' | 'black', fromPosition: number | 'start', toPosition: number | 'start'): number[] {
+    getAnimationWaypoints(player: 'white' | 'black', fromPosition: number | 'start', toPosition: number | 'start'): { waypoints: number[], flipWaypointIndex: number | null } {
         const path = player === 'white' ? this.whitePath : this.blackPath;
         const waypoints: number[] = [];
+        let flipWaypointIndex: number | null = null;
+
+        // Get flip squares from current rule set
+        const ruleSet = this.getCurrentRuleSet();
+        const flipSquares = ruleSet.getFlipSquares();
 
         // Handle moving from start
         if (fromPosition === 'start') {
-            if (toPosition === 'start') return waypoints; // No movement
+            if (toPosition === 'start') return { waypoints, flipWaypointIndex }; // No movement
             const toIndex = toPosition as number;
             // Add all squares from path[0] to path[toIndex]
             for (let i = 0; i <= toIndex; i++) {
                 waypoints.push(path[i]);
+                // Check if this is a flip square and we haven't found one yet
+                if (flipWaypointIndex === null && flipSquares.includes(path[i])) {
+                    flipWaypointIndex = waypoints.length - 1; // Index in waypoints array
+                }
             }
         }
         // Handle moving to start (completing circuit)
@@ -155,6 +164,10 @@ export class GameState {
             // Add all squares from current position to end of path
             for (let i = fromIndex + 1; i < path.length; i++) {
                 waypoints.push(path[i]);
+                // Check if this is a flip square and we haven't found one yet
+                if (flipWaypointIndex === null && flipSquares.includes(path[i])) {
+                    flipWaypointIndex = waypoints.length - 1; // Index in waypoints array
+                }
             }
         }
         // Handle moving along the path
@@ -164,10 +177,14 @@ export class GameState {
             // Add all squares between fromIndex and toIndex (exclusive of from, inclusive of to)
             for (let i = fromIndex + 1; i <= toIndex; i++) {
                 waypoints.push(path[i]);
+                // Check if this is a flip square and we haven't found one yet
+                if (flipWaypointIndex === null && flipSquares.includes(path[i])) {
+                    flipWaypointIndex = waypoints.length - 1; // Index in waypoints array
+                }
             }
         }
 
-        return waypoints;
+        return { waypoints, flipWaypointIndex };
     }
 
     // Get pieces on a specific board square
@@ -671,15 +688,23 @@ export class GameState {
         index: number,
         fromPosition: number | 'start',
         toPosition: number | 'start',
-        waypoints: number[]
+        waypoints: number[],
+        flipWaypointIndex: number | null
     } | null {
         if (!this.data.animatingPiece?.isAnimating) {
             return null;
         }
 
         const { player, index, fromPosition, toPosition } = this.data.animatingPiece;
-        const waypoints = this.getAnimationWaypoints(player, fromPosition, toPosition);
-        return { player, index, fromPosition, toPosition, waypoints };
+        const waypointData = this.getAnimationWaypoints(player, fromPosition, toPosition);
+        return {
+            player,
+            index,
+            fromPosition,
+            toPosition,
+            waypoints: waypointData.waypoints,
+            flipWaypointIndex: waypointData.flipWaypointIndex
+        };
     }
 
     // Get current captured piece animation data
@@ -764,13 +789,15 @@ export class GameState {
             }
         }
 
-        // Check if piece landed on a rosette square
-        if (destinationSquare !== undefined && (ROSETTE_SQUARES as readonly number[]).includes(destinationSquare)) {
+        // Check if piece landed on a rosette square and rule set grants extra turns on rosettes
+        const ruleSet = this.getCurrentRuleSet();
+        if (destinationSquare !== undefined &&
+            (ROSETTE_SQUARES as readonly number[]).includes(destinationSquare) &&
+            ruleSet.getExtraTurnOnRosette()) {
             extraTurn = true;
         }
 
         // Handle flip squares (piece becomes spots)
-        const ruleSet = this.getCurrentRuleSet();
         const flipSquares = ruleSet.getFlipSquares();
 
         if (currentPos === 'start') {
