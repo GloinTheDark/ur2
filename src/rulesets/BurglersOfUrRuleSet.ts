@@ -15,10 +15,6 @@ export class BurglersOfUrRuleSet extends RuleSet {
     readonly pathType = "burglers" as const;
 
     // Aggressive game mechanics
-    canCaptureOnRosette(): boolean {
-        return true; // Even rosettes aren't safe! (Burglers can steal from anywhere)
-    }
-
     getExtraTurnOnRosette(): boolean {
         return true; // Still get extra turns on rosettes
     }

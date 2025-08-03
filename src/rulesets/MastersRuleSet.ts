@@ -14,10 +14,6 @@ export class MastersRuleSet extends RuleSet {
     readonly pathType = "masters" as const;
 
     // Masters game mechanics
-    canCaptureOnRosette(): boolean {
-        return true; // Rosettes are NOT safe - pieces can be captured on rosettes
-    }
-
     getExtraTurnOnRosette(): boolean {
         return true; // Landing on rosette gives extra turn
     }

@@ -24,10 +24,6 @@ export abstract class RuleSet {
     }
 
     // Game mechanics that can be customized
-    canCaptureOnRosette(): boolean {
-        return false; // Default: pieces on rosettes are safe
-    }
-
     getExtraTurnOnRosette(): boolean {
         return true; // Default: landing on rosette gives extra turn
     }

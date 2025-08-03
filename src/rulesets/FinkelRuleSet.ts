@@ -14,10 +14,6 @@ export class FinkelRuleSet extends RuleSet {
     readonly pathType = "finkel" as const;
 
     // Traditional game mechanics
-    canCaptureOnRosette(): boolean {
-        return false; // Pieces on rosettes are safe from capture
-    }
-
     getExtraTurnOnRosette(): boolean {
         return true; // Landing on rosette gives extra turn
     }
