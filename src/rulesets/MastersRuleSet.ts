@@ -33,7 +33,6 @@ export class MastersRuleSet extends RuleSet {
         houseBonusApplied: boolean;
         flags: {
             canMove: boolean;
-            extraTurn?: boolean;
             specialMessage?: string;
         };
     } {
@@ -51,7 +50,6 @@ export class MastersRuleSet extends RuleSet {
             houseBonusApplied: false,     // Masters doesn't use house bonus
             flags: {
                 canMove: true, // Always can move in Masters
-                extraTurn: false, // Will be determined by game logic
                 specialMessage
             }
         };

@@ -33,7 +33,6 @@ export class BurglersOfUrRuleSet extends RuleSet {
         houseBonusApplied: boolean;
         flags: {
             canMove: boolean;
-            extraTurn?: boolean;
             specialMessage?: string;
         };
     } {
@@ -61,7 +60,6 @@ export class BurglersOfUrRuleSet extends RuleSet {
             houseBonusApplied,
             flags: {
                 canMove: total > 0,
-                extraTurn: false, // Will be determined by game logic
                 specialMessage: undefined
             }
         };

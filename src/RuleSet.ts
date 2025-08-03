@@ -43,7 +43,6 @@ export abstract class RuleSet {
         houseBonusApplied: boolean;
         flags: {
             canMove: boolean;
-            extraTurn?: boolean;
             specialMessage?: string;
         };
     } {
@@ -57,7 +56,6 @@ export abstract class RuleSet {
             houseBonusApplied: false,
             flags: {
                 canMove: total > 0,
-                extraTurn: false, // Will be determined by game logic based on landing position
                 specialMessage: total === 0 ? "No movement possible" : undefined
             }
         };
