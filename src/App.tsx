@@ -91,7 +91,10 @@ function App() {
           zIndex: 1000,
           backgroundColor: 'rgba(0, 0, 0, 0.8)',
           borderRadius: '8px',
-          padding: '8px'
+          padding: '8px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '8px'
         }}>
           <button
             onClick={() => setIsPaused(!isPaused)}
@@ -118,6 +121,33 @@ function App() {
           >
             {isPaused ? '▶️ Resume AI' : '⏸️ Pause AI'}
           </button>
+          {isPaused && (
+            <button
+              onClick={() => gameState.stepAI()}
+              style={{
+                padding: '8px 16px',
+                fontSize: '14px',
+                fontWeight: 'bold',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                backgroundColor: '#3388ff',
+                color: '#fff',
+                border: 'none',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.transform = 'translateY(-1px)';
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.4)';
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.3)';
+              }}
+            >
+              ⏭️ Step AI
+            </button>
+          )}
           <div style={{
             fontSize: '12px',
             color: '#ccc',

@@ -458,6 +458,21 @@ export class GameState {
         this.notify(); // Trigger state change to resume AI if unpaused
     }
 
+    stepAI(): void {
+        if (!this.debugPaused) return; // Only step when paused
+        
+        // Temporarily unpause, trigger state change, then re-pause after a short delay
+        this.debugPaused = false;
+        this.notify();
+        
+        // Re-pause after allowing one AI action
+        setTimeout(() => {
+            if (!this.debugPaused) { // Only re-pause if still unpaused
+                this.debugPaused = true;
+            }
+        }, 100); // Short delay to allow the AI action to start
+    }
+
     private async handleGameStateChange(): Promise<void> {
         if (!this.playerManagerActive || !this.whitePlayer || !this.blackPlayer) return;
 

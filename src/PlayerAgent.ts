@@ -249,7 +249,11 @@ export class ComputerPlayerAgent implements PlayerAgent {
         for (const move of legalMoves) {
             const score = this.evaluateMoveWithMCTS(gameState, move.pieceIndex);
 
-            console.log(`MCTS: Piece ${move.pieceIndex} scored ${score.toFixed(3)}`);
+            // Get piece starting position for logging
+            const myPositions = this.color === 'white' ? gameState.state.whitePiecePositions : gameState.state.blackPiecePositions;
+            const startPosition = myPositions[move.pieceIndex];
+
+            console.log(`MCTS: Piece ${move.pieceIndex} (pos: ${startPosition}) scored ${score.toFixed(4)}`);
 
             if (score > bestScore) {
                 bestScore = score;
@@ -257,7 +261,7 @@ export class ComputerPlayerAgent implements PlayerAgent {
             }
         }
 
-        console.log(`MCTS: Selected piece ${bestPiece} with score ${bestScore.toFixed(3)}`);
+        console.log(`MCTS: Selected piece ${bestPiece} with score ${bestScore.toFixed(4)}`);
 
         return bestPiece;
     }
