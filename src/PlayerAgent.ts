@@ -1,6 +1,5 @@
 import React from 'react';
 import { GameState } from './GameState';
-import { BoardUtils } from './BoardLayout';
 import type { DiceRollerRef } from './DiceRoller';
 
 export type PlayerType = 'human' | 'computer';
@@ -14,12 +13,6 @@ export interface PlayerAgent {
 
     // Called when dice have been rolled and the player needs to select a piece or pass
     onMoveRequired(gameState: GameState): Promise<void>;
-
-    // Called when the player's turn ends
-    onTurnEnd(gameState: GameState): Promise<void>;
-
-    // Called when the game ends
-    onGameEnd(gameState: GameState, winner: 'white' | 'black' | null): Promise<void>;
 
     // Get the player's display name
     getPlayerName(): string;
@@ -48,16 +41,6 @@ export class HumanPlayerAgent implements PlayerAgent {
         // This is a no-op since humans interact directly with the UI
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    async onTurnEnd(_gameState: GameState): Promise<void> {
-        // No special action needed for human players
-    }
-
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    async onGameEnd(_gameState: GameState, _winner: 'white' | 'black' | null): Promise<void> {
-        // Could show a message or update UI, but for now just a no-op
-    }
-
     getPlayerName(): string {
         return this.color.charAt(0).toUpperCase() + this.color.slice(1);
     }
@@ -72,6 +55,25 @@ interface MoveEvaluation {
     score: number;
     reasons: string[];
 }
+
+// AI scoring constants
+const AI_SCORES = {
+    PIECE_COMPLETION: 50,
+    CAPTURE: 25,
+    EXTRA_TURN: 15,
+    ENTER_PLAY: 10,
+    ADVANCE_PIECE: 5,
+    SAFE_SQUARE: 8,
+    DANGER_PENALTY: -10,
+    INVALID_MOVE: -1000
+} as const;
+
+// AI timing constants (in milliseconds)
+const AI_DELAYS = {
+    ROLL_DICE: 500,
+    THINK: 1000,
+    MOVE_PIECE: 300
+} as const;
 
 export class ComputerPlayerAgent implements PlayerAgent {
     readonly playerType: PlayerType = 'computer';
@@ -98,7 +100,7 @@ export class ComputerPlayerAgent implements PlayerAgent {
             gameState.state.diceRolls.length === 0) {
 
             // Add a small delay to make it feel more natural
-            await this.delay(500);
+            await this.delay(AI_DELAYS.ROLL_DICE);
 
             // Use animated roll if available and animations are enabled
             if (this.diceRollerRef.current && gameState.gameSettings.diceAnimations) {
@@ -124,7 +126,7 @@ export class ComputerPlayerAgent implements PlayerAgent {
         }
 
         // Add thinking delay
-        await this.delay(1000);
+        await this.delay(AI_DELAYS.THINK);
 
         const eligiblePieces = gameState.state.eligiblePieces;
 
@@ -141,18 +143,8 @@ export class ComputerPlayerAgent implements PlayerAgent {
         gameState.selectPiece(selectedPieceIndex);
 
         // Small delay before moving
-        await this.delay(300);
+        await this.delay(AI_DELAYS.MOVE_PIECE);
         gameState.movePiece(selectedPieceIndex);
-    }
-
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    async onTurnEnd(_gameState: GameState): Promise<void> {
-        // No special action needed
-    }
-
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    async onGameEnd(_gameState: GameState, _winner: 'white' | 'black' | null): Promise<void> {
-        // Game ended notification for computer player
     }
 
     cleanup(): void {
@@ -164,33 +156,35 @@ export class ComputerPlayerAgent implements PlayerAgent {
     }
 
     private selectBestMove(gameState: GameState, eligiblePieces: number[]): number {
-        // Rank all possible moves
         const rankedMoves = this.rankMoves(gameState, eligiblePieces);
+
+        // Ensure we have moves to choose from
+        if (rankedMoves.length === 0) {
+            return eligiblePieces[0]; // Fallback to first eligible piece
+        }
 
         // Select move based on difficulty
         switch (this.difficulty) {
             case 'easy':
-                // Choose the worst move
+                // Choose the worst move (lowest score)
                 return rankedMoves[rankedMoves.length - 1].pieceIndex;
+
             case 'medium':
-                // Choose a random move
+                // Choose a random move from all available moves
                 return rankedMoves[Math.floor(Math.random() * rankedMoves.length)].pieceIndex;
+
             case 'hard':
-                // Choose the best move
-                return rankedMoves[0].pieceIndex;
             default:
+                // Choose the best move (highest score)
                 return rankedMoves[0].pieceIndex;
         }
     }
 
     private rankMoves(gameState: GameState, eligiblePieces: number[]): MoveEvaluation[] {
         const moves: MoveEvaluation[] = [];
-        const diceTotal = gameState.state.diceTotal;
-        const myPositions = this.color === 'white' ? gameState.state.whitePiecePositions : gameState.state.blackPiecePositions;
-        const opponentPositions = this.color === 'white' ? gameState.state.blackPiecePositions : gameState.state.whitePiecePositions;
 
         for (const pieceIndex of eligiblePieces) {
-            const evaluation = this.evaluateMove(gameState, pieceIndex, diceTotal, myPositions, opponentPositions);
+            const evaluation = this.evaluateMove(gameState, pieceIndex);
             moves.push(evaluation);
         }
 
@@ -198,102 +192,88 @@ export class ComputerPlayerAgent implements PlayerAgent {
         return moves.sort((a, b) => b.score - a.score);
     }
 
-    private evaluateMove(
-        gameState: GameState,
-        pieceIndex: number,
-        diceTotal: number,
-        myPositions: (number | 'start' | 'moving')[],
-        opponentPositions: (number | 'start' | 'moving')[]
-    ): MoveEvaluation {
+    private evaluateMove(gameState: GameState, pieceIndex: number): MoveEvaluation {
         let score = 0;
         const reasons: string[] = [];
+
+        // Find the legal move for this piece
+        const legalMove = gameState.getLegalMoves().find(move => move.pieceIndex === pieceIndex);
+        if (!legalMove) {
+            return {
+                pieceIndex,
+                score: AI_SCORES.INVALID_MOVE,
+                reasons: ['No legal move found for piece']
+            };
+        }
+
+        // Get current position
+        const myPositions = this.color === 'white' ? gameState.state.whitePiecePositions : gameState.state.blackPiecePositions;
         const currentPosition = myPositions[pieceIndex];
 
         // Skip evaluation for pieces that are currently moving (in animation)
         if (currentPosition === 'moving') {
             return {
                 pieceIndex,
-                score: -1000, // Very low score to avoid selecting moving pieces
+                score: AI_SCORES.INVALID_MOVE,
                 reasons: ['Piece is currently moving']
             };
         }
 
-        // Get the path for this player
-        const path = gameState.getPlayerPath(this.color);
-
-        // Calculate destination position
-        let destinationSquare: number | undefined;
-
-        if (currentPosition === 'start') {
-            // Moving from start
-            if (diceTotal <= path.length) {
-                destinationSquare = path[diceTotal - 1];
-                score += 10; // Base score for getting a piece in play
-                reasons.push('Getting piece into play');
-            }
+        // Base scoring based on move type
+        if (legalMove.destinationSquare === 'complete') {
+            // Piece completes the circuit - highest priority
+            score += AI_SCORES.PIECE_COMPLETION;
+            reasons.push('Piece reaches home (wins!)');
+        } else if (currentPosition === 'start') {
+            // Getting piece into play
+            score += AI_SCORES.ENTER_PLAY;
+            reasons.push('Getting piece into play');
         } else {
-            // Moving piece already on board (currentPosition is guaranteed to be number here)
-            const currentIndex = path.indexOf(currentPosition as number);
-            if (currentIndex !== -1 && currentIndex + diceTotal < path.length) {
-                destinationSquare = path[currentIndex + diceTotal];
-                score += 5; // Base score for advancing piece
-                reasons.push('Advancing piece');
-            } else if (currentIndex !== -1 && currentIndex + diceTotal === path.length) {
-                // Reaching the end (winning the piece)
-                score += 50;
-                reasons.push('Piece reaches home (wins!)');
-            }
+            // Advancing piece on board
+            score += AI_SCORES.ADVANCE_PIECE;
+            reasons.push('Advancing piece');
         }
 
-        if (destinationSquare !== undefined) {
-            // Check if landing on rosette square
-            if (BoardUtils.isRosetteSquare(destinationSquare)) {
-                score += 15;
-                reasons.push('Landing on rosette (extra turn)');
-            }
+        // Bonus for capturing opponent pieces
+        if (legalMove.capture) {
+            score += AI_SCORES.CAPTURE;
+            reasons.push('Capturing opponent piece');
+        }
 
-            // Check if capturing opponent piece
-            const canCapture = opponentPositions.some(pos => pos === destinationSquare);
-            if (canCapture && !BoardUtils.isRosetteSquare(destinationSquare)) {
-                score += 25;
-                reasons.push('Capturing opponent piece');
-            }
+        // Bonus for extra turns (rosettes, captures, or bear-off depending on rule set)
+        if (legalMove.extraTurn) {
+            score += AI_SCORES.EXTRA_TURN;
+            reasons.push('Gets extra turn');
+        }
 
-            // Check if moving to safety (rosette squares are safe)
-            if (BoardUtils.isRosetteSquare(destinationSquare)) {
-                score += 8;
-                reasons.push('Moving to safe square');
-            }
+        // Positional bonus for pieces further along the path
+        if (currentPosition !== 'start' && typeof currentPosition === 'number') {
+            const pathIndex = currentPosition;
+            score += Math.floor(pathIndex / 2); // Small bonus for advancement
+            reasons.push(`Advancing piece at position ${pathIndex}`);
+        }
 
-            // Prefer advancing pieces that are further along
-            if (currentPosition !== 'start') {
-                const currentIndex = path.indexOf(currentPosition as number);
-                score += Math.floor(currentIndex / 2); // Small bonus for pieces further along
-                reasons.push(`Advancing piece at position ${currentIndex}`);
-            }
+        // Penalty for moves that put piece in danger (only if not landing on safe square)
+        if (legalMove.destinationSquare !== 'complete' && typeof legalMove.destinationSquare === 'number') {
+            const destinationSquare = legalMove.destinationSquare;
+            const ruleSet = gameState.getCurrentRuleSet();
+            const safeSquares = ruleSet.getSafeSquares();
 
-            // Avoid moves that put piece in danger (near opponent pieces)
-            const isDangerous = opponentPositions.some(pos => {
-                if (pos === 'start' || pos === 'moving' || pos === destinationSquare) return false;
-                const opponentPath = gameState.getPlayerPath(this.color === 'white' ? 'black' : 'white');
-                const opponentIndex = opponentPath.indexOf(pos as number);
-                if (opponentIndex === -1) return false;
+            if (!safeSquares.includes(destinationSquare)) {
+                // Check if opponent could capture us on next turn
+                const opponentPlayer = this.color === 'white' ? 'black' : 'white';
+                const opponentPath = gameState.getPlayerPath(opponentPlayer);
+                const opponentPositions = this.color === 'white' ? gameState.state.blackPiecePositions : gameState.state.whitePiecePositions;
 
-                // Check if opponent could reach our destination square with any dice roll (1-4)
-                for (let roll = 1; roll <= 4; roll++) {
-                    if (opponentIndex + roll < opponentPath.length) {
-                        const opponentDestination = opponentPath[opponentIndex + roll];
-                        if (opponentDestination === destinationSquare && !BoardUtils.isRosetteSquare(destinationSquare)) {
-                            return true;
-                        }
-                    }
+                const isDangerous = this.isPositionDangerous(destinationSquare, opponentPath, opponentPositions);
+
+                if (isDangerous) {
+                    score += AI_SCORES.DANGER_PENALTY;
+                    reasons.push('Move puts piece in danger');
                 }
-                return false;
-            });
-
-            if (isDangerous) {
-                score -= 10;
-                reasons.push('Move puts piece in danger');
+            } else {
+                score += AI_SCORES.SAFE_SQUARE;
+                reasons.push('Moving to safe square');
             }
         }
 
@@ -302,6 +282,26 @@ export class ComputerPlayerAgent implements PlayerAgent {
             score,
             reasons
         };
+    }
+
+    private isPositionDangerous(
+        destinationSquare: number,
+        opponentPath: number[],
+        opponentPositions: (number | 'start' | 'moving')[]
+    ): boolean {
+        return opponentPositions.some(pos => {
+            if (pos === 'start' || pos === 'moving') return false;
+            const opponentPathIndex = pos as number;
+
+            // Check if opponent could reach our destination with any dice roll (1-4)
+            for (let roll = 1; roll <= 4; roll++) {
+                const targetIndex = opponentPathIndex + roll;
+                if (targetIndex < opponentPath.length && opponentPath[targetIndex] === destinationSquare) {
+                    return true;
+                }
+            }
+            return false;
+        });
     }
 
     private delay(ms: number): Promise<void> {

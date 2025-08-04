@@ -89,8 +89,6 @@ export class PlayerManager {
         // Check for game end
         const winner = this.gameState.checkWinCondition();
         if (winner) {
-            await this.whitePlayer.onGameEnd(this.gameState, winner);
-            await this.blackPlayer.onGameEnd(this.gameState, winner);
             this.stop();
             return;
         }
