@@ -78,9 +78,10 @@ const AI_DELAYS = {
 
 // Monte Carlo simulation constants
 const MCTS_CONFIG = {
-    SIMULATIONS: 1000,
-    MAX_DEPTH: 5,
-    EXPLORATION_FACTOR: 1.4 // UCB1 exploration parameter
+    SIMULATIONS: 2000,
+    MAX_DEPTH: 10,
+    EXPLORATION_FACTOR: 1.4, // UCB1 exploration parameter
+    ADVANCEMENT_GAMMA: 1.5 // Gamma curve for piece advancement scoring (1.0 = linear, >1.0 = progressive)
 } as const;
 
 export class ComputerPlayerAgent implements PlayerAgent {
@@ -197,7 +198,18 @@ export class ComputerPlayerAgent implements PlayerAgent {
     private selectBestMove(gameState: GameState, eligiblePieces: number[]): number {
         // Use Monte Carlo Tree Search for hard difficulty
         if (this.difficulty === 'hard') {
-            return this.selectMCTSMove(gameState, eligiblePieces);
+            const startTime = performance.now();
+            const result = this.selectMCTSMove(gameState, eligiblePieces);
+            const elapsedTime = performance.now() - startTime;
+
+            console.log(`MCTS: Total time ${elapsedTime.toFixed(2)}ms`);
+
+            // Warn if we exceed our 500ms budget
+            if (elapsedTime > 500) {
+                console.warn(`MCTS: Exceeded time budget! ${elapsedTime.toFixed(2)}ms > 500ms`);
+            }
+
+            return result;
         }
 
         // Use simple heuristic evaluation for easy and medium
@@ -222,13 +234,9 @@ export class ComputerPlayerAgent implements PlayerAgent {
     }
 
     private selectMCTSMove(gameState: GameState, eligiblePieces: number[]): number {
-        const startTime = performance.now();
-
         const legalMoves = gameState.getLegalMoves().filter(move => eligiblePieces.includes(move.pieceIndex));
 
         if (legalMoves.length === 1) {
-            const elapsedTime = performance.now() - startTime;
-            console.log(`MCTS: Single move available, took ${elapsedTime.toFixed(2)}ms`);
             return legalMoves[0].pieceIndex;
         }
 
@@ -239,11 +247,9 @@ export class ComputerPlayerAgent implements PlayerAgent {
 
         // Evaluate each possible move using Monte Carlo simulations
         for (const move of legalMoves) {
-            const moveStartTime = performance.now();
             const score = this.evaluateMoveWithMCTS(gameState, move.pieceIndex);
-            const moveElapsedTime = performance.now() - moveStartTime;
 
-            console.log(`MCTS: Piece ${move.pieceIndex} scored ${score.toFixed(3)} (${moveElapsedTime.toFixed(2)}ms)`);
+            console.log(`MCTS: Piece ${move.pieceIndex} scored ${score.toFixed(3)}`);
 
             if (score > bestScore) {
                 bestScore = score;
@@ -251,8 +257,7 @@ export class ComputerPlayerAgent implements PlayerAgent {
             }
         }
 
-        const totalElapsedTime = performance.now() - startTime;
-        console.log(`MCTS: Selected piece ${bestPiece} with score ${bestScore.toFixed(3)} (total: ${totalElapsedTime.toFixed(2)}ms)`);
+        console.log(`MCTS: Selected piece ${bestPiece} with score ${bestScore.toFixed(3)}`);
 
         return bestPiece;
     }
@@ -273,7 +278,7 @@ export class ComputerPlayerAgent implements PlayerAgent {
 
         // Run a limited number of simulations to add some randomness
         let totalScore = normalizedHeuristic;
-        const simulations = Math.min(MCTS_CONFIG.SIMULATIONS, 100); // Reduce simulations due to cloning issues
+        const simulations = MCTS_CONFIG.SIMULATIONS;
 
         for (let i = 0; i < simulations; i++) {
             // Clone the game state for simulation
@@ -285,7 +290,7 @@ export class ComputerPlayerAgent implements PlayerAgent {
                 simulatedState.movePiece(pieceIndex);
 
                 // Run a short simulation
-                const score = this.runSimulation(simulatedState, 2); // Reduced depth
+                const score = this.runSimulation(simulatedState, MCTS_CONFIG.MAX_DEPTH);
                 totalScore += score / 1000; // Scale down the simulation score
             } catch {
                 // If simulation fails, just use the heuristic
@@ -349,27 +354,55 @@ export class ComputerPlayerAgent implements PlayerAgent {
 
         let score = 0;
 
+        // Get path length for scoring completed pieces
+        const myPath = gameState.getPlayerPath(this.color);
+        const pathLength = myPath.length;
+        const completedPieceValue = pathLength * 2; // 2x path length
+
         // Count completed pieces
         const myCompleted = myPieces.filter((piece, index) => piece === 'spots' && myPositions[index] === 'start').length;
         const opponentCompleted = opponentPieces.filter((piece, index) => piece === 'spots' && opponentPositions[index] === 'start').length;
 
-        score += myCompleted * 100;
-        score -= opponentCompleted * 100;
+        score += myCompleted * completedPieceValue;
+        score -= opponentCompleted * completedPieceValue;
 
-        // Evaluate piece advancement
+        // Evaluate piece advancement using gamma curve
         myPositions.forEach(pos => {
             if (pos !== 'start' && pos !== 'moving') {
-                score += (pos as number) * 2; // Points for advancement
+                const advancementScore = this.calculateAdvancementScore(pos as number, pathLength);
+                score += advancementScore;
             }
         });
 
         opponentPositions.forEach(pos => {
             if (pos !== 'start' && pos !== 'moving') {
-                score -= (pos as number) * 2; // Opponent advancement hurts us
+                const advancementScore = this.calculateAdvancementScore(pos as number, pathLength);
+                score -= advancementScore; // Opponent advancement hurts us
             }
         });
 
         return score;
+    }
+
+    /**
+     * Calculate advancement score using a gamma curve
+     * @param position Current position on the path (0-based index)
+     * @param pathLength Total length of the path
+     * @returns Progressive score based on position
+     */
+    private calculateAdvancementScore(position: number, pathLength: number): number {
+        // Normalize position to 0-1 range
+        const normalizedPosition = position / (pathLength - 1);
+
+        // Apply gamma curve: score = (normalizedPosition ^ gamma) * maxScore
+        // Gamma > 1.0 creates a progressive curve (low early values, high late values)
+        // Gamma < 1.0 creates a regressive curve (high early values, low late values)
+        // Gamma = 1.0 is linear
+        const gamma = MCTS_CONFIG.ADVANCEMENT_GAMMA;
+        const curvedValue = Math.pow(normalizedPosition, gamma);
+
+        // Scale to a reasonable score range (0 to pathLength)
+        return curvedValue * pathLength;
     }
 
     private cloneGameState(gameState: GameState): GameState {
