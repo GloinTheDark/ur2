@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import './App.css'
 import { useGameState } from './useGameState'
 import DiceRoller from './DiceRoller'
@@ -35,6 +35,21 @@ function App() {
   const [showGameSetup, setShowGameSetup] = useState<boolean>(false);
   const diceRollerRef = useRef<DiceRollerRef>(null);
 
+  // Debug mode - check URL parameter
+  const [isDebugMode] = useState(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get('debug') === '1';
+  });
+
+  const [isPaused, setIsPaused] = useState(false);
+
+  // Update gameState with debug pause state
+  useEffect(() => {
+    if (isDebugMode) {
+      gameState.setDebugPaused(isPaused);
+    }
+  }, [isDebugMode, isPaused, gameState]);
+
   const winner = gameState.checkWinCondition();
 
   // Handle game setup completion
@@ -67,6 +82,52 @@ function App() {
       padding: '20px 0',
       boxSizing: 'border-box'
     }}>
+      {/* Debug Mode Pause Button */}
+      {isDebugMode && state.gameStarted && (
+        <div style={{
+          position: 'fixed',
+          top: '10px',
+          left: '10px',
+          zIndex: 1000,
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          borderRadius: '8px',
+          padding: '8px'
+        }}>
+          <button
+            onClick={() => setIsPaused(!isPaused)}
+            style={{
+              padding: '8px 16px',
+              fontSize: '14px',
+              fontWeight: 'bold',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              backgroundColor: isPaused ? '#ff4444' : '#44ff44',
+              color: '#fff',
+              border: 'none',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
+              transition: 'all 0.2s ease'
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.transform = 'translateY(-1px)';
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.4)';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.3)';
+            }}
+          >
+            {isPaused ? '▶️ Resume AI' : '⏸️ Pause AI'}
+          </button>
+          <div style={{
+            fontSize: '12px',
+            color: '#ccc',
+            marginTop: '4px',
+            textAlign: 'center'
+          }}>
+            Debug Mode
+          </div>
+        </div>
+      )}
       {!state.gameStarted && !showGameSetup && (
         <div style={{
           marginTop: '50px',

@@ -51,6 +51,7 @@ export interface GameStateData {
     gameStarted: boolean;
     gamePhase: 'initial-roll' | 'playing';
     initialRollResult: number | null;
+    turnCount: number; // Track number of turns played
     diceRolls: number[];
     diceTotal: number;
     houseBonusApplied: boolean;
@@ -79,12 +80,17 @@ export class GameState {
     private data: GameStateData;
     private settings: GameSettings;
     private listeners: Set<() => void> = new Set();
+    private isSimulation: boolean = false; // Flag to track if this is a simulation
 
     // Player management
     private whitePlayer: PlayerAgent | null = null;
     private blackPlayer: PlayerAgent | null = null;
     private playerManagerActive: boolean = false;
     private diceRollerRef: React.RefObject<DiceRollerRef | null> | null = null;
+    private handlingStateChange: boolean = false; // Prevent concurrent handler execution
+
+    // Debug mode
+    private debugPaused: boolean = false;
 
     // Game paths - dynamically loaded from current rule set
     private whitePath: number[] = [];
@@ -98,6 +104,49 @@ export class GameState {
         this.blackPath = [...defaultPaths.black];
         this.data = this.createInitialState();
         this.updatePathsFromRuleSet();
+    }
+
+    // Create a deep clone of this GameState for simulations
+    clone(): GameState {
+        // Prevent cloning during animations to avoid inconsistent state
+        if (this.isAnimating()) {
+            throw new Error('Cannot clone GameState during animations');
+        }
+
+        // Create a new instance with the same settings
+        const cloned = new GameState({ ...this.settings });
+
+        // Mark as simulation to prevent logging
+        cloned.markAsSimulation();
+
+        // Deep copy all data
+        cloned.data = {
+            currentPlayer: this.data.currentPlayer,
+            whitePieces: [...this.data.whitePieces],
+            blackPieces: [...this.data.blackPieces],
+            whitePiecePositions: [...this.data.whitePiecePositions],
+            blackPiecePositions: [...this.data.blackPiecePositions],
+            selectedPiece: this.data.selectedPiece ? { ...this.data.selectedPiece } : null,
+            gameStarted: this.data.gameStarted,
+            gamePhase: this.data.gamePhase,
+            initialRollResult: this.data.initialRollResult,
+            turnCount: this.data.turnCount,
+            diceRolls: [...this.data.diceRolls],
+            diceTotal: this.data.diceTotal,
+            houseBonusApplied: this.data.houseBonusApplied,
+            templeBlessingApplied: this.data.templeBlessingApplied,
+            eligiblePieces: [...this.data.eligiblePieces],
+            legalMoves: this.data.legalMoves.map(move => ({ ...move })),
+            illegalMoves: this.data.illegalMoves.map(move => ({ ...move })),
+            animatingPiece: this.data.animatingPiece ? { ...this.data.animatingPiece } : null,
+            animatingCapturedPiece: this.data.animatingCapturedPiece ? { ...this.data.animatingCapturedPiece } : null
+        };
+
+        // Copy paths
+        cloned.whitePath = [...this.whitePath];
+        cloned.blackPath = [...this.blackPath];
+
+        return cloned;
     }
 
     // Update paths based on current rule set
@@ -122,6 +171,16 @@ export class GameState {
     getPiecesPerPlayer(): number {
         const ruleSet = getRuleSetByName(this.settings.currentRuleSet);
         return ruleSet.piecesPerPlayer;
+    }
+
+    // Get current turn count
+    getTurnCount(): number {
+        return this.data.turnCount;
+    }
+
+    // Mark this GameState as a simulation (for MCTS/AI)
+    markAsSimulation(): void {
+        this.isSimulation = true;
     }
 
     // Get current rule set
@@ -257,6 +316,7 @@ export class GameState {
             gameStarted: false,
             gamePhase: 'initial-roll',
             initialRollResult: null,
+            turnCount: 0,
             diceRolls: [],
             diceTotal: 0,
             houseBonusApplied: false,
@@ -316,6 +376,10 @@ export class GameState {
     proceedToGame(): void {
         this.data.gamePhase = 'playing';
         this.data.initialRollResult = null;
+
+        // Start the first turn (will set turn count to 1)
+        this.startTurn();
+
         this.notify();
     }
 
@@ -389,40 +453,58 @@ export class GameState {
         return currentAgent ? currentAgent.playerType === 'computer' : false;
     }
 
+    setDebugPaused(paused: boolean): void {
+        this.debugPaused = paused;
+        this.notify(); // Trigger state change to resume AI if unpaused
+    }
+
     private async handleGameStateChange(): Promise<void> {
         if (!this.playerManagerActive || !this.whitePlayer || !this.blackPlayer) return;
 
-        const currentPlayerAgent = this.getCurrentPlayerAgent();
-        if (!currentPlayerAgent) return;
+        // Prevent concurrent execution
+        if (this.handlingStateChange) return;
+        this.handlingStateChange = true;
 
-        // Check for game end
-        const winner = this.checkWinCondition();
-        if (winner) {
-            this.playerManagerActive = false;
-            return;
-        }
+        try {
+            const currentPlayerAgent = this.getCurrentPlayerAgent();
+            if (!currentPlayerAgent) return;
 
-        // Only proceed if game is in playing phase
-        if (this.data.gamePhase !== 'playing') {
-            return;
-        }
+            // Don't trigger AI actions during animations
+            if (this.isAnimating()) {
+                return;
+            }
 
-        // Handle different game states
-        if (this.data.diceRolls.length === 0) {
-            // Player needs to roll dice - only auto-roll for computer players
-            if (currentPlayerAgent.playerType === 'computer') {
-                await currentPlayerAgent.onTurnStart(this);
+            // Check if debug mode is pausing AI actions
+            if (this.debugPaused && currentPlayerAgent.playerType === 'computer') {
+                return;
             }
-        } else if (this.data.diceTotal > 0 && this.data.eligiblePieces.length > 0) {
-            // Player needs to make a move - only auto-move for computer players
-            if (currentPlayerAgent.playerType === 'computer') {
-                await currentPlayerAgent.onMoveRequired(this);
+
+            // Check for game end
+            const winner = this.checkWinCondition();
+            if (winner) {
+                this.playerManagerActive = false;
+                return;
             }
-        } else if (this.data.diceTotal === 0 || this.data.eligiblePieces.length === 0) {
-            // No moves available, player should pass - only auto-pass for computer players
-            if (currentPlayerAgent.playerType === 'computer') {
-                await currentPlayerAgent.onMoveRequired(this);
+
+            // Only proceed if game is in playing phase
+            if (this.data.gamePhase !== 'playing') {
+                return;
             }
+
+            // Handle different game states
+            if (this.data.diceRolls.length === 0) {
+                // Player needs to roll dice - only auto-roll for computer players
+                if (currentPlayerAgent.playerType === 'computer') {
+                    await currentPlayerAgent.onTurnStart(this);
+                }
+            } else {
+                // Player needs to make a move or pass - only auto-act for computer players
+                if (currentPlayerAgent.playerType === 'computer') {
+                    await currentPlayerAgent.onMoveRequired(this);
+                }
+            }
+        } finally {
+            this.handlingStateChange = false;
         }
     }
 
@@ -568,6 +650,9 @@ export class GameState {
             this.data.currentPlayer = this.data.currentPlayer === 'white' ? 'black' : 'white';
         }
 
+        // Start the new turn
+        this.startTurn();
+
         // Single notification after all state changes are complete
         this.notify();
 
@@ -684,6 +769,9 @@ export class GameState {
         if (!extraTurn) {
             this.data.currentPlayer = this.data.currentPlayer === 'white' ? 'black' : 'white';
         }
+
+        // Start the new turn
+        this.startTurn();
 
         // Notify after all state changes are complete
         this.notify();
@@ -939,10 +1027,6 @@ export class GameState {
                 }
             }
 
-            // Bear off gives extra turn if ruleset supports it
-            if (ruleSet.getExtraTurnOnRosette()) {
-                move.extraTurn = true;
-            }
             return move;
         }
 
@@ -1151,10 +1235,24 @@ export class GameState {
         return this.data.diceRolls.length > 0 && this.data.eligiblePieces.length === 0;
     }
 
+    // Start a new turn (centralized turn logging and counting)
+    private startTurn(): void {
+        // Increment turn count
+        this.data.turnCount++;
+
+        // Log the new turn (unless simulating)
+        if (!this.isSimulation) {
+            console.log(`Turn ${this.data.turnCount}: ${this.data.currentPlayer} player's turn`);
+        }
+    }
+
     passTurn(): void {
         // Reset dice state and switch player in one atomic operation
         this.resetDice();
         this.data.currentPlayer = this.data.currentPlayer === 'white' ? 'black' : 'white';
+
+        // Start the new turn
+        this.startTurn();
 
         // Single notification after all state changes are complete
         this.notify();
