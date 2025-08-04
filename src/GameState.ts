@@ -12,6 +12,24 @@ import { HumanPlayerAgent, ComputerPlayerAgent } from './PlayerAgent';
 import type { PlayerAgent, PlayerType } from './PlayerAgent';
 import type { DiceRollerRef } from './DiceRoller';
 
+export type MoveIllegalReason =
+    | 'blocked-by-same-color'
+    | 'blocked-by-safe-square'
+    | 'blocked-by-gatekeeper'
+    | 'exact-roll-needed-to-bear-off'
+    | 'dice-roll-too-large'
+    | 'piece-is-animating'
+    | 'no-dice-rolled';
+
+export interface Move {
+    pieceIndex: number;
+    legal: boolean;
+    destinationSquare: number | 'complete' | null;
+    capture: boolean;
+    extraTurn: boolean;
+    why?: MoveIllegalReason;
+}
+
 export interface PlayerConfiguration {
     white: PlayerType;
     black: PlayerType;
@@ -881,25 +899,46 @@ export class GameState {
         this.data.eligiblePieces = eligiblePiecesList;
     }
 
-    private canPieceMove(pieceIndex: number): boolean {
+    // Calculate move information for a piece
+    calculateMove(pieceIndex: number): Move {
         const currentPlayer = this.data.currentPlayer;
         const currentPositions = currentPlayer === 'white' ? this.data.whitePiecePositions : this.data.blackPiecePositions;
         const currentPlayerPath = currentPlayer === 'white' ? this.whitePath : this.blackPath;
         const currentPos = currentPositions[pieceIndex];
-        let destinationSquare: number;
+        const ruleSet = this.getCurrentRuleSet();
+
+        let move: Move = {
+            pieceIndex,
+            legal: false,
+            destinationSquare: null,
+            capture: false,
+            extraTurn: false
+        };
+
+        // Check if dice have been rolled
+        if (this.data.diceRolls.length === 0 || this.data.diceTotal === 0) {
+            move.why = 'no-dice-rolled';
+            return move;
+        }
 
         // Can't move pieces that are currently animating
         if (currentPos === 'moving') {
-            return false;
+            move.why = 'piece-is-animating';
+            return move;
         }
+
+        let destinationPathIndex: number;
+        let destinationSquare: number;
 
         if (currentPos === 'start') {
             // Moving from start
-            if (this.data.diceTotal <= currentPlayerPath.length) {
-                destinationSquare = currentPlayerPath[this.data.diceTotal - 1]; // Convert 1-based dice to 0-based path index
-            } else {
-                return false; // Can't move beyond path
+            if (this.data.diceTotal > currentPlayerPath.length) {
+                move.why = 'dice-roll-too-large';
+                return move;
             }
+            destinationPathIndex = this.data.diceTotal - 1; // Convert 1-based dice to 0-based path index
+            destinationSquare = currentPlayerPath[destinationPathIndex];
+            move.destinationSquare = destinationSquare;
         } else {
             // Moving along the path
             const currentPathIndex = currentPos as number;
@@ -907,13 +946,13 @@ export class GameState {
 
             if (newPathIndex >= currentPlayerPath.length) {
                 // Attempting to bear off (complete the circuit)
-                const ruleSet = this.getCurrentRuleSet();
 
                 // Check if exact roll is required to bear off
                 if (ruleSet.getExactRollNeededToBearOff()) {
                     const exactRollNeeded = currentPlayerPath.length - currentPathIndex;
                     if (this.data.diceTotal !== exactRollNeeded) {
-                        return false; // Must have exact roll to bear off
+                        move.why = 'exact-roll-needed-to-bear-off';
+                        return move;
                     }
                 }
 
@@ -925,11 +964,21 @@ export class GameState {
                     return opponentPath[pos as number] === GATE_SQUARE;
                 });
                 if (isGateBlocked) {
-                    return false; // Cannot complete path if gate is blocked
+                    move.why = 'blocked-by-gatekeeper';
+                    return move;
                 }
-                return true; // Can return to start if gate is clear and exact roll conditions are met
+
+                move.destinationSquare = 'complete';
+                move.legal = true;
+                // Bear off always gives extra turn if ruleset supports it
+                if (ruleSet.getExtraTurnOnRosette()) {
+                    move.extraTurn = true;
+                }
+                return move;
             } else {
-                destinationSquare = currentPlayerPath[newPathIndex];
+                destinationPathIndex = newPathIndex;
+                destinationSquare = currentPlayerPath[destinationPathIndex];
+                move.destinationSquare = destinationSquare;
             }
         }
 
@@ -939,10 +988,14 @@ export class GameState {
             return currentPlayerPath[pos as number] === destinationSquare;
         });
 
+        if (isSameColorBlocking) {
+            move.why = 'blocked-by-same-color';
+            return move;
+        }
+
         // Check if destination is a safe square occupied by opponent piece
         const opponentPositions = currentPlayer === 'white' ? this.data.blackPiecePositions : this.data.whitePiecePositions;
         const opponentPath = currentPlayer === 'white' ? this.blackPath : this.whitePath;
-        const ruleSet = this.getCurrentRuleSet();
         const safeSquares = ruleSet.getSafeSquares();
         const isSafeSquareBlocked = safeSquares.includes(destinationSquare) &&
             opponentPositions.some(pos => {
@@ -950,7 +1003,66 @@ export class GameState {
                 return opponentPath[pos as number] === destinationSquare;
             });
 
-        return !isSameColorBlocking && !isSafeSquareBlocked;
+        if (isSafeSquareBlocked) {
+            move.why = 'blocked-by-safe-square';
+            return move;
+        }
+
+        // Check for capture
+        const capturedPieceIndex = opponentPositions.findIndex(pos => {
+            if (pos === 'start' || pos === 'moving') return false;
+            return opponentPath[pos as number] === destinationSquare;
+        });
+
+        if (capturedPieceIndex !== -1) {
+            move.capture = true;
+            if (ruleSet.getExtraTurnOnCapture()) {
+                move.extraTurn = true;
+            }
+        }
+
+        // Check if piece landed on a rosette square and rule set grants extra turns on rosettes
+        if ((ROSETTE_SQUARES as readonly number[]).includes(destinationSquare) &&
+            ruleSet.getExtraTurnOnRosette()) {
+            move.extraTurn = true;
+        }
+
+        move.legal = true;
+        return move;
+    }
+
+    // Get all possible moves for the current player
+    getAllPossibleMoves(): Move[] {
+        const currentPlayer = this.data.currentPlayer;
+        const currentPositions = currentPlayer === 'white' ? this.data.whitePiecePositions : this.data.blackPiecePositions;
+        const currentPieceStates = currentPlayer === 'white' ? this.data.whitePieces : this.data.blackPieces;
+        const moves: Move[] = [];
+
+        // For each piece, calculate its move
+        currentPositions.forEach((pos, index) => {
+            // Only consider pieces that are either at start (blank) or on the board
+            if (pos === 'start') {
+                // Only consider pieces that are still blank (not completed)
+                if (currentPieceStates[index] === 'blank') {
+                    moves.push(this.calculateMove(index));
+                }
+            } else if (pos !== 'moving') {
+                // Piece is on the board
+                moves.push(this.calculateMove(index));
+            }
+        });
+
+        return moves;
+    }
+
+    // Get legal moves for the current player
+    getLegalMoves(): Move[] {
+        return this.getAllPossibleMoves().filter(move => move.legal);
+    }
+
+    private canPieceMove(pieceIndex: number): boolean {
+        const move = this.calculateMove(pieceIndex);
+        return move.legal;
     }
 
     // Get destination square for selected piece
@@ -970,27 +1082,9 @@ export class GameState {
             }
         }
 
-        const currentPlayerPath = this.data.selectedPiece.player === 'white' ? this.whitePath : this.blackPath;
-        const currentPositions = this.data.selectedPiece.player === 'white' ? this.data.whitePiecePositions : this.data.blackPiecePositions;
-        const currentPos = currentPositions[this.data.selectedPiece.index];
-
-        if (currentPos === 'start') {
-            // Moving from start
-            if (this.data.diceTotal <= currentPlayerPath.length) {
-                return currentPlayerPath[this.data.diceTotal - 1]; // Convert 1-based dice to 0-based path index
-            }
-            return null; // Can't move beyond path
-        } else {
-            // Moving along the path
-            const currentPathIndex = currentPos as number;
-            const newPathIndex = currentPathIndex + this.data.diceTotal;
-
-            if (newPathIndex >= currentPlayerPath.length) {
-                return 'complete'; // Piece would complete the path and return to start
-            } else {
-                return currentPlayerPath[newPathIndex];
-            }
-        }
+        // Use the new Move system to get destination
+        const move = this.calculateMove(this.data.selectedPiece.index);
+        return move.destinationSquare;
     }
 
     // Calculate house control for house bonus rule
