@@ -16,10 +16,7 @@ export type MoveIllegalReason =
     | 'blocked-by-same-color'
     | 'blocked-by-safe-square'
     | 'blocked-by-gatekeeper'
-    | 'exact-roll-needed-to-bear-off'
-    | 'dice-roll-too-large'
-    | 'piece-is-animating'
-    | 'no-dice-rolled';
+    | 'exact-roll-needed-to-bear-off';
 
 export interface Move {
     pieceIndex: number;
@@ -205,40 +202,28 @@ export class GameState {
         return { waypoints, flipWaypointIndex };
     }
 
-    // Get pieces on a specific board square
-    getPiecesOnSquare(squareNumber: number): { white: number[], black: number[] } {
-        const whitePieces: number[] = [];
-        const blackPieces: number[] = [];
+    // Get pieces on a specific board square for a specific player
+    getPiecesOnSquare(squareNumber: number, player: 'white' | 'black'): number[] {
+        const pieces: number[] = [];
+        const playerPositions = player === 'white' ? this.data.whitePiecePositions : this.data.blackPiecePositions;
 
-        // Check white pieces
-        this.data.whitePiecePositions.forEach((pos, index) => {
+        playerPositions.forEach((pos, index) => {
             if (pos !== 'start' && pos !== 'moving') {
-                const square = this.getSquareFromPathIndex('white', pos as number);
+                const square = this.getSquareFromPathIndex(player, pos as number);
                 if (square === squareNumber) {
-                    whitePieces.push(index);
+                    pieces.push(index);
                 }
             }
         });
 
-        // Check black pieces
-        this.data.blackPiecePositions.forEach((pos, index) => {
-            if (pos !== 'start' && pos !== 'moving') {
-                const square = this.getSquareFromPathIndex('black', pos as number);
-                if (square === squareNumber) {
-                    blackPieces.push(index);
-                }
-            }
-        });
-
-        return { white: whitePieces, black: blackPieces };
+        return pieces;
     }
 
     // Check if any pieces on a square are eligible to move
     hasEligiblePieceOnSquare(squareNumber: number): boolean {
         if (!this.data.gameStarted || this.isAnimating()) return false;
 
-        const piecesOnSquare = this.getPiecesOnSquare(squareNumber);
-        const currentPlayerPieces = this.data.currentPlayer === 'white' ? piecesOnSquare.white : piecesOnSquare.black;
+        const currentPlayerPieces = this.getPiecesOnSquare(squareNumber, this.data.currentPlayer);
 
         return currentPlayerPieces.some(pieceIndex => this.data.eligiblePieces.includes(pieceIndex));
     }
@@ -247,8 +232,7 @@ export class GameState {
     hasSelectedPieceOnSquare(squareNumber: number): boolean {
         if (!this.data.selectedPiece) return false;
 
-        const piecesOnSquare = this.getPiecesOnSquare(squareNumber);
-        const selectedPlayerPieces = this.data.selectedPiece.player === 'white' ? piecesOnSquare.white : piecesOnSquare.black;
+        const selectedPlayerPieces = this.getPiecesOnSquare(squareNumber, this.data.selectedPiece.player);
 
         return selectedPlayerPieces.some(pieceIndex =>
             this.data.selectedPiece!.index === pieceIndex
@@ -862,39 +846,41 @@ export class GameState {
         return { extraTurn, captureInfo };
     }
 
-    // Calculate eligible pieces
-    private calculateEligiblePieces(): void {
-        if (this.data.diceRolls.length === 0 || this.data.diceTotal === 0) {
-            this.data.eligiblePieces = [];
-            return;
+    // Get pieces that should be evaluated for movement
+    private getPiecesToEvaluate(): number[] {
+        // Don't evaluate pieces if no dice have been rolled or if animations are in progress
+        if (this.data.diceRolls.length === 0 || this.data.diceTotal === 0 || this.isAnimating()) {
+            return [];
         }
 
-        // Don't allow piece selection if animation is in progress
-        if (this.isAnimating()) {
-            this.data.eligiblePieces = [];
-            return;
-        }
-
-        const eligiblePiecesList: number[] = [];
         const currentPlayer = this.data.currentPlayer;
         const currentPositions = currentPlayer === 'white' ? this.data.whitePiecePositions : this.data.blackPiecePositions;
+        const currentPieceStates = currentPlayer === 'white' ? this.data.whitePieces : this.data.blackPieces;
+        const piecesToEvaluate: number[] = [];
 
-        // Find the leftmost piece still in starting area (if any) and check if it can move
+        // Find the leftmost piece still in starting area (if any)
         const leftmostStartIndex = currentPositions.findIndex((pos, idx) => {
-            const currentPieceStates = currentPlayer === 'white' ? this.data.whitePieces : this.data.blackPieces;
             return pos === 'start' && currentPieceStates[idx] === 'blank';
         });
 
-        if (leftmostStartIndex !== -1 && this.canPieceMove(leftmostStartIndex)) {
-            eligiblePiecesList.push(leftmostStartIndex);
+        if (leftmostStartIndex !== -1) {
+            piecesToEvaluate.push(leftmostStartIndex);
         }
 
-        // Add all pieces that are on the board and can move (excluding moving pieces)
+        // Add all pieces that are on the board (excluding moving pieces)
         currentPositions.forEach((pos, index) => {
-            if (pos !== 'start' && pos !== 'moving' && this.canPieceMove(index)) {
-                eligiblePiecesList.push(index);
+            if (pos !== 'start' && pos !== 'moving') {
+                piecesToEvaluate.push(index);
             }
         });
+
+        return piecesToEvaluate;
+    }
+
+    // Calculate eligible pieces
+    private calculateEligiblePieces(): void {
+        const piecesToEvaluate = this.getPiecesToEvaluate();
+        const eligiblePiecesList = piecesToEvaluate.filter(pieceIndex => this.canPieceMove(pieceIndex));
 
         this.data.eligiblePieces = eligiblePiecesList;
     }
@@ -907,7 +893,7 @@ export class GameState {
         const currentPos = currentPositions[pieceIndex];
         const ruleSet = this.getCurrentRuleSet();
 
-        let move: Move = {
+        const move: Move = {
             pieceIndex,
             legal: false,
             destinationSquare: null,
@@ -915,72 +901,44 @@ export class GameState {
             extraTurn: false
         };
 
-        // Check if dice have been rolled
-        if (this.data.diceRolls.length === 0 || this.data.diceTotal === 0) {
-            move.why = 'no-dice-rolled';
-            return move;
-        }
-
-        // Can't move pieces that are currently animating
-        if (currentPos === 'moving') {
-            move.why = 'piece-is-animating';
-            return move;
-        }
-
         let destinationPathIndex: number;
-        let destinationSquare: number;
 
         if (currentPos === 'start') {
-            // Moving from start
-            if (this.data.diceTotal > currentPlayerPath.length) {
-                move.why = 'dice-roll-too-large';
+            destinationPathIndex = this.data.diceTotal - 1; // Convert 1-based dice to 0-based path index
+        } else {
+            destinationPathIndex = currentPos as number + this.data.diceTotal;
+        }
+
+        if (destinationPathIndex >= currentPlayerPath.length) {
+            // Attempting to bear off (complete the circuit)
+
+            // Check if exact roll is required to bear off
+            if (ruleSet.getExactRollNeededToBearOff() && destinationPathIndex > currentPlayerPath.length) {
+                move.why = 'exact-roll-needed-to-bear-off';
                 return move;
             }
-            destinationPathIndex = this.data.diceTotal - 1; // Convert 1-based dice to 0-based path index
-            destinationSquare = currentPlayerPath[destinationPathIndex];
-            move.destinationSquare = destinationSquare;
-        } else {
-            // Moving along the path
-            const currentPathIndex = currentPos as number;
-            const newPathIndex = currentPathIndex + this.data.diceTotal;
 
-            if (newPathIndex >= currentPlayerPath.length) {
-                // Attempting to bear off (complete the circuit)
-
-                // Check if exact roll is required to bear off
-                if (ruleSet.getExactRollNeededToBearOff()) {
-                    const exactRollNeeded = currentPlayerPath.length - currentPathIndex;
-                    if (this.data.diceTotal !== exactRollNeeded) {
-                        move.why = 'exact-roll-needed-to-bear-off';
-                        return move;
-                    }
-                }
-
-                // Check if gate square is occupied by opponent piece (only if gate keeper rule is enabled by ruleset)
-                const opponentPositions = currentPlayer === 'white' ? this.data.blackPiecePositions : this.data.whitePiecePositions;
-                const opponentPath = currentPlayer === 'white' ? this.blackPath : this.whitePath;
-                const isGateBlocked = ruleSet.getGateKeeperEnabled() && opponentPositions.some(pos => {
-                    if (pos === 'start' || pos === 'moving') return false;
-                    return opponentPath[pos as number] === GATE_SQUARE;
-                });
-                if (isGateBlocked) {
+            // Check if gate square is occupied by opponent piece (only if gate keeper rule is enabled by ruleset)
+            if (ruleSet.getGateKeeperEnabled()) {
+                const opponentPlayer = currentPlayer === 'white' ? 'black' : 'white';
+                const opponentPiecesOnGate = this.getPiecesOnSquare(GATE_SQUARE, opponentPlayer);
+                if (opponentPiecesOnGate.length > 0) {
                     move.why = 'blocked-by-gatekeeper';
                     return move;
                 }
-
-                move.destinationSquare = 'complete';
-                move.legal = true;
-                // Bear off always gives extra turn if ruleset supports it
-                if (ruleSet.getExtraTurnOnRosette()) {
-                    move.extraTurn = true;
-                }
-                return move;
-            } else {
-                destinationPathIndex = newPathIndex;
-                destinationSquare = currentPlayerPath[destinationPathIndex];
-                move.destinationSquare = destinationSquare;
             }
+
+            move.destinationSquare = 'complete';
+            move.legal = true;
+            // Bear off gives extra turn if ruleset supports it
+            if (ruleSet.getExtraTurnOnRosette()) {
+                move.extraTurn = true;
+            }
+            return move;
         }
+
+        const destinationSquare = currentPlayerPath[destinationPathIndex];
+        move.destinationSquare = destinationSquare;
 
         // Check if destination is occupied by same color piece (blocking)
         const isSameColorBlocking = currentPositions.some((pos, idx) => {
@@ -994,27 +952,21 @@ export class GameState {
         }
 
         // Check if destination is a safe square occupied by opponent piece
-        const opponentPositions = currentPlayer === 'white' ? this.data.blackPiecePositions : this.data.whitePiecePositions;
-        const opponentPath = currentPlayer === 'white' ? this.blackPath : this.whitePath;
         const safeSquares = ruleSet.getSafeSquares();
-        const isSafeSquareBlocked = safeSquares.includes(destinationSquare) &&
-            opponentPositions.some(pos => {
-                if (pos === 'start' || pos === 'moving') return false;
-                return opponentPath[pos as number] === destinationSquare;
-            });
-
-        if (isSafeSquareBlocked) {
-            move.why = 'blocked-by-safe-square';
-            return move;
+        if (safeSquares.includes(destinationSquare)) {
+            const opponentPlayer = currentPlayer === 'white' ? 'black' : 'white';
+            const opponentPiecesAtDestination = this.getPiecesOnSquare(destinationSquare, opponentPlayer);
+            if (opponentPiecesAtDestination.length > 0) {
+                move.why = 'blocked-by-safe-square';
+                return move;
+            }
         }
 
         // Check for capture
-        const capturedPieceIndex = opponentPositions.findIndex(pos => {
-            if (pos === 'start' || pos === 'moving') return false;
-            return opponentPath[pos as number] === destinationSquare;
-        });
+        const opponentPlayer = currentPlayer === 'white' ? 'black' : 'white';
+        const opponentPiecesAtDestination = this.getPiecesOnSquare(destinationSquare, opponentPlayer);
 
-        if (capturedPieceIndex !== -1) {
+        if (opponentPiecesAtDestination.length > 0) {
             move.capture = true;
             if (ruleSet.getExtraTurnOnCapture()) {
                 move.extraTurn = true;
@@ -1033,23 +985,12 @@ export class GameState {
 
     // Get all possible moves for the current player
     getAllPossibleMoves(): Move[] {
-        const currentPlayer = this.data.currentPlayer;
-        const currentPositions = currentPlayer === 'white' ? this.data.whitePiecePositions : this.data.blackPiecePositions;
-        const currentPieceStates = currentPlayer === 'white' ? this.data.whitePieces : this.data.blackPieces;
+        const piecesToEvaluate = this.getPiecesToEvaluate();
         const moves: Move[] = [];
 
-        // For each piece, calculate its move
-        currentPositions.forEach((pos, index) => {
-            // Only consider pieces that are either at start (blank) or on the board
-            if (pos === 'start') {
-                // Only consider pieces that are still blank (not completed)
-                if (currentPieceStates[index] === 'blank') {
-                    moves.push(this.calculateMove(index));
-                }
-            } else if (pos !== 'moving') {
-                // Piece is on the board
-                moves.push(this.calculateMove(index));
-            }
+        // For each piece that should be evaluated, calculate its move
+        piecesToEvaluate.forEach(pieceIndex => {
+            moves.push(this.calculateMove(pieceIndex));
         });
 
         return moves;

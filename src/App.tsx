@@ -287,9 +287,8 @@ function App() {
               const isDestinationSquare = destinationSquare === squareNumber;
 
               // Get pieces on this square (excluding moving pieces)
-              const piecesOnSquare = gameState.getPiecesOnSquare(squareNumber);
-              const whitePiecesOnSquare = piecesOnSquare.white;
-              const blackPiecesOnSquare = piecesOnSquare.black;
+              const whitePiecesOnSquare = gameState.getPiecesOnSquare(squareNumber, 'white');
+              const blackPiecesOnSquare = gameState.getPiecesOnSquare(squareNumber, 'black');
 
               // Check if any piece on this square is eligible to move (only during active gameplay and not during animation)
               const hasEligiblePiece = gameState.hasEligiblePieceOnSquare(squareNumber) && !winner;
