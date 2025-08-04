@@ -592,7 +592,9 @@ export class GameState {
 
         // Use rule set to calculate the final total and apply any modifiers
         const rollResult = ruleSet.calculateDiceRoll(newRolls, this);
-
+        if (!this.isSimulation) {
+            console.log(`Dice rolled: ${newRolls.join(', ')} (Total: ${rollResult.total})`);
+        }
         this.data.diceRolls = newRolls;
         this.data.diceTotal = rollResult.total;
         this.data.houseBonusApplied = rollResult.houseBonusApplied;
