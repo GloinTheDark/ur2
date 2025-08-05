@@ -78,10 +78,11 @@ const AI_DELAYS = {
 
 // Monte Carlo simulation constants
 const MCTS_CONFIG = {
-    SIMULATIONS: 2000,
-    MAX_DEPTH: 10,
+    SIMULATIONS: 400,
+    MAX_DEPTH: 4,
     EXPLORATION_FACTOR: 1.4, // UCB1 exploration parameter
-    ADVANCEMENT_GAMMA: 1.5 // Gamma curve for piece advancement scoring (1.0 = linear, >1.0 = progressive)
+    ADVANCEMENT_GAMMA: 1.5, // Gamma curve for piece advancement scoring (1.0 = linear, >1.0 = progressive)
+    HEURISTIC_WEIGHT: 0.0 // Weight for heuristic vs simulation (0.0 = pure simulation, 1.0 = pure heuristic)
 } as const;
 
 export class ComputerPlayerAgent implements PlayerAgent {
@@ -233,6 +234,11 @@ export class ComputerPlayerAgent implements PlayerAgent {
         }
     }
 
+    // Public method for debug purposes - allows external access to AI decision making
+    public evaluateAndSelectPiece(gameState: GameState, eligiblePieces: number[]): number {
+        return this.selectBestMove(gameState, eligiblePieces);
+    }
+
     private selectMCTSMove(gameState: GameState, eligiblePieces: number[]): number {
         const legalMoves = gameState.getLegalMoves().filter(move => eligiblePieces.includes(move.pieceIndex));
 
@@ -267,10 +273,12 @@ export class ComputerPlayerAgent implements PlayerAgent {
     }
 
     private evaluateMoveWithMCTS(gameState: GameState, pieceIndex: number): number {
-        // For now, use the heuristic evaluation as a base since cloning is limited
-        // This gives MCTS something meaningful to work with
+        // Get the heuristic evaluation as a baseline
         const heuristicEval = this.evaluateMove(gameState, pieceIndex);
         const heuristicScore = heuristicEval.score;
+
+        // For debugging: log the heuristic evaluation
+        console.log(`MCTS Debug: Piece ${pieceIndex} heuristic: ${heuristicScore} (${heuristicEval.reasons.join(', ')})`);
 
         // Normalize the heuristic score to a reasonable range for MCTS
         if (heuristicScore === AI_SCORES.INVALID_MOVE) {
@@ -280,29 +288,48 @@ export class ComputerPlayerAgent implements PlayerAgent {
         // Convert heuristic score to a 0-1 range for MCTS
         const normalizedHeuristic = Math.max(0, heuristicScore) / 100;
 
-        // Run a limited number of simulations to add some randomness
-        let totalScore = normalizedHeuristic;
+        // Run simulations
+        let totalScore = 0;
         const simulations = MCTS_CONFIG.SIMULATIONS;
+        let successfulSimulations = 0;
 
         for (let i = 0; i < simulations; i++) {
-            // Clone the game state for simulation
-            const simulatedState = this.cloneGameState(gameState);
-
             try {
+                // Clone the game state for simulation
+                const simulatedState = this.cloneGameState(gameState);
+
                 // Make the move we're evaluating
                 simulatedState.selectPiece(pieceIndex);
                 simulatedState.movePiece(pieceIndex);
 
-                // Run a short simulation
-                const score = this.runSimulation(simulatedState, MCTS_CONFIG.MAX_DEPTH);
-                totalScore += score / 1000; // Scale down the simulation score
+                // Run simulation - extra turns will be valued naturally through position evaluation
+                const simulationScore = this.runSimulation(simulatedState, MCTS_CONFIG.MAX_DEPTH);
+
+                totalScore += simulationScore;
+                successfulSimulations++;
             } catch {
-                // If simulation fails, just use the heuristic
-                totalScore += normalizedHeuristic;
+                // If simulation fails, don't count it
+                continue;
             }
         }
 
-        return totalScore / (simulations + 1); // +1 for the heuristic base
+        if (successfulSimulations === 0) {
+            return normalizedHeuristic; // Fall back to heuristic if all simulations failed
+        }
+
+        const averageSimulation = totalScore / successfulSimulations;
+
+        // Combine heuristic (immediate tactical value) with simulation (strategic value)
+        // Weight controlled by MCTS_CONFIG.HEURISTIC_WEIGHT
+        const simulationComponent = averageSimulation / 1000; // Scale simulation score
+        const heuristicWeight = MCTS_CONFIG.HEURISTIC_WEIGHT;
+        const simulationWeight = 1.0 - heuristicWeight;
+        const finalScore = (heuristicWeight * normalizedHeuristic) + (simulationWeight * simulationComponent);
+
+        // For debugging: log the components
+        console.log(`MCTS Debug: Piece ${pieceIndex} simulation avg: ${averageSimulation.toFixed(2)}, final: ${finalScore.toFixed(4)}`);
+
+        return finalScore;
     }
 
     private runSimulation(gameState: GameState, depth: number): number {
@@ -319,8 +346,11 @@ export class ComputerPlayerAgent implements PlayerAgent {
         const isOurTurn = gameState.state.currentPlayer === this.color;
         let bestScore = isOurTurn ? -Infinity : Infinity;
 
-        // Get current legal moves
-        gameState.rollDice(); // Roll dice for simulation
+        // Only roll dice if no dice have been rolled yet for this turn
+        if (gameState.state.diceRolls.length === 0) {
+            gameState.rollDice();
+        }
+
         const legalMoves = gameState.getLegalMoves();
 
         if (legalMoves.length === 0) {
@@ -334,9 +364,12 @@ export class ComputerPlayerAgent implements PlayerAgent {
 
         for (const move of shuffledMoves) {
             const clonedState = this.cloneGameState(gameState);
+
+            // Make the move
             clonedState.selectPiece(move.pieceIndex);
             clonedState.movePiece(move.pieceIndex);
 
+            // Continue simulation - extra turns will be valued naturally through position evaluation
             const score = this.runSimulation(clonedState, depth - 1);
 
             if (isOurTurn) {

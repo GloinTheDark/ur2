@@ -113,8 +113,14 @@ export class GameState {
             throw new Error('Cannot clone GameState during animations');
         }
 
-        // Create a new instance with the same settings
-        const cloned = new GameState({ ...this.settings });
+        // Create a new instance with settings modified for simulation
+        // Disable animations so movePiece() executes immediately instead of starting animations
+        const simulationSettings = {
+            ...this.settings,
+            diceAnimations: false,
+            pieceAnimations: false
+        };
+        const cloned = new GameState(simulationSettings);
 
         // Mark as simulation to prevent logging
         cloned.markAsSimulation();
@@ -496,6 +502,38 @@ export class GameState {
             // Roll new dice
             this.rollDice();
         }
+    }
+
+    selectAIPiece(): void {
+        // Only allow when paused and it's an AI player's turn
+        if (!this.debugPaused) return;
+
+        const currentPlayerAgent = this.getCurrentPlayerAgent();
+        if (!currentPlayerAgent || currentPlayerAgent.playerType !== 'computer') {
+            console.log('Debug: Current player is not a computer player');
+            return;
+        }
+
+        // Only proceed if dice have been rolled and there are eligible pieces
+        if (this.data.diceRolls.length === 0 || this.data.eligiblePieces.length === 0) {
+            console.log('Debug: No dice rolled or no eligible pieces to select');
+            return;
+        }
+
+        console.log('Debug: AI selecting piece without moving...');
+
+        // Deselect any currently selected piece first
+        if (this.data.selectedPiece !== null) {
+            console.log('Debug: Deselecting current piece before AI selection');
+            this.data.selectedPiece = null;
+        }
+
+        // Use the AI's selection logic to choose the best piece
+        const computerAgent = currentPlayerAgent as import('./PlayerAgent').ComputerPlayerAgent;
+        const selectedPieceIndex = computerAgent.evaluateAndSelectPiece(this, this.data.eligiblePieces);
+
+        console.log(`Debug: AI selected piece ${selectedPieceIndex}`);
+        this.selectPiece(selectedPieceIndex);
     }
 
     private async handleGameStateChange(): Promise<void> {

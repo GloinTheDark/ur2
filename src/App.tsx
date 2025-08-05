@@ -176,6 +176,34 @@ function App() {
               🎲 Reroll Dice
             </button>
           )}
+          {/* Show select AI piece button when paused, dice rolled, and it's an AI player's turn with eligible pieces */}
+          {isPaused && state.diceRolls.length > 0 && state.eligiblePieces.length > 0 && gameState.isCurrentPlayerComputer() && !state.animatingPiece && !state.animatingCapturedPiece && (
+            <button
+              onClick={() => gameState.selectAIPiece()}
+              style={{
+                padding: '8px 16px',
+                fontSize: '14px',
+                fontWeight: 'bold',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                backgroundColor: '#9966ff',
+                color: '#fff',
+                border: 'none',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.transform = 'translateY(-1px)';
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.4)';
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.3)';
+              }}
+            >
+              🤖 Select AI Piece
+            </button>
+          )}
           <div style={{
             fontSize: '12px',
             color: '#ccc',
