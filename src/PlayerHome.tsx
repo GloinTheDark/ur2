@@ -91,11 +91,6 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
         const currentPlayerAgent = gameState.getCurrentPlayerAgent();
         const isAI = currentPlayerAgent?.playerType === 'computer';
 
-        // Check if game hasn't started yet
-        if (!state.gameStarted) {
-            return isAI ? 'Thinking...' : 'Roll dice';
-        }
-
         // Check if animating
         if (gameState.isAnimating()) {
             // Check if it's dice animation

@@ -232,8 +232,8 @@ function App() {
         </div>
       )}
 
-      {/* Debug Mode Pause Button */}
-      {isDebugMode && state.gameStarted && (
+      {/* Debug Mode Panel - Always show when debug mode is enabled */}
+      {isDebugMode && (
         <div style={{
           position: 'fixed',
           top: '10px',
@@ -246,115 +246,120 @@ function App() {
           flexDirection: 'column',
           gap: '8px'
         }}>
-          <button
-            onClick={() => setIsPaused(!isPaused)}
-            style={{
-              padding: '8px 16px',
-              fontSize: '14px',
-              fontWeight: 'bold',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              backgroundColor: isPaused ? '#ff4444' : '#44ff44',
-              color: '#fff',
-              border: 'none',
-              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
-              transition: 'all 0.2s ease'
-            }}
-            onMouseOver={(e) => {
-              e.currentTarget.style.transform = 'translateY(-1px)';
-              e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.4)';
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.3)';
-            }}
-          >
-            {isPaused ? '▶️ Resume AI' : '⏸️ Pause AI'}
-          </button>
-          {isPaused && (
-            <button
-              onClick={() => gameState.stepAI()}
-              style={{
-                padding: '8px 16px',
-                fontSize: '14px',
-                fontWeight: 'bold',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                backgroundColor: '#3388ff',
-                color: '#fff',
-                border: 'none',
-                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
-                transition: 'all 0.2s ease'
-              }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.transform = 'translateY(-1px)';
-                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.4)';
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.3)';
-              }}
-            >
-              ⏭️ Step AI
-            </button>
+          {/* Game-specific debug buttons - only show when game is started */}
+          {state.gameStarted && (
+            <>
+              <button
+                onClick={() => setIsPaused(!isPaused)}
+                style={{
+                  padding: '8px 16px',
+                  fontSize: '14px',
+                  fontWeight: 'bold',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  backgroundColor: isPaused ? '#ff4444' : '#44ff44',
+                  color: '#fff',
+                  border: 'none',
+                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.4)';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.3)';
+                }}
+              >
+                {isPaused ? '▶️ Resume AI' : '⏸️ Pause AI'}
+              </button>
+              {isPaused && (
+                <button
+                  onClick={() => gameState.stepAI()}
+                  style={{
+                    padding: '8px 16px',
+                    fontSize: '14px',
+                    fontWeight: 'bold',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    backgroundColor: '#3388ff',
+                    color: '#fff',
+                    border: 'none',
+                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
+                    transition: 'all 0.2s ease'
+                  }}
+                  onMouseOver={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-1px)';
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.4)';
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.3)';
+                  }}
+                >
+                  ⏭️ Step AI
+                </button>
+              )}
+              {/* Show reroll dice button when dice have been rolled (including when waiting for pass turn) */}
+              {state.diceRolls.length > 0 && !state.animatingPiece && !state.animatingCapturedPiece && (
+                <button
+                  onClick={() => gameState.rerollDice()}
+                  style={{
+                    padding: '8px 16px',
+                    fontSize: '14px',
+                    fontWeight: 'bold',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    backgroundColor: '#ff8800',
+                    color: '#fff',
+                    border: 'none',
+                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
+                    transition: 'all 0.2s ease'
+                  }}
+                  onMouseOver={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-1px)';
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.4)';
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.3)';
+                  }}
+                >
+                  🎲 Reroll Dice
+                </button>
+              )}
+              {/* Show select AI piece button when paused, dice rolled, and it's an AI player's turn with eligible pieces */}
+              {isPaused && state.diceRolls.length > 0 && state.eligiblePieces.length > 0 && gameState.isCurrentPlayerComputer() && !state.animatingPiece && !state.animatingCapturedPiece && (
+                <button
+                  onClick={() => { gameState.selectAIPiece().catch(console.error); }}
+                  style={{
+                    padding: '8px 16px',
+                    fontSize: '14px',
+                    fontWeight: 'bold',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    backgroundColor: '#9966ff',
+                    color: '#fff',
+                    border: 'none',
+                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
+                    transition: 'all 0.2s ease'
+                  }}
+                  onMouseOver={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-1px)';
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.4)';
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.3)';
+                  }}
+                >
+                  🤖 Select AI Piece
+                </button>
+              )}
+            </>
           )}
-          {/* Show reroll dice button when dice have been rolled (including when waiting for pass turn) */}
-          {state.diceRolls.length > 0 && !state.animatingPiece && !state.animatingCapturedPiece && (
-            <button
-              onClick={() => gameState.rerollDice()}
-              style={{
-                padding: '8px 16px',
-                fontSize: '14px',
-                fontWeight: 'bold',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                backgroundColor: '#ff8800',
-                color: '#fff',
-                border: 'none',
-                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
-                transition: 'all 0.2s ease'
-              }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.transform = 'translateY(-1px)';
-                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.4)';
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.3)';
-              }}
-            >
-              🎲 Reroll Dice
-            </button>
-          )}
-          {/* Show select AI piece button when paused, dice rolled, and it's an AI player's turn with eligible pieces */}
-          {isPaused && state.diceRolls.length > 0 && state.eligiblePieces.length > 0 && gameState.isCurrentPlayerComputer() && !state.animatingPiece && !state.animatingCapturedPiece && (
-            <button
-              onClick={() => { gameState.selectAIPiece().catch(console.error); }}
-              style={{
-                padding: '8px 16px',
-                fontSize: '14px',
-                fontWeight: 'bold',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                backgroundColor: '#9966ff',
-                color: '#fff',
-                border: 'none',
-                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
-                transition: 'all 0.2s ease'
-              }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.transform = 'translateY(-1px)';
-                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.4)';
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.3)';
-              }}
-            >
-              🤖 Select AI Piece
-            </button>
-          )}
-          {/* Debug Logging Control Button */}
+          {/* Debug Logging Control Button - Always available in debug mode */}
           <button
             onClick={() => setShowLoggingControl(true)}
             style={{
