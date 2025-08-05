@@ -70,6 +70,61 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
         (player === 'white' ? houseControl.whiteHouses > houseControl.blackHouses :
             houseControl.blackHouses > houseControl.whiteHouses) : false;
 
+    // Get status message for this player
+    const getStatusMessage = (): string => {
+        // Check if game is over
+        if (winner) {
+            return winner === player ? 'Victory!' : 'Defeat';
+        }
+
+        // During initial roll phase, no player has a turn yet
+        if (state.gamePhase === 'initial-roll') {
+            return 'Waiting for turn';
+        }
+
+        // Check if it's this player's turn
+        if (state.currentPlayer !== player) {
+            return 'Waiting for turn';
+        }
+
+        // Get current player agent to determine if AI or human
+        const currentPlayerAgent = gameState.getCurrentPlayerAgent();
+        const isAI = currentPlayerAgent?.playerType === 'computer';
+
+        // Check if game hasn't started yet
+        if (!state.gameStarted) {
+            return isAI ? 'Thinking...' : 'Roll dice';
+        }
+
+        // Check if animating
+        if (gameState.isAnimating()) {
+            // Check if it's dice animation
+            if (state.diceAnimating) {
+                return 'Rolling...';
+            } else {
+                // Must be piece animation
+                return 'Moving...';
+            }
+        }
+
+        // Check game phase
+        if (state.diceRolls.length === 0) {
+            // Need to roll dice
+            return isAI ? 'Thinking...' : 'Roll dice';
+        } else if (state.selectedPiece === null) {
+            // Need to select piece
+            if (state.eligiblePieces.length === 0) {
+                // No eligible pieces, turn will end automatically
+                return 'No moves available';
+            } else {
+                return isAI ? 'Thinking...' : 'Select piece to move';
+            }
+        } else {
+            // Piece selected, need to move
+            return isAI ? 'Thinking...' : 'Select destination';
+        }
+    };
+
     return (
         <div style={{ marginTop: isWhite ? '24px' : '16px' }}>
             <h3 style={{
@@ -124,7 +179,7 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
                                 eligibleBlankPieces.length > 0 &&
                                 state.gameStarted && !winner &&
                                 state.currentPlayer === player &&
-                                !gameState.isAnimating();
+                                !(state.animatingPiece?.isAnimating || state.animatingCapturedPiece?.isAnimating);
 
                             // Check if this leftmost blank piece is selected
                             isSelected = isLeftmostBlankSlot && !!(selectedPiece &&
@@ -281,6 +336,19 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
                         />
                     </div>
                 )}
+            </div>
+
+            {/* Status Line */}
+            <div style={{
+                textAlign: 'center',
+                marginTop: '8px',
+                fontSize: '0.9rem',
+                fontWeight: '500',
+                color: titleColor,
+                filter: 'var(--dark-mode-filter, none)',
+                minHeight: '20px'
+            }}>
+                {getStatusMessage()}
             </div>
         </div>
     );

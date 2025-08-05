@@ -40,6 +40,7 @@ const DiceRoller = forwardRef<DiceRollerRef, DiceRollerProps>(({ gameState }, re
         }
 
         setIsRolling(true);
+        gameState.startDiceAnimation(); // Notify GameState that dice animation started
 
         // Get dice count from current rule set
         const currentRuleSet = gameState.getCurrentRuleSet();
@@ -59,6 +60,7 @@ const DiceRoller = forwardRef<DiceRollerRef, DiceRollerProps>(({ gameState }, re
             const finalRoll = gameState.state.diceRolls;
             setAnimatedRoll(finalRoll);
             setIsRolling(false);
+            gameState.finishDiceAnimation(); // Notify GameState that dice animation finished
         }, ANIMATION_DURATION);
     };
 
@@ -79,6 +81,7 @@ const DiceRoller = forwardRef<DiceRollerRef, DiceRollerProps>(({ gameState }, re
         }
 
         setIsInitialRolling(true);
+        gameState.startDiceAnimation(); // Notify GameState that dice animation started
 
         // Start animation with random dice values
         const animationInterval = setInterval(() => {
@@ -94,6 +97,7 @@ const DiceRoller = forwardRef<DiceRollerRef, DiceRollerProps>(({ gameState }, re
                 setAnimatedInitialRoll(finalRoll);
             }
             setIsInitialRolling(false);
+            gameState.finishDiceAnimation(); // Notify GameState that dice animation finished
         }, ANIMATION_DURATION);
     };
 

@@ -55,6 +55,7 @@ export interface GameStateData {
     turnCount: number; // Track number of turns played
     diceRolls: number[];
     diceTotal: number;
+    diceAnimating: boolean;
     houseBonusApplied: boolean;
     templeBlessingApplied: boolean;
     eligiblePieces: number[];
@@ -140,6 +141,7 @@ export class GameState {
             turnCount: this.data.turnCount,
             diceRolls: [...this.data.diceRolls],
             diceTotal: this.data.diceTotal,
+            diceAnimating: this.data.diceAnimating,
             houseBonusApplied: this.data.houseBonusApplied,
             templeBlessingApplied: this.data.templeBlessingApplied,
             eligiblePieces: [...this.data.eligiblePieces],
@@ -293,7 +295,7 @@ export class GameState {
 
     // Check if any pieces on a square are eligible to move
     hasEligiblePieceOnSquare(squareNumber: number): boolean {
-        if (!this.data.gameStarted || this.isAnimating()) return false;
+        if (!this.data.gameStarted || this.data.animatingPiece?.isAnimating || this.data.animatingCapturedPiece?.isAnimating) return false;
 
         const currentPlayerPieces = this.getPiecesOnSquare(squareNumber, this.data.currentPlayer);
 
@@ -326,6 +328,7 @@ export class GameState {
             turnCount: 0,
             diceRolls: [],
             diceTotal: 0,
+            diceAnimating: false,
             houseBonusApplied: false,
             templeBlessingApplied: false,
             eligiblePieces: [],
@@ -687,6 +690,7 @@ export class GameState {
     resetDice(): void {
         this.data.diceRolls = [];
         this.data.diceTotal = 0;
+        this.data.diceAnimating = false;
         this.data.houseBonusApplied = false;
         this.data.templeBlessingApplied = false;
         this.data.eligiblePieces = [];
@@ -868,7 +872,19 @@ export class GameState {
 
     // Check if any animation is currently in progress
     isAnimating(): boolean {
-        return this.data.animatingPiece?.isAnimating === true || this.data.animatingCapturedPiece?.isAnimating === true;
+        return this.data.diceAnimating || this.data.animatingPiece?.isAnimating === true || this.data.animatingCapturedPiece?.isAnimating === true;
+    }
+
+    // Start dice animation
+    startDiceAnimation(): void {
+        this.data.diceAnimating = true;
+        this.notify();
+    }
+
+    // Finish dice animation
+    finishDiceAnimation(): void {
+        this.data.diceAnimating = false;
+        this.notify();
     }
 
     // Get current animation data
@@ -1007,8 +1023,9 @@ export class GameState {
 
     // Get pieces that should be evaluated for movement
     private getPiecesToEvaluate(): number[] {
-        // Don't evaluate pieces if no dice have been rolled or if animations are in progress
-        if (this.data.diceRolls.length === 0 || this.data.diceTotal === 0 || this.isAnimating()) {
+        // Don't evaluate pieces if no dice have been rolled or if piece animations are in progress
+        if (this.data.diceRolls.length === 0 || this.data.diceTotal === 0 ||
+            this.data.animatingPiece?.isAnimating || this.data.animatingCapturedPiece?.isAnimating) {
             return [];
         }
 
