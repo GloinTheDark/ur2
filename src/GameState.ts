@@ -504,7 +504,7 @@ export class GameState {
         }
     }
 
-    selectAIPiece(): void {
+    async selectAIPiece(): Promise<void> {
         // Only allow when paused and it's an AI player's turn
         if (!this.debugPaused) return;
 
@@ -530,7 +530,7 @@ export class GameState {
 
         // Use the AI's selection logic to choose the best piece
         const computerAgent = currentPlayerAgent as import('./PlayerAgent').ComputerPlayerAgent;
-        const selectedPieceIndex = computerAgent.evaluateAndSelectPiece(this, this.data.eligiblePieces);
+        const selectedPieceIndex = await computerAgent.evaluateAndSelectPiece(this, this.data.eligiblePieces);
 
         console.log(`Debug: AI selected piece ${selectedPieceIndex}`);
         this.selectPiece(selectedPieceIndex);

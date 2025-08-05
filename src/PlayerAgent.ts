@@ -78,9 +78,8 @@ const AI_DELAYS = {
 
 // Monte Carlo simulation constants
 const MCTS_CONFIG = {
-    SIMULATIONS: 400,
-    MAX_DEPTH: 4,
-    EXPLORATION_FACTOR: 1.4, // UCB1 exploration parameter
+    SIMULATIONS: 300,
+    MAX_DEPTH: 5,
     ADVANCEMENT_GAMMA: 1.5, // Gamma curve for piece advancement scoring (1.0 = linear, >1.0 = progressive)
     HEURISTIC_WEIGHT: 0.0 // Weight for heuristic vs simulation (0.0 = pure simulation, 1.0 = pure heuristic)
 } as const;
@@ -171,7 +170,7 @@ export class ComputerPlayerAgent implements PlayerAgent {
 
         // Select a piece based on difficulty/strategy
         console.log(`AI onMoveRequired: Selecting best move for ${this.difficulty} difficulty`);
-        const selectedPieceIndex = this.selectBestMove(gameState, eligiblePieces);
+        const selectedPieceIndex = await this.selectBestMove(gameState, eligiblePieces);
         console.log(`AI onMoveRequired: Selected piece ${selectedPieceIndex}`);
 
         gameState.selectPiece(selectedPieceIndex);
@@ -196,18 +195,18 @@ export class ComputerPlayerAgent implements PlayerAgent {
         return difficultyNames[this.difficulty];
     }
 
-    private selectBestMove(gameState: GameState, eligiblePieces: number[]): number {
+    private async selectBestMove(gameState: GameState, eligiblePieces: number[]): Promise<number> {
         // Use Monte Carlo Tree Search for hard difficulty
         if (this.difficulty === 'hard') {
             const startTime = performance.now();
-            const result = this.selectMCTSMove(gameState, eligiblePieces);
+            const result = await this.selectMCTSMove(gameState, eligiblePieces);
             const elapsedTime = performance.now() - startTime;
 
             console.log(`MCTS: Total time ${elapsedTime.toFixed(2)}ms`);
 
             // Warn if we exceed our 500ms budget
-            if (elapsedTime > 500) {
-                console.warn(`MCTS: Exceeded time budget! ${elapsedTime.toFixed(2)}ms > 500ms`);
+            if (elapsedTime > 1500) {
+                console.warn(`MCTS: Exceeded time budget! ${elapsedTime.toFixed(2)}ms > 1500ms`);
             }
 
             return result;
@@ -235,11 +234,11 @@ export class ComputerPlayerAgent implements PlayerAgent {
     }
 
     // Public method for debug purposes - allows external access to AI decision making
-    public evaluateAndSelectPiece(gameState: GameState, eligiblePieces: number[]): number {
-        return this.selectBestMove(gameState, eligiblePieces);
+    public async evaluateAndSelectPiece(gameState: GameState, eligiblePieces: number[]): Promise<number> {
+        return await this.selectBestMove(gameState, eligiblePieces);
     }
 
-    private selectMCTSMove(gameState: GameState, eligiblePieces: number[]): number {
+    private async selectMCTSMove(gameState: GameState, eligiblePieces: number[]): Promise<number> {
         const legalMoves = gameState.getLegalMoves().filter(move => eligiblePieces.includes(move.pieceIndex));
 
         if (legalMoves.length === 1) {
@@ -253,7 +252,7 @@ export class ComputerPlayerAgent implements PlayerAgent {
 
         // Evaluate each possible move using Monte Carlo simulations
         for (const move of legalMoves) {
-            const score = this.evaluateMoveWithMCTS(gameState, move.pieceIndex);
+            const score = await this.evaluateMoveWithMCTS(gameState, move.pieceIndex);
 
             // Get piece starting position for logging
             const myPositions = this.color === 'white' ? gameState.state.whitePiecePositions : gameState.state.blackPiecePositions;
@@ -265,6 +264,9 @@ export class ComputerPlayerAgent implements PlayerAgent {
                 bestScore = score;
                 bestPiece = move.pieceIndex;
             }
+
+            // Yield time to UI between move evaluations
+            await this.yieldToUI();
         }
 
         console.log(`MCTS: Selected piece ${bestPiece} with score ${bestScore.toFixed(4)}`);
@@ -272,7 +274,7 @@ export class ComputerPlayerAgent implements PlayerAgent {
         return bestPiece;
     }
 
-    private evaluateMoveWithMCTS(gameState: GameState, pieceIndex: number): number {
+    private async evaluateMoveWithMCTS(gameState: GameState, pieceIndex: number): Promise<number> {
         // Get the heuristic evaluation as a baseline
         const heuristicEval = this.evaluateMove(gameState, pieceIndex);
         const heuristicScore = heuristicEval.score;
@@ -293,6 +295,9 @@ export class ComputerPlayerAgent implements PlayerAgent {
         const simulations = MCTS_CONFIG.SIMULATIONS;
         let successfulSimulations = 0;
 
+        // Yield time to UI periodically during simulations
+        const yieldInterval = 25; // Yield every 25 simulations
+
         for (let i = 0; i < simulations; i++) {
             try {
                 // Clone the game state for simulation
@@ -310,6 +315,11 @@ export class ComputerPlayerAgent implements PlayerAgent {
             } catch {
                 // If simulation fails, don't count it
                 continue;
+            }
+
+            // Yield time to UI periodically
+            if (i > 0 && i % yieldInterval === 0) {
+                await this.yieldToUI();
             }
         }
 
@@ -583,5 +593,10 @@ export class ComputerPlayerAgent implements PlayerAgent {
 
     private delay(ms: number): Promise<void> {
         return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    // Yield time to the UI to keep it responsive during long computations
+    private yieldToUI(): Promise<void> {
+        return new Promise(resolve => setTimeout(resolve, 0));
     }
 }

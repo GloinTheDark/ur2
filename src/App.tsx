@@ -179,7 +179,7 @@ function App() {
           {/* Show select AI piece button when paused, dice rolled, and it's an AI player's turn with eligible pieces */}
           {isPaused && state.diceRolls.length > 0 && state.eligiblePieces.length > 0 && gameState.isCurrentPlayerComputer() && !state.animatingPiece && !state.animatingCapturedPiece && (
             <button
-              onClick={() => gameState.selectAIPiece()}
+              onClick={() => { gameState.selectAIPiece().catch(console.error); }}
               style={{
                 padding: '8px 16px',
                 fontSize: '14px',
