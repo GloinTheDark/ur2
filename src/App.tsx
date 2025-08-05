@@ -6,6 +6,7 @@ import type { DiceRollerRef } from './DiceRoller'
 import GameSetup from './GameSetup'
 import GameSettings from './GameSettings'
 import UserPreferences from './UserPreferences'
+import ConfirmModal from './ConfirmModal'
 import type { UserPreferencesData } from './UserPreferences'
 import PlayerHome from './PlayerHome'
 import GameLayout from './GameLayout'
@@ -36,6 +37,7 @@ function App() {
   const [showPath, setShowPath] = useState<boolean>(false);
   const [showGameSetup, setShowGameSetup] = useState<boolean>(false);
   const [showPreferences, setShowPreferences] = useState<boolean>(false);
+  const [showQuitConfirm, setShowQuitConfirm] = useState<boolean>(false);
   const diceRollerRef = useRef<DiceRollerRef>(null);
 
   // Debug mode - check URL parameter
@@ -200,12 +202,7 @@ function App() {
           {/* Quit Game Button - only during game */}
           {state.gameStarted && (
             <button
-              onClick={() => {
-                if (confirm('Are you sure you want to quit the current game?')) {
-                  gameState.resetGame();
-                  setShowGameSetup(false);
-                }
-              }}
+              onClick={() => setShowQuitConfirm(true)}
               style={{
                 padding: '8px 16px',
                 fontSize: '14px',
@@ -510,6 +507,22 @@ function App() {
           pieceAnimations: settings.pieceAnimations
         }}
         onPreferencesChange={savePreferences}
+      />
+
+      {/* Quit Game Confirmation Modal */}
+      <ConfirmModal
+        isOpen={showQuitConfirm}
+        title="Quit Game"
+        message="Are you sure you want to quit the current game? Your progress will be lost."
+        confirmText="Quit Game"
+        cancelText="Continue Playing"
+        confirmButtonColor="#ff4444"
+        onConfirm={() => {
+          gameState.resetGame();
+          setShowGameSetup(false);
+          setShowQuitConfirm(false);
+        }}
+        onCancel={() => setShowQuitConfirm(false)}
       />
 
       {winner && (
