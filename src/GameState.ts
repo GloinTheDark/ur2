@@ -460,17 +460,42 @@ export class GameState {
 
     stepAI(): void {
         if (!this.debugPaused) return; // Only step when paused
-        
+
         // Temporarily unpause, trigger state change, then re-pause after a short delay
         this.debugPaused = false;
         this.notify();
-        
+
         // Re-pause after allowing one AI action
         setTimeout(() => {
             if (!this.debugPaused) { // Only re-pause if still unpaused
                 this.debugPaused = true;
             }
         }, 100); // Short delay to allow the AI action to start
+    }
+
+    rerollDice(): void {
+        // Only allow rerolling if dice have been rolled
+        if (this.data.diceRolls.length > 0) {
+            console.log('Debug: Rerolling dice');
+
+            // Deselect any selected piece first since the reroll will change available moves
+            if (this.data.selectedPiece !== null) {
+                console.log('Debug: Deselecting piece before reroll');
+                this.data.selectedPiece = null;
+            }
+
+            // Clear current dice state
+            this.data.diceRolls = [];
+            this.data.diceTotal = 0;
+            this.data.houseBonusApplied = false;
+            this.data.templeBlessingApplied = false;
+            this.data.eligiblePieces = [];
+            this.data.legalMoves = [];
+            this.data.illegalMoves = [];
+
+            // Roll new dice
+            this.rollDice();
+        }
     }
 
     private async handleGameStateChange(): Promise<void> {
@@ -635,7 +660,15 @@ export class GameState {
     // Piece selection
     selectPiece(pieceIndex: number): void {
         if (this.data.eligiblePieces.includes(pieceIndex)) {
-            this.data.selectedPiece = { player: this.data.currentPlayer, index: pieceIndex };
+            // If the piece is already selected, deselect it
+            if (this.data.selectedPiece && 
+                this.data.selectedPiece.player === this.data.currentPlayer && 
+                this.data.selectedPiece.index === pieceIndex) {
+                this.data.selectedPiece = null;
+            } else {
+                // Select the piece
+                this.data.selectedPiece = { player: this.data.currentPlayer, index: pieceIndex };
+            }
             this.notify();
         }
     }

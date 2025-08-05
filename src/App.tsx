@@ -148,6 +148,34 @@ function App() {
               ⏭️ Step AI
             </button>
           )}
+          {/* Show reroll dice button when dice have been rolled (including when waiting for pass turn) */}
+          {state.diceRolls.length > 0 && !state.animatingPiece && !state.animatingCapturedPiece && (
+            <button
+              onClick={() => gameState.rerollDice()}
+              style={{
+                padding: '8px 16px',
+                fontSize: '14px',
+                fontWeight: 'bold',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                backgroundColor: '#ff8800',
+                color: '#fff',
+                border: 'none',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.transform = 'translateY(-1px)';
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.4)';
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.3)';
+              }}
+            >
+              🎲 Reroll Dice
+            </button>
+          )}
           <div style={{
             fontSize: '12px',
             color: '#ccc',
