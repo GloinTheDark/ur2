@@ -110,7 +110,11 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
         // Check game phase
         if (state.diceRolls.length === 0) {
             // Need to roll dice
-            return isAI ? 'Thinking...' : 'Roll dice';
+            if (state.isExtraTurn) {
+                return isAI ? 'Thinking...' : 'Extra turn! Roll again';
+            } else {
+                return isAI ? 'Thinking...' : 'Roll dice';
+            }
         } else if (state.selectedPiece === null) {
             // Need to select piece
             if (state.eligiblePieces.length === 0) {

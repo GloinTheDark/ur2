@@ -53,6 +53,7 @@ export interface GameStateData {
     gamePhase: 'initial-roll' | 'playing';
     initialRollResult: number | null;
     turnCount: number; // Track number of turns played
+    isExtraTurn: boolean; // Track if current turn is an extra turn
     diceRolls: number[];
     diceTotal: number;
     diceAnimating: boolean;
@@ -139,6 +140,7 @@ export class GameState {
             gamePhase: this.data.gamePhase,
             initialRollResult: this.data.initialRollResult,
             turnCount: this.data.turnCount,
+            isExtraTurn: this.data.isExtraTurn,
             diceRolls: [...this.data.diceRolls],
             diceTotal: this.data.diceTotal,
             diceAnimating: this.data.diceAnimating,
@@ -326,6 +328,7 @@ export class GameState {
             gamePhase: 'initial-roll',
             initialRollResult: null,
             turnCount: 0,
+            isExtraTurn: false,
             diceRolls: [],
             diceTotal: 0,
             diceAnimating: false,
@@ -386,6 +389,7 @@ export class GameState {
     proceedToGame(): void {
         this.data.gamePhase = 'playing';
         this.data.initialRollResult = null;
+        this.data.isExtraTurn = false; // Reset extra turn flag for the first turn
 
         // Start the first turn (will set turn count to 1)
         this.startTurn();
@@ -687,7 +691,8 @@ export class GameState {
         this.notify();
     }
 
-    resetDice(): void {
+    resetTurn(extraTurn: boolean): void {
+        // Reset dice state
         this.data.diceRolls = [];
         this.data.diceTotal = 0;
         this.data.diceAnimating = false;
@@ -697,6 +702,15 @@ export class GameState {
         this.data.legalMoves = [];
         this.data.illegalMoves = [];
         this.data.selectedPiece = null;
+
+        // Set extra turn flag for the next turn
+        this.data.isExtraTurn = extraTurn;
+
+        // Switch player if didn't get extra turn
+        if (!extraTurn) {
+            this.data.currentPlayer = this.data.currentPlayer === 'white' ? 'black' : 'white';
+        }
+
         // Don't notify here - let the calling method handle notification
     }
 
@@ -735,13 +749,8 @@ export class GameState {
         const result = this.executeMoveWithCaptureInfo(player, pieceIndex, diceRoll);
         const extraTurn = result.extraTurn;
 
-        // Reset dice state
-        this.resetDice();
-
-        // Switch player if didn't get extra turn
-        if (!extraTurn) {
-            this.data.currentPlayer = this.data.currentPlayer === 'white' ? 'black' : 'white';
-        }
+        // Reset turn state and handle player switching
+        this.resetTurn(extraTurn);
 
         // Start the new turn
         this.startTurn();
@@ -855,13 +864,8 @@ export class GameState {
 
     // Complete the turn (called after all animations finish)
     private completeTurn(extraTurn: boolean): void {
-        // Reset dice state
-        this.resetDice();
-
-        // Switch player if didn't get extra turn
-        if (!extraTurn) {
-            this.data.currentPlayer = this.data.currentPlayer === 'white' ? 'black' : 'white';
-        }
+        // Reset turn state and handle player switching
+        this.resetTurn(extraTurn);
 
         // Start the new turn
         this.startTurn();
@@ -1353,9 +1357,8 @@ export class GameState {
     }
 
     passTurn(): void {
-        // Reset dice state and switch player in one atomic operation
-        this.resetDice();
-        this.data.currentPlayer = this.data.currentPlayer === 'white' ? 'black' : 'white';
+        // Reset turn state and switch player (no extra turn when passing)
+        this.resetTurn(false);
 
         // Start the new turn
         this.startTurn();
