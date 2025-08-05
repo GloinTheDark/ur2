@@ -11,6 +11,7 @@ import type { RuleSet } from './RuleSet';
 import { HumanPlayerAgent, ComputerPlayerAgent } from './PlayerAgent';
 import type { PlayerAgent, PlayerType } from './PlayerAgent';
 import type { DiceRollerRef } from './DiceRoller';
+import { AppLog } from './AppSettings';
 
 export type MoveIllegalReason =
     | 'blocked-by-same-color'
@@ -482,11 +483,11 @@ export class GameState {
     rerollDice(): void {
         // Only allow rerolling if dice have been rolled
         if (this.data.diceRolls.length > 0) {
-            console.log('Debug: Rerolling dice');
+            AppLog.gameState('Debug: Rerolling dice');
 
             // Deselect any selected piece first since the reroll will change available moves
             if (this.data.selectedPiece !== null) {
-                console.log('Debug: Deselecting piece before reroll');
+                AppLog.gameState('Debug: Deselecting piece before reroll');
                 this.data.selectedPiece = null;
             }
 
@@ -510,21 +511,21 @@ export class GameState {
 
         const currentPlayerAgent = this.getCurrentPlayerAgent();
         if (!currentPlayerAgent || currentPlayerAgent.playerType !== 'computer') {
-            console.log('Debug: Current player is not a computer player');
+            AppLog.gameState('Debug: Current player is not a computer player');
             return;
         }
 
         // Only proceed if dice have been rolled and there are eligible pieces
         if (this.data.diceRolls.length === 0 || this.data.eligiblePieces.length === 0) {
-            console.log('Debug: No dice rolled or no eligible pieces to select');
+            AppLog.gameState('Debug: No dice rolled or no eligible pieces to select');
             return;
         }
 
-        console.log('Debug: AI selecting piece without moving...');
+        AppLog.gameState('Debug: AI selecting piece without moving...');
 
         // Deselect any currently selected piece first
         if (this.data.selectedPiece !== null) {
-            console.log('Debug: Deselecting current piece before AI selection');
+            AppLog.gameState('Debug: Deselecting current piece before AI selection');
             this.data.selectedPiece = null;
         }
 
@@ -532,7 +533,7 @@ export class GameState {
         const computerAgent = currentPlayerAgent as import('./PlayerAgent').ComputerPlayerAgent;
         const selectedPieceIndex = await computerAgent.evaluateAndSelectPiece(this, this.data.eligiblePieces);
 
-        console.log(`Debug: AI selected piece ${selectedPieceIndex}`);
+        AppLog.gameState(`Debug: AI selected piece ${selectedPieceIndex}`);
         this.selectPiece(selectedPieceIndex);
     }
 
@@ -671,7 +672,7 @@ export class GameState {
         // Use rule set to calculate the final total and apply any modifiers
         const rollResult = ruleSet.calculateDiceRoll(newRolls, this);
         if (!this.isSimulation) {
-            console.log(`Dice rolled: ${newRolls.join(', ')} (Total: ${rollResult.total})`);
+            AppLog.dice(`Dice rolled: ${newRolls.join(', ')} (Total: ${rollResult.total})`);
         }
         this.data.diceRolls = newRolls;
         this.data.diceTotal = rollResult.total;
@@ -1330,7 +1331,7 @@ export class GameState {
 
         // Log the new turn (unless simulating)
         if (!this.isSimulation) {
-            console.log(`Turn ${this.data.turnCount}: ${this.data.currentPlayer} player's turn`);
+            AppLog.gameState(`Turn ${this.data.turnCount}: ${this.data.currentPlayer} player's turn`);
         }
     }
 

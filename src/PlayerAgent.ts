@@ -1,5 +1,6 @@
 import React from 'react';
 import { GameState } from './GameState';
+import { AppLog } from './AppSettings';
 import type { DiceRollerRef } from './DiceRoller';
 
 export type PlayerType = 'human' | 'computer';
@@ -96,87 +97,87 @@ export class ComputerPlayerAgent implements PlayerAgent {
     }
 
     async onTurnStart(gameState: GameState): Promise<void> {
-        console.log(`AI onTurnStart: ${this.color} player (${this.difficulty}) called`);
+        AppLog.playerAgent(`AI onTurnStart: ${this.color} player (${this.difficulty}) called`);
 
         // Computer automatically rolls dice when it's their turn
         // PlayerManager ensures this is only called for computer players
 
         // Defensive check: only act if it's actually this computer's turn
         if (gameState.state.currentPlayer !== this.color) {
-            console.log(`AI onTurnStart: Not ${this.color}'s turn (current: ${gameState.state.currentPlayer}), returning`);
+            AppLog.playerAgent(`AI onTurnStart: Not ${this.color}'s turn (current: ${gameState.state.currentPlayer}), returning`);
             return;
         }
 
         if (gameState.state.gamePhase === 'playing' &&
             gameState.state.diceRolls.length === 0) {
 
-            console.log(`AI onTurnStart: Rolling dice for ${this.color} player`);
+            AppLog.playerAgent(`AI onTurnStart: Rolling dice for ${this.color} player`);
 
             // Add a small delay to make it feel more natural
             await this.delay(AI_DELAYS.ROLL_DICE);
 
             // Use animated roll if available and animations are enabled
             if (this.diceRollerRef.current && gameState.gameSettings.diceAnimations) {
-                console.log(`AI onTurnStart: Using animated dice roll`);
+                AppLog.playerAgent(`AI onTurnStart: Using animated dice roll`);
                 this.diceRollerRef.current.triggerRoll();
             } else {
-                console.log(`AI onTurnStart: Using direct dice roll (no animation)`);
+                AppLog.playerAgent(`AI onTurnStart: Using direct dice roll (no animation)`);
                 // Fall back to direct roll if animations are disabled or ref is not available
                 gameState.rollDice();
             }
         } else {
-            console.log(`AI onTurnStart: Not rolling dice - gamePhase: ${gameState.state.gamePhase}, diceRolls: ${gameState.state.diceRolls.length}`);
+            AppLog.playerAgent(`AI onTurnStart: Not rolling dice - gamePhase: ${gameState.state.gamePhase}, diceRolls: ${gameState.state.diceRolls.length}`);
         }
     }
 
     async onMoveRequired(gameState: GameState): Promise<void> {
-        console.log(`AI onMoveRequired: ${this.color} player (${this.difficulty}) called`);
+        AppLog.playerAgent(`AI onMoveRequired: ${this.color} player (${this.difficulty}) called`);
 
         // PlayerManager ensures this is only called for computer players
 
         // Defensive check: only act if it's actually this computer's turn
         if (gameState.state.currentPlayer !== this.color) {
-            console.log(`AI onMoveRequired: Not ${this.color}'s turn (current: ${gameState.state.currentPlayer}), returning`);
+            AppLog.playerAgent(`AI onMoveRequired: Not ${this.color}'s turn (current: ${gameState.state.currentPlayer}), returning`);
             return;
         }
 
         // Don't act if a piece has already been selected (prevents multiple calls)
         if (gameState.state.selectedPiece !== null) {
-            console.log(`AI onMoveRequired: Piece already selected (${gameState.state.selectedPiece}), returning`);
+            AppLog.playerAgent(`AI onMoveRequired: Piece already selected (${gameState.state.selectedPiece}), returning`);
             return;
         }
 
-        console.log(`AI onMoveRequired: Thinking for ${this.difficulty} difficulty...`);
+        AppLog.ai(`AI onMoveRequired: Thinking for ${this.difficulty} difficulty...`);
 
         const eligiblePieces = gameState.state.eligiblePieces;
-        console.log(`AI onMoveRequired: Found ${eligiblePieces.length} eligible pieces: [${eligiblePieces.join(', ')}]`);
+        AppLog.ai(`AI onMoveRequired: Found ${eligiblePieces.length} eligible pieces: [${eligiblePieces.join(', ')}]`);
 
         if (eligiblePieces.length === 0) {
             // No moves available, pass turn
-            console.log(`AI onMoveRequired: No eligible pieces, checking if should pass turn`);
+            AppLog.playerAgent(`AI onMoveRequired: No eligible pieces, checking if should pass turn`);
             if (gameState.shouldShowPassButton()) {
-                console.log(`AI onMoveRequired: Passing turn`);
+                AppLog.playerAgent(`AI onMoveRequired: Passing turn`);
                 // Add a short delay to make it feel more natural
                 await this.delay(AI_DELAYS.MIN_THINK);
                 gameState.passTurn();
             } else {
-                console.log(`AI onMoveRequired: Pass button not available, not passing`);
+                AppLog.playerAgent(`AI onMoveRequired: Pass button not available, not passing`);
             }
             return;
         }
 
         // Select a piece based on difficulty/strategy with timing
-        console.log(`AI onMoveRequired: Selecting best move for ${this.difficulty} difficulty`);
+        AppLog.ai(`AI onMoveRequired: Selecting best move for ${this.difficulty} difficulty`);
         const thinkStartTime = performance.now();
         const selectedPieceIndex = await this.selectBestMove(gameState, eligiblePieces);
         const actualThinkTime = performance.now() - thinkStartTime;
-        console.log(`AI onMoveRequired: Selected piece ${selectedPieceIndex}`);
+        AppLog.ai(`AI onMoveRequired: Selected piece ${selectedPieceIndex}`);
 
         // Delay to ensure minimum thinking time
         const minThinkTime = AI_DELAYS.MIN_THINK;
         const remainingThinkTime = Math.max(0, minThinkTime - actualThinkTime);
         if (remainingThinkTime > 0) {
-            console.log(`AI onMoveRequired: Adding ${remainingThinkTime.toFixed(0)}ms delay to reach minimum think time`);
+            AppLog.playerAgent(`AI onMoveRequired: Adding ${remainingThinkTime.toFixed(0)}ms delay to reach minimum think time`);
             await this.delay(remainingThinkTime);
         }
 
@@ -184,9 +185,9 @@ export class ComputerPlayerAgent implements PlayerAgent {
 
         // Small delay before moving
         await this.delay(AI_DELAYS.MOVE_PIECE);
-        console.log(`AI onMoveRequired: Moving piece ${selectedPieceIndex}`);
+        AppLog.playerAgent(`AI onMoveRequired: Moving piece ${selectedPieceIndex}`);
         gameState.movePiece(selectedPieceIndex);
-        console.log(`AI onMoveRequired: Move completed for ${this.color} player`);
+        AppLog.playerAgent(`AI onMoveRequired: Move completed for ${this.color} player`);
     }
 
     cleanup(): void {
@@ -209,11 +210,11 @@ export class ComputerPlayerAgent implements PlayerAgent {
             const result = await this.selectMCTSMove(gameState, eligiblePieces);
             const elapsedTime = performance.now() - startTime;
 
-            console.log(`MCTS: Total time ${elapsedTime.toFixed(2)}ms`);
+            AppLog.mcts(`MCTS: Total time ${elapsedTime.toFixed(2)}ms`);
 
             // Warn if we exceed our 500ms budget
             if (elapsedTime > 1500) {
-                console.warn(`MCTS: Exceeded time budget! ${elapsedTime.toFixed(2)}ms > 1500ms`);
+                AppLog.mcts(`MCTS: Exceeded time budget! ${elapsedTime.toFixed(2)}ms > 1500ms`);
             }
 
             return result;
@@ -255,7 +256,7 @@ export class ComputerPlayerAgent implements PlayerAgent {
         let bestPiece = eligiblePieces[0];
         let bestScore = -Infinity;
 
-        console.log(`MCTS: Evaluating ${legalMoves.length} possible moves with ${MCTS_CONFIG.SIMULATIONS} simulations each`);
+        AppLog.mcts(`MCTS: Evaluating ${legalMoves.length} possible moves with ${MCTS_CONFIG.SIMULATIONS} simulations each`);
 
         // Evaluate each possible move using Monte Carlo simulations
         for (const move of legalMoves) {
@@ -265,7 +266,7 @@ export class ComputerPlayerAgent implements PlayerAgent {
             const myPositions = this.color === 'white' ? gameState.state.whitePiecePositions : gameState.state.blackPiecePositions;
             const startPosition = myPositions[move.pieceIndex];
 
-            console.log(`MCTS: Piece ${move.pieceIndex} (pos: ${startPosition}) scored ${score.toFixed(4)}`);
+            AppLog.mcts(`MCTS: Piece ${move.pieceIndex} (pos: ${startPosition}) scored ${score.toFixed(4)}`);
 
             if (score > bestScore) {
                 bestScore = score;
@@ -276,7 +277,7 @@ export class ComputerPlayerAgent implements PlayerAgent {
             await this.yieldToUI();
         }
 
-        console.log(`MCTS: Selected piece ${bestPiece} with score ${bestScore.toFixed(4)}`);
+        AppLog.mcts(`MCTS: Selected piece ${bestPiece} with score ${bestScore.toFixed(4)}`);
 
         return bestPiece;
     }
@@ -287,7 +288,7 @@ export class ComputerPlayerAgent implements PlayerAgent {
         const heuristicScore = heuristicEval.score;
 
         // For debugging: log the heuristic evaluation
-        console.log(`MCTS Debug: Piece ${pieceIndex} heuristic: ${heuristicScore} (${heuristicEval.reasons.join(', ')})`);
+        AppLog.mcts(`MCTS Debug: Piece ${pieceIndex} heuristic: ${heuristicScore} (${heuristicEval.reasons.join(', ')})`);
 
         // Normalize the heuristic score to a reasonable range for MCTS
         if (heuristicScore === AI_SCORES.INVALID_MOVE) {
@@ -344,7 +345,7 @@ export class ComputerPlayerAgent implements PlayerAgent {
         const finalScore = (heuristicWeight * normalizedHeuristic) + (simulationWeight * simulationComponent);
 
         // For debugging: log the components
-        console.log(`MCTS Debug: Piece ${pieceIndex} simulation avg: ${averageSimulation.toFixed(2)}, final: ${finalScore.toFixed(4)}`);
+        AppLog.mcts(`MCTS Debug: Piece ${pieceIndex} simulation avg: ${averageSimulation.toFixed(2)}, final: ${finalScore.toFixed(4)}`);
 
         return finalScore;
     }
@@ -465,7 +466,7 @@ export class ComputerPlayerAgent implements PlayerAgent {
     }
 
     private rankMoves(gameState: GameState, eligiblePieces: number[]): MoveEvaluation[] {
-        console.log(`AI: Ranking ${eligiblePieces.length} eligible pieces for ${this.color} player`);
+        AppLog.ai(`AI: Ranking ${eligiblePieces.length} eligible pieces for ${this.color} player`);
 
         const moves: MoveEvaluation[] = [];
 
@@ -478,9 +479,9 @@ export class ComputerPlayerAgent implements PlayerAgent {
         const rankedMoves = moves.sort((a, b) => b.score - a.score);
 
         // Log the ranking results
-        console.log(`AI: Move rankings for ${this.color}:`);
+        AppLog.ai(`AI: Move rankings for ${this.color}:`);
         rankedMoves.forEach((move, index) => {
-            console.log(`  ${index + 1}. Piece ${move.pieceIndex}: ${move.score} points (${move.reasons.join(', ')})`);
+            AppLog.ai(`  ${index + 1}. Piece ${move.pieceIndex}: ${move.score} points (${move.reasons.join(', ')})`);
         });
 
         return rankedMoves;
