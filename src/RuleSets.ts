@@ -14,8 +14,8 @@ import { MastersRuleSet } from './rulesets/MastersRuleSet';
 
 // Rule set registry for easy access
 export const AVAILABLE_RULE_SETS = {
-    finkel: new FinkelRuleSet(),
     burglers: new BurglersOfUrRuleSet(),
+    finkel: new FinkelRuleSet(),
     blitz: new BlitzRuleSet(),
     masters: new MastersRuleSet()
 } as const;
