@@ -108,10 +108,6 @@ const DiceRoller = forwardRef<DiceRollerRef, DiceRollerProps>(({ gameState }, re
     const currentPlayer = state.currentPlayer;
     const rolls = state.diceRolls;
     const diceTotal = state.diceTotal;
-    const selectedPiece = state.selectedPiece;
-    const eligiblePieces = state.eligiblePieces;
-
-    const currentPositions = currentPlayer === 'white' ? state.whitePiecePositions : state.blackPiecePositions;
 
     // Initial roll phase
     if (state.gamePhase === 'initial-roll') {
@@ -208,12 +204,6 @@ const DiceRoller = forwardRef<DiceRollerRef, DiceRollerProps>(({ gameState }, re
     // Playing phase - normal game
     return (
         <div>
-            <div style={{ marginBottom: '12px', fontSize: '1.1rem', fontWeight: 'bold' }}>
-                Current Player: <span style={{ color: currentPlayer === 'white' ? 'var(--text-color, #666)' : 'var(--text-color, #333)' }}>
-                    {currentPlayer.charAt(0).toUpperCase() + currentPlayer.slice(1)}
-                </span>
-            </div>
-
             {rolls.length === 0 && !isRolling && (
                 <button
                     onClick={handleRoll}
@@ -282,9 +272,6 @@ const DiceRoller = forwardRef<DiceRollerRef, DiceRollerProps>(({ gameState }, re
 
             {gameState.shouldShowPassButton() && (
                 <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                    <div style={{ fontSize: '1rem', fontWeight: 'bold', color: '#ff6b6b' }}>
-                        {diceTotal === 0 ? 'No movement possible' : 'No valid moves available'}
-                    </div>
                     <button
                         onClick={() => gameState.passTurn()}
                         style={{
@@ -300,17 +287,6 @@ const DiceRoller = forwardRef<DiceRollerRef, DiceRollerProps>(({ gameState }, re
                     >
                         Pass Turn
                     </button>
-                </div>
-            )}
-
-            {rolls.length > 0 && diceTotal > 0 && eligiblePieces.length > 0 && (
-                <div style={{ marginTop: '16px' }}>
-                    <p style={{ marginBottom: '8px', fontSize: '1rem' }}>
-                        {selectedPiece !== null && selectedPiece.player === currentPlayer
-                            ? `Selected: Piece ${selectedPiece.index + 1} (${currentPositions[selectedPiece.index] === 'start' ? 'Start' : `Square ${currentPositions[selectedPiece.index]}`}) - Click destination to move`
-                            : 'Click on a highlighted piece to select it for movement'
-                        }
-                    </p>
                 </div>
             )}
         </div>
