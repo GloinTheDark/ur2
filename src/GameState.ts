@@ -627,7 +627,7 @@ export class GameState {
                 return {
                     diceAnimations: true,
                     pieceAnimations: true,
-                    currentRuleSet: 'Finkel',
+                    currentRuleSet: DEFAULT_RULE_SET.name,
                     ...validSettings
                 };
             } catch {
@@ -641,7 +641,7 @@ export class GameState {
         return {
             diceAnimations: true,
             pieceAnimations: true,
-            currentRuleSet: 'Finkel'
+            currentRuleSet: DEFAULT_RULE_SET.name
         };
     }
 

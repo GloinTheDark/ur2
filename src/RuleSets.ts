@@ -33,4 +33,4 @@ export function getRuleSetByName(name: string): RuleSet {
 }
 
 // Default rule set
-export const DEFAULT_RULE_SET = AVAILABLE_RULE_SETS.finkel;
+export const DEFAULT_RULE_SET = AVAILABLE_RULE_SETS.burglers;
