@@ -661,8 +661,8 @@ export class GameState {
     selectPiece(pieceIndex: number): void {
         if (this.data.eligiblePieces.includes(pieceIndex)) {
             // If the piece is already selected, deselect it
-            if (this.data.selectedPiece && 
-                this.data.selectedPiece.player === this.data.currentPlayer && 
+            if (this.data.selectedPiece &&
+                this.data.selectedPiece.player === this.data.currentPlayer &&
                 this.data.selectedPiece.index === pieceIndex) {
                 this.data.selectedPiece = null;
             } else {
