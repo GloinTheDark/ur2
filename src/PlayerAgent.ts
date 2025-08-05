@@ -71,9 +71,8 @@ const AI_SCORES = {
 // AI timing constants (in milliseconds)
 const AI_DELAYS = {
     ROLL_DICE: 500,
-    THINK: 800,
-    MOVE_PIECE: 300,
-    MCTS_THINK: 1000 // Extra time for Monte Carlo analysis
+    MIN_THINK: 800,
+    MOVE_PIECE: 300
 } as const;
 
 // Monte Carlo simulation constants
@@ -149,10 +148,6 @@ export class ComputerPlayerAgent implements PlayerAgent {
 
         console.log(`AI onMoveRequired: Thinking for ${this.difficulty} difficulty...`);
 
-        // Add thinking delay based on difficulty
-        const thinkTime = this.difficulty === 'hard' ? AI_DELAYS.MCTS_THINK : AI_DELAYS.THINK;
-        await this.delay(thinkTime);
-
         const eligiblePieces = gameState.state.eligiblePieces;
         console.log(`AI onMoveRequired: Found ${eligiblePieces.length} eligible pieces: [${eligiblePieces.join(', ')}]`);
 
@@ -161,6 +156,8 @@ export class ComputerPlayerAgent implements PlayerAgent {
             console.log(`AI onMoveRequired: No eligible pieces, checking if should pass turn`);
             if (gameState.shouldShowPassButton()) {
                 console.log(`AI onMoveRequired: Passing turn`);
+                // Add a short delay to make it feel more natural
+                await this.delay(AI_DELAYS.MIN_THINK);
                 gameState.passTurn();
             } else {
                 console.log(`AI onMoveRequired: Pass button not available, not passing`);
@@ -168,10 +165,20 @@ export class ComputerPlayerAgent implements PlayerAgent {
             return;
         }
 
-        // Select a piece based on difficulty/strategy
+        // Select a piece based on difficulty/strategy with timing
         console.log(`AI onMoveRequired: Selecting best move for ${this.difficulty} difficulty`);
+        const thinkStartTime = performance.now();
         const selectedPieceIndex = await this.selectBestMove(gameState, eligiblePieces);
+        const actualThinkTime = performance.now() - thinkStartTime;
         console.log(`AI onMoveRequired: Selected piece ${selectedPieceIndex}`);
+
+        // Delay to ensure minimum thinking time
+        const minThinkTime = AI_DELAYS.MIN_THINK;
+        const remainingThinkTime = Math.max(0, minThinkTime - actualThinkTime);
+        if (remainingThinkTime > 0) {
+            console.log(`AI onMoveRequired: Adding ${remainingThinkTime.toFixed(0)}ms delay to reach minimum think time`);
+            await this.delay(remainingThinkTime);
+        }
 
         gameState.selectPiece(selectedPieceIndex);
 
