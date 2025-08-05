@@ -13,14 +13,12 @@ interface GameSettingsProps {
     isOpen: boolean;
     onClose: () => void;
     settings: {
-        diceAnimations: boolean;
-        pieceAnimations: boolean;
         currentRuleSet: string; // Add current rule set
     };
     onSettingsChange: (newSettings: Partial<GameSettingsProps['settings']>) => void;
 }
 
-type TabType = 'rules' | 'rulesets' | 'preferences';
+type TabType = 'rules' | 'rulesets';
 
 const GameSettings: React.FC<GameSettingsProps> = ({
     isOpen,
@@ -215,41 +213,6 @@ const GameSettings: React.FC<GameSettingsProps> = ({
         </div>
     );
 
-    const renderPreferencesTab = () => (
-        <div style={{ padding: '20px 0' }}>
-            <h3 style={{ marginBottom: '16px', color: 'var(--text-color, #666)', fontSize: '1.2rem' }}>
-                Player Preferences
-            </h3>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'center' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1rem', color: 'var(--text-color, #333)' }}>
-                    <input
-                        type="checkbox"
-                        checked={settings.diceAnimations}
-                        onChange={(e) => onSettingsChange({ diceAnimations: e.target.checked })}
-                        style={{ transform: 'scale(1.2)' }}
-                    />
-                    <span>Enable dice rolling animations</span>
-                </label>
-
-                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1rem', color: 'var(--text-color, #333)' }}>
-                    <input
-                        type="checkbox"
-                        checked={settings.pieceAnimations}
-                        onChange={(e) => onSettingsChange({ pieceAnimations: e.target.checked })}
-                        style={{ transform: 'scale(1.2)' }}
-                    />
-                    <span>Enable piece movement animations</span>
-                </label>
-
-                <div style={{ marginTop: '8px', fontSize: '0.9rem', color: 'var(--text-color, #666)', textAlign: 'center' }}>
-                    <div>Animations add visual flair when rolling dice and moving pieces.</div>
-                    <div>Disable for faster gameplay or accessibility preferences.</div>
-                </div>
-            </div>
-        </div>
-    );
-
     return (
         <div style={{
             position: 'fixed',
@@ -295,12 +258,6 @@ const GameSettings: React.FC<GameSettingsProps> = ({
                         >
                             Rule Sets
                         </button>
-                        <button
-                            onClick={() => setActiveTab('preferences')}
-                            style={tabStyle(activeTab === 'preferences')}
-                        >
-                            Preferences
-                        </button>
                     </div>
                 </div>
 
@@ -312,7 +269,6 @@ const GameSettings: React.FC<GameSettingsProps> = ({
                 }}>
                     {activeTab === 'rules' && renderRulesTab()}
                     {activeTab === 'rulesets' && renderRuleSetsTab()}
-                    {activeTab === 'preferences' && renderPreferencesTab()}
                 </div>
 
                 {/* Footer */}

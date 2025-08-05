@@ -5,6 +5,8 @@ import DiceRoller from './DiceRoller'
 import type { DiceRollerRef } from './DiceRoller'
 import GameSetup from './GameSetup'
 import GameSettings from './GameSettings'
+import UserPreferences from './UserPreferences'
+import type { UserPreferencesData } from './UserPreferences'
 import PlayerHome from './PlayerHome'
 import GameLayout from './GameLayout'
 import type { PlayerType } from './PlayerAgent'
@@ -33,6 +35,7 @@ function App() {
   const [showSettings, setShowSettings] = useState<boolean>(false);
   const [showPath, setShowPath] = useState<boolean>(false);
   const [showGameSetup, setShowGameSetup] = useState<boolean>(false);
+  const [showPreferences, setShowPreferences] = useState<boolean>(false);
   const diceRollerRef = useRef<DiceRollerRef>(null);
 
   // Debug mode - check URL parameter
@@ -73,6 +76,19 @@ function App() {
     gameState.updateAndSaveSettings(newSettings);
   };
 
+  // Handle preferences changes
+  const savePreferences = (newPreferences: Partial<UserPreferencesData>) => {
+    // Convert preferences to settings format for GameState
+    const settingsUpdate: Partial<GameSettingsType> = {};
+    if (newPreferences.diceAnimations !== undefined) {
+      settingsUpdate.diceAnimations = newPreferences.diceAnimations;
+    }
+    if (newPreferences.pieceAnimations !== undefined) {
+      settingsUpdate.pieceAnimations = newPreferences.pieceAnimations;
+    }
+    gameState.updateAndSaveSettings(settingsUpdate);
+  };
+
   return (
     <div className="app" style={{
       display: 'flex',
@@ -82,6 +98,141 @@ function App() {
       padding: '20px 0',
       boxSizing: 'border-box'
     }}>
+      {/* Upper Right Controls */}
+      {(state.gameStarted || !showGameSetup) && (
+        <div style={{
+          position: 'fixed',
+          top: '10px',
+          right: '10px',
+          zIndex: 1000,
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          borderRadius: '8px',
+          padding: '8px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '8px'
+        }}>
+          {/* Show Path Button - only during game */}
+          {state.gameStarted && (
+            <button
+              onClick={() => setShowPath(!showPath)}
+              style={{
+                padding: '8px 16px',
+                fontSize: '14px',
+                fontWeight: 'bold',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                backgroundColor: showPath ? '#4CAF50' : '#646cff',
+                color: '#fff',
+                border: 'none',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.transform = 'translateY(-1px)';
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.4)';
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.3)';
+              }}
+            >
+              {showPath ? '👁️ Hide Path' : '👁️ Show Path'}
+            </button>
+          )}
+
+          {/* Change Ruleset Button - only before game starts */}
+          {!state.gameStarted && (
+            <button
+              onClick={() => setShowSettings(true)}
+              style={{
+                padding: '8px 16px',
+                fontSize: '14px',
+                fontWeight: 'bold',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                backgroundColor: '#ff8800',
+                color: '#fff',
+                border: 'none',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.transform = 'translateY(-1px)';
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.4)';
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.3)';
+              }}
+            >
+              📚 Change Ruleset
+            </button>
+          )}
+
+          {/* Preferences Button - always available */}
+          <button
+            onClick={() => setShowPreferences(true)}
+            style={{
+              padding: '8px 16px',
+              fontSize: '14px',
+              fontWeight: 'bold',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              backgroundColor: '#9966ff',
+              color: '#fff',
+              border: 'none',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
+              transition: 'all 0.2s ease'
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.transform = 'translateY(-1px)';
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.4)';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.3)';
+            }}
+          >
+            ⚙️ Preferences
+          </button>
+
+          {/* Quit Game Button - only during game */}
+          {state.gameStarted && (
+            <button
+              onClick={() => {
+                if (confirm('Are you sure you want to quit the current game?')) {
+                  gameState.resetGame();
+                  setShowGameSetup(false);
+                }
+              }}
+              style={{
+                padding: '8px 16px',
+                fontSize: '14px',
+                fontWeight: 'bold',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                backgroundColor: '#ff4444',
+                color: '#fff',
+                border: 'none',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.transform = 'translateY(-1px)';
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.4)';
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.3)';
+              }}
+            >
+              🚪 Quit Game
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Debug Mode Pause Button */}
       {isDebugMode && state.gameStarted && (
         <div style={{
@@ -214,19 +365,36 @@ function App() {
           </div>
         </div>
       )}
+
+      {/* Game Title - Always show */}
+      <div style={{
+        marginTop: state.gameStarted ? '20px' : '50px',
+        textAlign: 'center'
+      }}>
+        <h1 style={{
+          fontSize: state.gameStarted ? '2rem' : '2.5rem',
+          marginBottom: state.gameStarted ? '8px' : '12px',
+          color: 'var(--title-color, #333)',
+          filter: 'var(--dark-mode-filter, none)',
+          transition: 'all 0.3s ease'
+        }}>
+          Royal Game of Ur
+        </h1>
+        <div style={{
+          fontSize: state.gameStarted ? '0.9rem' : '1rem',
+          color: 'var(--subtitle-color, #666)',
+          marginBottom: state.gameStarted ? '16px' : '20px',
+          fontWeight: '500',
+          opacity: 0.8
+        }}>
+          {settings.currentRuleSet}
+        </div>
+      </div>
+
       {!state.gameStarted && !showGameSetup && (
         <div style={{
-          marginTop: '50px',
           textAlign: 'center'
         }}>
-          <h1 style={{
-            fontSize: '2.5rem',
-            marginBottom: '20px',
-            color: 'var(--title-color, #333)',
-            filter: 'var(--dark-mode-filter, none)'
-          }}>
-            Royal Game of Ur
-          </h1>
           <p style={{
             fontSize: '1.2rem',
             marginBottom: '40px',
@@ -261,32 +429,6 @@ function App() {
               }}
             >
               Start Game
-            </button>
-            <button
-              onClick={() => setShowSettings(true)}
-              style={{
-                padding: '16px 32px',
-                fontSize: '1.1rem',
-                fontWeight: 'bold',
-                borderRadius: 8,
-                cursor: 'pointer',
-                backgroundColor: '#f0f0f0',
-                color: '#333',
-                border: '2px solid #ddd',
-                transition: 'all 0.2s ease'
-              }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.backgroundColor = '#e0e0e0';
-                e.currentTarget.style.borderColor = '#bbb';
-                e.currentTarget.style.transform = 'translateY(-2px)';
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.backgroundColor = '#f0f0f0';
-                e.currentTarget.style.borderColor = '#ddd';
-                e.currentTarget.style.transform = 'translateY(0)';
-              }}
-            >
-              Game Settings
             </button>
           </div>
         </div>
@@ -355,8 +497,19 @@ function App() {
       <GameSettings
         isOpen={showSettings}
         onClose={() => setShowSettings(false)}
-        settings={settings}
+        settings={{ currentRuleSet: settings.currentRuleSet }}
         onSettingsChange={saveSettings}
+      />
+
+      {/* User Preferences Modal */}
+      <UserPreferences
+        isOpen={showPreferences}
+        onClose={() => setShowPreferences(false)}
+        preferences={{
+          diceAnimations: settings.diceAnimations,
+          pieceAnimations: settings.pieceAnimations
+        }}
+        onPreferencesChange={savePreferences}
       />
 
       {winner && (
@@ -705,25 +858,6 @@ function App() {
       {state.gameStarted && !winner && (
         <div style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <DiceRoller ref={diceRollerRef} gameState={gameState} />
-
-          {/* Toggle Path Button */}
-          <button
-            onClick={() => setShowPath(!showPath)}
-            style={{
-              marginTop: '16px',
-              padding: '8px 16px',
-              fontSize: '1rem',
-              borderRadius: 6,
-              cursor: 'pointer',
-              backgroundColor: showPath ? '#4CAF50' : '#646cff',
-              color: '#fff',
-              border: 'none',
-              fontWeight: 'bold',
-              userSelect: 'none'
-            }}
-          >
-            {showPath ? 'Hide Path' : 'Show Path'}
-          </button>
         </div>
       )}
     </div>

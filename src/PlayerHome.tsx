@@ -259,7 +259,9 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
                                 width: '24px',
                                 height: '24px',
                                 opacity: hasTempleControl ? 1.0 : 0.25,
-                                filter: 'var(--dark-mode-filter, none)'
+                                filter: 'var(--dark-mode-filter, none)',
+                                border: `1px solid rgba(0, 0, 255, ${hasTempleControl ? 1.0 : 0.25})`,
+                                borderRadius: '2px'
                             }}
                         />
 
@@ -272,7 +274,9 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
                                 width: '24px',
                                 height: '24px',
                                 opacity: hasHouseControl ? 1.0 : 0.25,
-                                filter: 'var(--dark-mode-filter, none)'
+                                filter: 'var(--dark-mode-filter, none)',
+                                border: `1px solid rgba(0, 0, 255, ${hasHouseControl ? 1.0 : 0.25})`,
+                                borderRadius: '2px'
                             }}
                         />
                     </div>
