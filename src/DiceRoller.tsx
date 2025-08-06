@@ -204,23 +204,6 @@ const DiceRoller = forwardRef<DiceRollerRef, DiceRollerProps>(({ gameState }, re
     // Playing phase - normal game
     return (
         <div>
-            {rolls.length === 0 && !isRolling && (
-                <button
-                    onClick={handleRoll}
-                    style={{
-                        padding: '8px 16px',
-                        fontSize: '1rem',
-                        borderRadius: 4,
-                        cursor: 'pointer',
-                        backgroundColor: currentPlayer === 'white' ? '#f0f0f0' : '#333',
-                        color: currentPlayer === 'white' ? '#333' : '#fff',
-                        border: `2px solid ${currentPlayer === 'white' ? '#ccc' : '#666'}`,
-                    }}
-                >
-                    {`Roll Dice (${currentPlayer})`}
-                </button>
-            )}
-
             {(rolls.length > 0 || isRolling) && (
                 <div style={{ marginTop: '12px', fontSize: '1.5rem', fontWeight: 600, display: 'flex', gap: '12px', alignItems: 'center', justifyContent: 'center' }}>
                     {(isRolling ? animatedRoll : rolls).map((roll, i) => {
@@ -267,26 +250,6 @@ const DiceRoller = forwardRef<DiceRollerRef, DiceRollerProps>(({ gameState }, re
                             Total: {diceTotal}
                         </>
                     )}
-                </div>
-            )}
-
-            {gameState.shouldShowPassButton() && (
-                <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                    <button
-                        onClick={() => gameState.passTurn()}
-                        style={{
-                            padding: '8px 16px',
-                            fontSize: '1rem',
-                            borderRadius: 6,
-                            cursor: 'pointer',
-                            backgroundColor: '#ff6b6b',
-                            color: '#fff',
-                            border: 'none',
-                            fontWeight: 'bold'
-                        }}
-                    >
-                        Pass Turn
-                    </button>
                 </div>
             )}
         </div>

@@ -70,21 +70,30 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
         (player === 'white' ? houseControl.whiteHouses > houseControl.blackHouses :
             houseControl.blackHouses > houseControl.whiteHouses) : false;
 
-    // Get status message for this player
-    const getStatusMessage = (): string => {
+    // Get status message and UI behavior for this player
+    const getStatusMessage = (): { message: string, type: 'static' | 'roll-button' | 'pass-button' | 'thinking' } => {
         // Check if game is over
         if (winner) {
-            return winner === player ? 'Victory!' : 'Defeat';
+            return {
+                message: winner === player ? 'Victory!' : 'Defeat',
+                type: 'static'
+            };
         }
 
         // During initial roll phase, no player has a turn yet
         if (state.gamePhase === 'initial-roll') {
-            return 'Waiting for turn';
+            return {
+                message: 'Waiting for turn',
+                type: 'static'
+            };
         }
 
         // Check if it's this player's turn
         if (state.currentPlayer !== player) {
-            return 'Waiting for turn';
+            return {
+                message: 'Waiting for turn',
+                type: 'static'
+            };
         }
 
         // Get current player agent to determine if AI or human
@@ -95,10 +104,16 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
         if (gameState.isAnimating()) {
             // Check if it's dice animation
             if (state.diceAnimating) {
-                return 'Rolling...';
+                return {
+                    message: 'Rolling...',
+                    type: 'static'
+                };
             } else {
                 // Must be piece animation
-                return 'Moving...';
+                return {
+                    message: 'Moving...',
+                    type: 'static'
+                };
             }
         }
 
@@ -106,21 +121,36 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
         if (state.diceRolls.length === 0) {
             // Need to roll dice
             if (state.isExtraTurn) {
-                return 'Extra turn! Roll again';
+                return {
+                    message: 'Extra turn! Roll again',
+                    type: isAI ? 'static' : 'roll-button'
+                };
             } else {
-                return 'Roll dice';
+                return {
+                    message: 'Roll dice',
+                    type: isAI ? 'static' : 'roll-button'
+                };
             }
         } else if (state.selectedPiece === null) {
             // Need to select piece
             if (state.eligiblePieces.length === 0) {
                 // No eligible pieces, turn will end automatically
-                return 'No moves available';
+                return {
+                    message: 'No moves available',
+                    type: isAI ? 'static' : 'pass-button'
+                };
             } else {
-                return isAI ? 'Thinking...' : 'Select piece to move';
+                return {
+                    message: isAI ? 'Thinking...' : 'Select piece to move',
+                    type: isAI ? 'thinking' : 'static'
+                };
             }
         } else {
             // Piece selected, need to move
-            return isAI ? 'Thinking...' : 'Select destination';
+            return {
+                message: isAI ? 'Thinking...' : 'Select destination',
+                type: isAI ? 'thinking' : 'static'
+            };
         }
     };
 
@@ -338,16 +368,107 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
             </div>
 
             {/* Status Line */}
-            <div style={{
-                textAlign: 'center',
-                marginTop: '8px',
-                fontSize: '0.9rem',
-                fontWeight: '500',
-                color: titleColor,
-                filter: 'var(--dark-mode-filter, none)',
-                minHeight: '20px'
-            }}>
-                {getStatusMessage()}
+            <div
+                style={{
+                    textAlign: 'center',
+                    marginTop: '8px',
+                    fontSize: '0.9rem',
+                    fontWeight: '500',
+                    color: titleColor,
+                    filter: 'var(--dark-mode-filter, none)',
+                    minHeight: '20px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    cursor: (() => {
+                        const status = getStatusMessage();
+                        return (status.type === 'roll-button' || status.type === 'pass-button') ? 'pointer' : 'default';
+                    })(),
+                    padding: (() => {
+                        const status = getStatusMessage();
+                        return (status.type === 'roll-button' || status.type === 'pass-button') ? '4px 8px' : '0';
+                    })(),
+                    borderRadius: (() => {
+                        const status = getStatusMessage();
+                        return (status.type === 'roll-button' || status.type === 'pass-button') ? '4px' : '0';
+                    })(),
+                    backgroundColor: (() => {
+                        const status = getStatusMessage();
+                        if (status.type === 'roll-button') return 'rgba(51, 136, 255, 0.2)';
+                        if (status.type === 'pass-button') return 'rgba(255, 136, 0, 0.2)';
+                        return 'transparent';
+                    })(),
+                    border: (() => {
+                        const status = getStatusMessage();
+                        if (status.type === 'roll-button') return '1px solid rgba(51, 136, 255, 0.5)';
+                        if (status.type === 'pass-button') return '1px solid rgba(255, 136, 0, 0.5)';
+                        return 'none';
+                    })(),
+                    transition: 'all 0.2s ease'
+                }}
+                onClick={(e) => {
+                    const status = getStatusMessage();
+                    if (status.type === 'roll-button') {
+                        // Trigger dice roll with animation if enabled
+                        gameState.startDiceRoll();
+                    } else if (status.type === 'pass-button') {
+                        // Trigger pass turn
+                        gameState.passTurn();
+                    }
+                    // Reset button styling after click
+                    e.currentTarget.style.transform = 'scale(1)';
+                    e.currentTarget.style.boxShadow = 'none';
+                }}
+                onMouseOver={(e) => {
+                    const status = getStatusMessage();
+                    if (status.type === 'roll-button' || status.type === 'pass-button') {
+                        e.currentTarget.style.transform = 'scale(1.05)';
+                        e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.2)';
+                    }
+                }}
+                onMouseOut={(e) => {
+                    const status = getStatusMessage();
+                    if (status.type === 'roll-button' || status.type === 'pass-button') {
+                        e.currentTarget.style.transform = 'scale(1)';
+                        e.currentTarget.style.boxShadow = 'none';
+                    }
+                }}
+            >
+                {/* Thinking spinner */}
+                {(() => {
+                    const status = getStatusMessage();
+                    if (status.type === 'thinking') {
+                        return (
+                            <div
+                                style={{
+                                    width: '16px',
+                                    height: '16px',
+                                    border: '2px solid transparent',
+                                    borderTop: `2px solid ${titleColor}`,
+                                    borderRadius: '50%',
+                                    animation: 'spin 1s linear infinite',
+                                    opacity: 0.7
+                                }}
+                            />
+                        );
+                    }
+                    return null;
+                })()}
+
+                {/* Status message */}
+                {getStatusMessage().message}
+
+                {/* Button icons */}
+                {(() => {
+                    const status = getStatusMessage();
+                    if (status.type === 'roll-button') {
+                        return <span style={{ fontSize: '0.8rem', opacity: 0.7 }}>🎲</span>;
+                    } else if (status.type === 'pass-button') {
+                        return <span style={{ fontSize: '0.8rem', opacity: 0.7 }}>⏭️</span>;
+                    }
+                    return null;
+                })()}
             </div>
         </div>
     );

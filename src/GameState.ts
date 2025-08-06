@@ -423,10 +423,7 @@ export class GameState {
             case 'human':
                 return new HumanPlayerAgent(color);
             case 'computer':
-                if (!this.diceRollerRef) {
-                    throw new Error('DiceRollerRef is required for computer players');
-                }
-                return new ComputerPlayerAgent(color, difficulty || 'medium', this.diceRollerRef);
+                return new ComputerPlayerAgent(color, difficulty || 'medium');
             default:
                 throw new Error(`Unknown player type: ${type}`);
         }
@@ -507,8 +504,8 @@ export class GameState {
             this.data.legalMoves = [];
             this.data.illegalMoves = [];
 
-            // Roll new dice
-            this.rollDice();
+            // Roll new dice with animation if enabled
+            this.startDiceRoll();
         }
     }
 
@@ -689,6 +686,24 @@ export class GameState {
         this.data.selectedPiece = null; // Reset selection on new roll
         this.calculateEligiblePieces();
         this.notify();
+    }
+
+    // Centralized dice rolling that handles both animation and direct rolling
+    startDiceRoll(): void {
+        // Only allow dice rolling during the playing phase
+        if (this.data.gamePhase !== 'playing') {
+            return;
+        }
+
+        // Check if animations are enabled and DiceRoller ref is available
+        if (this.settings.diceAnimations && this.diceRollerRef?.current) {
+            AppLog.dice('Starting animated dice roll');
+            this.diceRollerRef.current.triggerRoll();
+        } else {
+            AppLog.dice('Starting direct dice roll (no animation)');
+            // Roll immediately without animation
+            this.rollDice();
+        }
     }
 
     resetTurn(extraTurn: boolean): void {

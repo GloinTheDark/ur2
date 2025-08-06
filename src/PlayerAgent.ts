@@ -1,7 +1,5 @@
-import React from 'react';
 import { GameState } from './GameState';
 import { AppLog } from './AppSettings';
-import type { DiceRollerRef } from './DiceRoller';
 
 export type PlayerType = 'human' | 'computer';
 
@@ -88,12 +86,10 @@ export class ComputerPlayerAgent implements PlayerAgent {
     readonly playerType: PlayerType = 'computer';
     readonly color: 'white' | 'black';
     private difficulty: 'easy' | 'medium' | 'hard';
-    private diceRollerRef: React.RefObject<DiceRollerRef | null>;
 
-    constructor(color: 'white' | 'black', difficulty: 'easy' | 'medium' | 'hard' = 'medium', diceRollerRef: React.RefObject<DiceRollerRef | null>) {
+    constructor(color: 'white' | 'black', difficulty: 'easy' | 'medium' | 'hard' = 'medium') {
         this.color = color;
         this.difficulty = difficulty;
-        this.diceRollerRef = diceRollerRef;
     }
 
     async onTurnStart(gameState: GameState): Promise<void> {
@@ -116,15 +112,8 @@ export class ComputerPlayerAgent implements PlayerAgent {
             // Add a small delay to make it feel more natural
             await this.delay(AI_DELAYS.ROLL_DICE);
 
-            // Use animated roll if available and animations are enabled
-            if (this.diceRollerRef.current && gameState.gameSettings.diceAnimations) {
-                AppLog.playerAgent(`AI onTurnStart: Using animated dice roll`);
-                this.diceRollerRef.current.triggerRoll();
-            } else {
-                AppLog.playerAgent(`AI onTurnStart: Using direct dice roll (no animation)`);
-                // Fall back to direct roll if animations are disabled or ref is not available
-                gameState.rollDice();
-            }
+            // Use centralized dice roll function
+            gameState.startDiceRoll();
         } else {
             AppLog.playerAgent(`AI onTurnStart: Not rolling dice - gamePhase: ${gameState.state.gamePhase}, diceRolls: ${gameState.state.diceRolls.length}`);
         }

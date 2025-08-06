@@ -123,3 +123,14 @@
     --dark-mode-filter: brightness(1.2);
   }
 }
+
+/* Animation for thinking spinner */
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
