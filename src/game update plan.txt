@@ -1,0 +1,153 @@
+We are going to attempt a change to the internal structure of the game.
+
+## The old way:
+- Board squares have the values 1 through 24.
+- Paths represent board squares that pieces travel through. They do not represent off board locations that a piece can be in (start and finish locations).
+- Game state piece positions, as numbers represent the progression along the path. 
+- Requiring special value of 'start' to indicate a piece has not entered the board or has finished the path. 
+- Further requiring examination of the blank vs spotted state of the piece to distinguish start vs finished.
+- Special value of 'moving' during animation to represent the piece is temporarily off the board during animation.
+
+## The new way:
+- Board squares have the values 1 through 24.
+- Two new board square values are added: 0 representing the location where pieces start and 25 representing the finish.
+- Paths will now all start at location 0 (start) and end at position 25 (finish).
+- Game state piece positions, as numbers represent the progression along the path. 
+- Piece position will start at path index 0 and end at the last path index (path.length - 1).
+- Moving pieces will be represented by a path index of -1.
+- Piece blank vs spotted state no longer needs to be tracked because it can be inferred by the progress along the path.
+
+## Implementation Strategy
+
+**⚠️ IMPORTANT: This is a massive refactoring that touches nearly every file in the codebase. It should be done in stages to maintain a working build.**
+
+### Recommended Approach:
+
+#### Stage 1: Prepare Infrastructure (Separate Branch)
+1. Create a new git branch for this refactoring
+2. Update GamePaths.ts with new structure and helper functions ✅ (DONE)
+3. Remove getFlipSquares from RuleSet.ts ✅ (DONE)
+4. Create new helper functions in GameState.ts ✅ (PARTIALLY DONE)
+5. Ensure all infrastructure compiles before proceeding
+
+#### Stage 2: Core GameState Refactoring (High Risk)
+6. Update GameStateData interface to remove piece state arrays
+7. Update all position comparisons ('start' → 0, 'moving' → -1)
+8. Update all animation and movement logic
+9. Update piece state logic to use path-based flip detection
+10. **This stage will break the build until complete**
+
+#### Stage 3: UI Component Updates
+11. Update PlayerHome.tsx to use new position system
+12. Update App.tsx board rendering
+13. Update all animation components
+14. Test that UI works correctly
+
+#### Stage 4: AI and Game Logic
+15. Update PlayerAgent.ts for new position system
+16. Update all MCTS and evaluation logic
+17. Test AI functionality
+
+#### Stage 5: Testing and Polish
+18. Test all rule sets work correctly
+19. Test animations and UI polish
+20. Verify flip behavior works as expected
+
+### Current Status: 
+- ✅ Stage 1 partially complete (GamePaths updated, RuleSet cleaned up)
+- ❌ Stage 2 started but broke compilation (51+ errors)
+- **RECOMMENDATION**: Revert GameState.ts changes and plan Stage 2 more carefully
+
+### 1. Path Definition Updates
+- **GamePaths.ts**: Update all path definitions to start with 0 and end with 25
+- **GamePaths.whitePathToBlackPath()**: Needs to handle values of 0 and 25 (do not transform these)
+- **GamePaths.ts**: Add `getFlipIndex()` method to GamePath interface to specify at which path index pieces flip
+  - For most paths: pieces flip when entering the board (path index 1)  
+  - For Burglers path: pieces flip at a specific square (path index where square 8/24 appears)
+- **RuleSet.ts**: Remove `getFlipSquares()` method entirely - flip behavior is now path-dependent
+
+### 2. Core Game Logic Updates  
+- **GameState.ts**: Update piece position type from `(number | 'start' | 'moving')[]` to `number[]`
+  - Replace 'start' checks with path index 0 checks
+  - Replace 'moving' checks with path index -1 checks
+  - Update `createInitialState()` to initialize pieces at path index 0
+  - Update animation logic to use -1 for moving pieces
+  - Remove piece state (blank/spotted) tracking - infer from path position instead
+
+### 3. Move Calculation & Validation
+- **calculateMove()**: Update logic to work with 0-based and 25-based positions
+- **executeMove()**: Simplify bear-off logic (moving to path index = path.length - 1)  
+- **getLegalMoves()**: Update to handle new position system
+- Remove special handling for 'start' position in move validation
+- **Update flip logic**: Use path's `getFlipIndex()` instead of ruleset's `getFlipSquares()`
+
+### 4. Animation System Updates
+- **PieceAnimator.tsx**: Update to handle path index -1 for moving pieces
+- **CapturedPieceAnimator.tsx**: Update captured piece logic
+- **GameLayout.tsx**: Update home position calculations
+
+### 5. UI Component Updates
+- **PlayerHome.tsx**: Update piece counting and display logic
+- **App.tsx**: Update board square piece detection
+- Remove all blank vs spotted state logic - infer from path position
+
+### 6. Player Agent Updates  
+- **PlayerAgent.ts**: Update AI evaluation to use new position system
+- Update MCTS simulation logic
+- Remove 'start' and 'moving' string comparisons
+
+### 7. Rule Set Integration
+- **RuleSet.ts**: Remove `getFlipSquares()` method entirely
+- Update all RuleSet implementations to remove flip square logic
+- **BurglersOfUrRuleSet.ts**: Remove treasury square flip logic - now handled by path
+- Test that flip behavior still works correctly with path-based system
+
+### 8. Testing & Validation
+- Test piece movement from start (index 0) to board
+- Test piece completion (to index path.length - 1) 
+- Test capture and animation logic
+- Verify AI still functions correctly
+- Test all rule sets work with new system
+- **Test flip behavior**: Verify pieces flip at correct path indices for each path type
+
+### 9. Flip Logic Redesign Details
+
+#### Current System Problems:
+- `RuleSet.getFlipSquares()` returns board square numbers (e.g., [5, 6, 7, 8] for temple squares)
+- Different paths have pieces flip at different squares, but ruleset determines flip squares
+- This creates a tight coupling between paths and rulesets
+
+#### New System Benefits:
+- Each `GamePath` specifies its own `flipIndex: number` 
+- For most paths: `flipIndex: 1` (pieces flip when entering board from start)
+- For Burglers path: `flipIndex: X` (where X is the path index containing square 8/24)
+- Flip logic becomes: `shouldShowSpots = pathIndex >= path.flipIndex`
+- Eliminates need to track separate blank/spotted piece states
+
+#### Implementation Example:
+```typescript
+// In GamePaths.ts
+export interface GamePath {
+    readonly name: string;
+    readonly description: string;  
+    readonly whitePath: readonly number[];
+    readonly flipIndex: number; // Path index where pieces flip to spotted
+    readonly overlayImage: string;
+}
+
+// Helper function
+export function shouldPieceShowSpots(pathIndex: number, path: GamePath): boolean {
+    return pathIndex >= path.flipIndex && pathIndex !== -1; // -1 = moving
+}
+```
+
+### 10. Benefits of This Change
+- **Simplified Logic**: No more string-based position tracking
+- **Cleaner Code**: Eliminate blank/spotted state management complexity  
+- **Better Performance**: Numeric comparisons instead of string comparisons
+- **Easier Debugging**: Path progression is just a simple integer
+- **More Maintainable**: Single source of truth for piece progression
+- **Logical Separation**: Flip behavior properly belongs to paths, not rulesets
+- **Consistency**: All paths handle flipping the same way via path index
+
+

@@ -24,9 +24,13 @@ const GameLayout: React.FC<GameLayoutProps> = ({
     const blackHomeRef = useRef<HTMLDivElement>(null);
 
     // Calculate position of a square on the board
-    const getSquarePosition = useCallback((square: number | 'start'): { x: number; y: number } | null => {
-        if (square === 'start' || !boardRef.current || !containerRef.current) {
+    const getSquarePosition = useCallback((square: number): { x: number; y: number } | null => {
+        if (!boardRef.current || !containerRef.current) {
             return null;
+        }
+
+        if (square < 1 || square > 24) {
+            return null; // Invalid square number
         }
 
         const boardRect = boardRef.current.getBoundingClientRect();
@@ -69,10 +73,8 @@ const GameLayout: React.FC<GameLayoutProps> = ({
 
         // Get game state to determine piece type and target zone
         const state = gameState.state;
-        const pieces = player === 'white' ? state.whitePieces : state.blackPieces;
         const positions = player === 'white' ? state.whitePiecePositions : state.blackPiecePositions;
 
-        const piece = pieces[pieceIndex];
         const position = positions[pieceIndex];
 
         // For animations, we need to handle pieces that are 'moving' from start or to start
@@ -83,35 +85,25 @@ const GameLayout: React.FC<GameLayoutProps> = ({
         const isAnimatingFromStart = animatingPiece &&
             animatingPiece.player === player &&
             animatingPiece.index === pieceIndex &&
-            animatingPiece.fromPosition === 'start';
+            animatingPiece.fromPosition === 0;
 
-        const isAnimatingToStart = animatingPiece &&
+        // Get player path to determine completion index
+        const playerPath = gameState.getPlayerPath(player);
+        const completionIndex = playerPath.length - 1;
+
+        const isAnimatingToHome = animatingPiece &&
             animatingPiece.player === player &&
             animatingPiece.index === pieceIndex &&
-            animatingPiece.toPosition === 'start';
+            (animatingPiece.toPosition === 0 || animatingPiece.toPosition === completionIndex);
 
         const isCapturedPieceAnimating = animatingCapturedPiece &&
             animatingCapturedPiece.player === player &&
             animatingCapturedPiece.index === pieceIndex;
 
-        // If piece is not in start position and not animating from/to start, don't show in home
-        if (position !== 'start' && !isAnimatingFromStart && !isAnimatingToStart && !isCapturedPieceAnimating) {
+        // If piece is not in start position and not animating from/to home, don't show in home
+        if (position !== 0 && !isAnimatingFromStart && !isAnimatingToHome && !isCapturedPieceAnimating) {
             return null;
         }
-
-        // Calculate counts to determine target zone
-        // For animations, use the original state before the animation started
-        const blankPiecesInHome = pieces.filter((p, idx) => {
-            const pos = positions[idx];
-            // Count pieces that are in start position OR animating from/to start OR captured piece animating
-            const inHome = pos === 'start' ||
-                (animatingPiece && animatingPiece.player === player &&
-                    animatingPiece.index === idx &&
-                    (animatingPiece.fromPosition === 'start' || animatingPiece.toPosition === 'start')) ||
-                (animatingCapturedPiece && animatingCapturedPiece.player === player &&
-                    animatingCapturedPiece.index === idx);
-            return p === 'blank' && inHome;
-        }).length;
 
         // Determine target slot based on piece type
         let targetSlot = 0;
@@ -120,44 +112,42 @@ const GameLayout: React.FC<GameLayoutProps> = ({
         if (isCapturedPieceAnimating) {
             // Captured pieces become blank and go to the rightmost empty slot
             // Count existing blank pieces (excluding the captured piece itself)
-            const existingBlankCount = pieces.filter((p, idx) => {
+            const existingBlankCount = positions.filter((pos, idx) => {
                 if (idx === pieceIndex) return false; // Don't count the captured piece itself
-                const pos = positions[idx];
-                const inHome = pos === 'start' ||
+                const inHome = pos === 0 ||
                     (animatingPiece && animatingPiece.player === player &&
                         animatingPiece.index === idx &&
-                        (animatingPiece.fromPosition === 'start' || animatingPiece.toPosition === 'start'));
-                return p === 'blank' && inHome;
+                        (animatingPiece.fromPosition === 0 || animatingPiece.toPosition === 0 || animatingPiece.toPosition === completionIndex));
+                return !gameState.shouldPieceShowSpots(pos, player) && inHome;
             }).length;
 
             // The rightmost empty slot is just before the existing blank pieces
             // Layout: [Completed][Completed][Empty][Empty][CAPTURE HERE][Blank][Blank]
             targetSlot = gameState.getPiecesPerPlayer() - existingBlankCount - 1;
-        } else if (piece === 'spots') {
+        } else if (gameState.shouldPieceShowSpots(position, player)) {
             // Completed pieces go on the left
-            if (isAnimatingToStart) {
+            if (isAnimatingToHome && animatingPiece && animatingPiece.toPosition === completionIndex) {
                 // When a piece is completing its circuit and returning home as a spotted piece,
                 // it should go to the leftmost empty slot (next available slot after existing completed pieces)
-                const existingCompletedCount = pieces.filter((p, idx) => {
+                const existingCompletedCount = positions.filter((pos, idx) => {
                     if (idx === pieceIndex) return false; // Don't count this piece itself
-                    const pos = positions[idx];
-                    const inHome = pos === 'start' ||
+                    const inHome = pos === 0 ||
                         (animatingPiece && animatingPiece.player === player &&
                             animatingPiece.index === idx &&
-                            animatingPiece.fromPosition === 'start');
-                    return p === 'spots' && inHome;
+                            (animatingPiece.fromPosition === 0 || animatingPiece.toPosition === 0 || animatingPiece.toPosition === completionIndex));
+                    return gameState.shouldPieceShowSpots(pos, player) && inHome;
                 }).length;
 
                 targetSlot = existingCompletedCount; // Next available leftmost slot
             } else {
                 // For pieces already at home, find which completed piece this is (0-indexed from left)
-                const completedPieces = pieces.map((p, idx) => ({ piece: p, position: positions[idx], index: idx }))
+                const completedPieces = positions.map((pos, idx) => ({ position: pos, index: idx }))
                     .filter(item => {
-                        const inHome = item.position === 'start' ||
+                        const inHome = item.position === 0 ||
                             (animatingPiece && animatingPiece.player === player &&
                                 animatingPiece.index === item.index &&
-                                (animatingPiece.fromPosition === 'start' || animatingPiece.toPosition === 'start'));
-                        return item.piece === 'spots' && inHome;
+                                (animatingPiece.fromPosition === 0 || animatingPiece.toPosition === 0 || animatingPiece.toPosition === completionIndex));
+                        return gameState.shouldPieceShowSpots(item.position, player) && inHome;
                     })
                     .sort((a, b) => a.index - b.index); // Sort by original index for consistency
 
@@ -166,20 +156,28 @@ const GameLayout: React.FC<GameLayoutProps> = ({
             }
         } else {
             // Blank pieces go on the right
-            const blankPieces = pieces.map((p, idx) => ({ piece: p, position: positions[idx], index: idx }))
+            const blankPieces = positions.map((pos, idx) => ({ position: pos, index: idx }))
                 .filter(item => {
-                    const inHome = item.position === 'start' ||
+                    const inHome = item.position === 0 ||
                         (animatingPiece && animatingPiece.player === player &&
                             animatingPiece.index === item.index &&
-                            (animatingPiece.fromPosition === 'start' || animatingPiece.toPosition === 'start')) ||
+                            (animatingPiece.fromPosition === 0 || animatingPiece.toPosition === 0 || animatingPiece.toPosition === completionIndex)) ||
                         (animatingCapturedPiece && animatingCapturedPiece.player === player &&
                             animatingCapturedPiece.index === item.index);
-                    return item.piece === 'blank' && inHome;
+                    return !gameState.shouldPieceShowSpots(item.position, player) && inHome;
                 })
                 .sort((a, b) => a.index - b.index); // Sort by original index for consistency
 
             const thisBlankIndex = blankPieces.findIndex(item => item.index === pieceIndex);
-            targetSlot = gameState.getPiecesPerPlayer() - blankPiecesInHome + (thisBlankIndex >= 0 ? thisBlankIndex : 0);
+            const completedCount = positions.filter((pos, idx) => {
+                const inHome = pos === 0 ||
+                    (animatingPiece && animatingPiece.player === player &&
+                        animatingPiece.index === idx &&
+                        (animatingPiece.fromPosition === 0 || animatingPiece.toPosition === 0 || animatingPiece.toPosition === completionIndex));
+                return gameState.shouldPieceShowSpots(pos, player) && inHome;
+            }).length;
+
+            targetSlot = completedCount + 1 + (thisBlankIndex >= 0 ? thisBlankIndex : 0);
         }
 
         // Calculate position within the home grid

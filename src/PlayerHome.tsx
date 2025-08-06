@@ -23,30 +23,29 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
     const playerName = gameState.getPlayerName(player);
 
     const isWhite = player === 'white';
-    const pieces = isWhite ? state.whitePieces : state.blackPieces;
     const positions = isWhite ? state.whitePiecePositions : state.blackPiecePositions;
     const blankIcon = isWhite ? whiteBlank : blackBlank;
     const spotsIcon = isWhite ? whiteSpots : blackSpots;
 
-    // Count pieces by type and location
-    const completedCount = pieces.filter((piece, idx) =>
-        piece === 'spots' && positions[idx] === 'start'
+    // Count pieces by type and location using the new position system
+    const completedCount = positions.filter((pos) =>
+        pos === 0 && gameState.shouldPieceShowSpots(pos, player)
     ).length;
 
-    const blankPiecesInHome = pieces.filter((piece, idx) =>
-        piece === 'blank' && positions[idx] === 'start'
+    const blankPiecesInHome = positions.filter((pos) =>
+        pos === 0 && !gameState.shouldPieceShowSpots(pos, player)
     ).length;
 
-    // Get eligible blank pieces (for clicking)
+    // Get eligible blank pieces (for clicking) - pieces at position 0 that don't show spots yet
     const eligibleBlankPieces = state.eligiblePieces.filter(idx =>
-        pieces[idx] === 'blank' && positions[idx] === 'start'
+        positions[idx] === 0 && !gameState.shouldPieceShowSpots(positions[idx], player)
     );
 
     // Check if any piece is selected and eligible to complete
     const selectedPiece = state.selectedPiece;
     const canCompleteToHome = selectedPiece &&
         selectedPiece.player === player &&
-        gameState.getDestinationSquare() === 'complete';
+        gameState.getDestinationSquare() === 25; // BOARD_FINISH means completion
 
     const homeStyle = isWhite ? {
         backgroundColor: '#ccc',
@@ -213,8 +212,8 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
                             // Check if this leftmost blank piece is selected
                             isSelected = isLeftmostBlankSlot && !!(selectedPiece &&
                                 selectedPiece.player === player &&
-                                pieces[selectedPiece.index] === 'blank' &&
-                                positions[selectedPiece.index] === 'start');
+                                !gameState.shouldPieceShowSpots(positions[selectedPiece.index], player) &&
+                                positions[selectedPiece.index] === 0);
 
                             if (isEligible) {
                                 clickHandler = () => {

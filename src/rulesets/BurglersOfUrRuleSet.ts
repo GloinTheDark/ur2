@@ -1,5 +1,5 @@
 import { RuleSet } from '../RuleSet';
-import { MARKET_SQUARES, TREASURY_SQUARES } from '../BoardLayout';
+import { MARKET_SQUARES } from '../BoardLayout';
 import type { GameState } from '../GameState';
 
 // Action-packed variant with more aggressive gameplay
@@ -31,11 +31,6 @@ export class BurglersOfUrRuleSet extends RuleSet {
     // In Burglers rules, market squares are safe
     getSafeSquares(): number[] {
         return [...MARKET_SQUARES]; // Market squares are safe from capture
-    }
-
-    // In Burglers rules, pieces flip on treasury squares instead of temple squares
-    getFlipSquares(): number[] {
-        return [...TREASURY_SQUARES]; // Treasury squares flip pieces to spotted side
     }
 
     // Burglers-specific dice roll calculation with temple blessing and house bonus

@@ -8,7 +8,7 @@ import { PIECE_SIZE } from './UIConstants';
 
 interface PieceAnimatorProps {
     gameState: GameState;
-    getSquarePosition: (square: number | 'start') => { x: number; y: number } | null;
+    getSquarePosition: (square: number) => { x: number; y: number } | null;
     getHomePosition: (player: 'white' | 'black', pieceIndex: number) => { x: number; y: number } | null;
 }
 
@@ -43,20 +43,21 @@ const PieceAnimator: React.FC<PieceAnimatorProps> = ({
             let endPos: { x: number; y: number } | null = null;
 
             // Get start position
-            if (fromPosition === 'start') {
+            if (fromPosition === 0) {
                 startPos = getHomePosition(player, index);
             } else {
                 // Convert path index to board square using GameState helper
-                const boardSquare = gameState.getSquareFromPathIndex(player, fromPosition as number);
+                const boardSquare = gameState.getSquareFromPathIndex(player, fromPosition);
                 startPos = getSquarePosition(boardSquare);
             }
 
-            // Get end position
-            if (toPosition === 'start') {
+            // Get end position - check if completing circuit
+            const playerPath = gameState.getPlayerPath(player);
+            if (toPosition === playerPath.length - 1) {
                 endPos = getHomePosition(player, index);
             } else {
                 // Convert path index to board square using GameState helper
-                const boardSquare = gameState.getSquareFromPathIndex(player, toPosition as number);
+                const boardSquare = gameState.getSquareFromPathIndex(player, toPosition);
                 endPos = getSquarePosition(boardSquare);
             }
 
@@ -180,9 +181,7 @@ const PieceAnimator: React.FC<PieceAnimatorProps> = ({
         return null;
     }
 
-    const { player, index } = animationData;
-    const pieces = gameState.state[player === 'white' ? 'whitePieces' : 'blackPieces'];
-    const pieceType = pieces[index];
+    const { player } = animationData;
 
     // Calculate current position along the waypoint path
     const { startPosition, endPosition, waypoints, totalDistance, progress } = animationState;
@@ -240,8 +239,12 @@ const PieceAnimator: React.FC<PieceAnimatorProps> = ({
 
     // Get the appropriate piece image
     const getPieceImage = () => {
-        // During animation, check if piece should be flipped
-        const shouldShowSpots = animationState?.hasFlipped || pieceType === 'spots';
+        // During animation, determine if piece should show spots based on flip state
+        // If piece has flipped during animation, it should show spots
+        // Otherwise, determine from original position using GameState logic
+        const shouldShowSpots = animationState?.hasFlipped ||
+            (typeof animationData.fromPosition === 'number' &&
+                gameState.shouldPieceShowSpots(animationData.fromPosition, player));
 
         if (player === 'white') {
             return shouldShowSpots ? whiteSpots : whiteBlank;
@@ -265,7 +268,7 @@ const PieceAnimator: React.FC<PieceAnimatorProps> = ({
         >
             <img
                 src={getPieceImage()}
-                alt={`${player} ${pieceType} piece`}
+                alt={`${player} piece animating`}
                 style={{
                     width: '100%',
                     height: '100%',

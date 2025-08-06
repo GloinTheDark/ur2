@@ -812,7 +812,7 @@ function App() {
                               />
                             )}
                             <img
-                              src={state.whitePieces[pieceIndex] === 'blank' ? whiteBlank : whiteSpots}
+                              src={gameState.shouldPieceShowSpots(state.whitePiecePositions[pieceIndex], 'white') ? whiteSpots : whiteBlank}
                               alt={`White piece ${pieceIndex + 1}`}
                               style={{
                                 width: `${PIECE_SIZE}px`,
@@ -860,7 +860,7 @@ function App() {
                               />
                             )}
                             <img
-                              src={state.blackPieces[pieceIndex] === 'blank' ? blackBlank : blackSpots}
+                              src={gameState.shouldPieceShowSpots(state.blackPiecePositions[pieceIndex], 'black') ? blackSpots : blackBlank}
                               alt={`Black piece ${pieceIndex + 1}`}
                               style={{
                                 width: `${PIECE_SIZE}px`,

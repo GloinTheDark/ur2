@@ -5,13 +5,17 @@ import {
     TEMPLE_SQUARES,
     HOUSE_SQUARES
 } from './BoardLayout';
-import { getPathPair } from './GamePaths';
+import { getPathPair, getPath } from './GamePaths';
 import { getRuleSetByName, DEFAULT_RULE_SET } from './RuleSets';
 import type { RuleSet } from './RuleSet';
 import { HumanPlayerAgent, ComputerPlayerAgent } from './PlayerAgent';
 import type { PlayerAgent, PlayerType } from './PlayerAgent';
 import type { DiceRollerRef } from './DiceRoller';
 import { AppLog } from './AppSettings';
+
+// Board square constants
+const BOARD_FINISH = 25; // Off-board finish square for completed pieces
+const IS_MOVING = -1; // Path index value for pieces that are currently animating/moving
 
 export type MoveIllegalReason =
     | 'blocked-by-same-color'
@@ -22,7 +26,7 @@ export type MoveIllegalReason =
 export interface Move {
     pieceIndex: number;
     legal: boolean;
-    destinationSquare: number | 'complete' | null;
+    destinationSquare: number; // Board square number (1-24 on-board, 25 for completion)
     capture: boolean;
     extraTurn: boolean;
     flipSquareIndex?: number; // Path index where piece should flip (if any)
@@ -44,10 +48,8 @@ export interface GameSettings {
 
 export interface GameStateData {
     currentPlayer: 'white' | 'black';
-    whitePieces: ('blank' | 'spots')[];
-    blackPieces: ('blank' | 'spots')[];
-    whitePiecePositions: (number | 'start' | 'moving')[]; // numbers represent indices into the current rule set's white path
-    blackPiecePositions: (number | 'start' | 'moving')[]; // numbers represent indices into the current rule set's black path
+    whitePiecePositions: number[]; // numbers represent indices into the current rule set's white path (0 = start, IS_MOVING = moving)
+    blackPiecePositions: number[]; // numbers represent indices into the current rule set's black path (0 = start, IS_MOVING = moving)
     selectedPiece: { player: 'white' | 'black', index: number } | null;
     gameStarted: boolean;
     gamePhase: 'initial-roll' | 'playing';
@@ -65,8 +67,8 @@ export interface GameStateData {
     animatingPiece: {
         player: 'white' | 'black',
         index: number,
-        fromPosition: number | 'start',
-        toPosition: number | 'start',
+        fromPosition: number, // Path index (0 = start, IS_MOVING = moving)
+        toPosition: number, // Path index (path.length - 1 = complete)
         originalDiceRoll: number,
         isAnimating: boolean
     } | null;
@@ -131,8 +133,6 @@ export class GameState {
         // Deep copy all data
         cloned.data = {
             currentPlayer: this.data.currentPlayer,
-            whitePieces: [...this.data.whitePieces],
-            blackPieces: [...this.data.blackPieces],
             whitePiecePositions: [...this.data.whitePiecePositions],
             blackPiecePositions: [...this.data.blackPiecePositions],
             selectedPiece: this.data.selectedPiece ? { ...this.data.selectedPiece } : null,
@@ -199,6 +199,12 @@ export class GameState {
         return getRuleSetByName(this.settings.currentRuleSet);
     }
 
+    // Get current path objects (with flipIndex)
+    private getCurrentGamePath(): import('./GamePaths').GamePath {
+        const ruleSet = this.getCurrentRuleSet();
+        return getPath(ruleSet.pathType);
+    }
+
     // Get current paths
     getWhitePath(): number[] {
         return [...this.whitePath];
@@ -218,13 +224,29 @@ export class GameState {
         return path[pathIndex];
     }
 
-    getSquareFromPosition(player: 'white' | 'black', position: number | 'start' | 'moving'): number | 'start' | 'moving' {
-        if (position === 'start' || position === 'moving') return position;
-        return this.getSquareFromPathIndex(player, position);
+    // New helper methods for the refactored position system
+    isPieceAtStart(pathIndex: number): boolean {
+        return pathIndex === 0;
+    }
+
+    isPieceCompleted(pathIndex: number): boolean {
+        const path = this.getPlayerPath(this.data.currentPlayer);
+        return pathIndex === path.length - 1;
+    }
+
+    isPieceMoving(pathIndex: number): boolean {
+        return pathIndex === IS_MOVING;
+    }
+
+    shouldPieceShowSpots(pathIndex: number, _player: 'white' | 'black'): boolean {
+        if (pathIndex === IS_MOVING) return false; // Moving pieces don't show
+        const pathType = this.getCurrentRuleSet().pathType;
+        const gamePath = getPath(pathType);
+        return pathIndex >= gamePath.flipIndex;
     }
 
     // Get animation waypoints between two positions
-    getAnimationWaypoints(player: 'white' | 'black', fromPosition: number | 'start', toPosition: number | 'start'): { waypoints: number[], flipWaypointIndex: number | null } {
+    getAnimationWaypoints(player: 'white' | 'black', fromPosition: number, toPosition: number): { waypoints: number[], flipWaypointIndex: number | null } {
         const path = player === 'white' ? this.whitePath : this.blackPath;
         const waypoints: number[] = [];
         let flipWaypointIndex: number | null = null;
@@ -236,42 +258,12 @@ export class GameState {
             flipSquarePathIndex = legalMove?.flipSquareIndex;
         }
 
-        // Handle moving from start
-        if (fromPosition === 'start') {
-            if (toPosition === 'start') return { waypoints, flipWaypointIndex }; // No movement
-            const toIndex = toPosition as number;
-            // Add all squares from path[0] to path[toIndex]
-            for (let i = 0; i <= toIndex; i++) {
-                waypoints.push(path[i]);
-                // Check if this is the pre-calculated flip square
-                if (flipWaypointIndex === null && flipSquarePathIndex !== undefined && i === flipSquarePathIndex) {
-                    flipWaypointIndex = waypoints.length - 1; // Index in waypoints array
-                }
-            }
-        }
-        // Handle moving to start (completing circuit)
-        else if (toPosition === 'start') {
-            const fromIndex = fromPosition as number;
-            // Add all squares from current position to end of path
-            for (let i = fromIndex + 1; i < path.length; i++) {
-                waypoints.push(path[i]);
-                // Check if this is the pre-calculated flip square
-                if (flipWaypointIndex === null && flipSquarePathIndex !== undefined && i === flipSquarePathIndex) {
-                    flipWaypointIndex = waypoints.length - 1; // Index in waypoints array
-                }
-            }
-        }
-        // Handle moving along the path
-        else {
-            const fromIndex = fromPosition as number;
-            const toIndex = toPosition as number;
-            // Add all squares between fromIndex and toIndex (exclusive of from, inclusive of to)
-            for (let i = fromIndex + 1; i <= toIndex; i++) {
-                waypoints.push(path[i]);
-                // Check if this is the pre-calculated flip square
-                if (flipWaypointIndex === null && flipSquarePathIndex !== undefined && i === flipSquarePathIndex) {
-                    flipWaypointIndex = waypoints.length - 1; // Index in waypoints array
-                }
+        // Add all squares between fromPosition and toPosition (exclusive of from, inclusive of to)
+        for (let i = fromPosition + 1; i <= toPosition; i++) {
+            waypoints.push(path[i]);
+            // Check if this is the pre-calculated flip square
+            if (flipWaypointIndex === null && flipSquarePathIndex !== undefined && i === flipSquarePathIndex) {
+                flipWaypointIndex = waypoints.length - 1; // Index in waypoints array
             }
         }
 
@@ -283,11 +275,11 @@ export class GameState {
         const pieces: number[] = [];
         const playerPositions = player === 'white' ? this.data.whitePiecePositions : this.data.blackPiecePositions;
 
-        playerPositions.forEach((pos, index) => {
-            if (pos !== 'start' && pos !== 'moving') {
-                const square = this.getSquareFromPathIndex(player, pos as number);
+        playerPositions.forEach((pathIndex, pieceIndex) => {
+            if (pathIndex !== 0 && pathIndex !== IS_MOVING) { // Not at start, not moving
+                const square = this.getSquareFromPathIndex(player, pathIndex);
                 if (square === squareNumber) {
-                    pieces.push(index);
+                    pieces.push(pieceIndex);
                 }
             }
         });
@@ -319,10 +311,8 @@ export class GameState {
         const piecesPerPlayer = this.getPiecesPerPlayer();
         return {
             currentPlayer: 'white',
-            whitePieces: Array(piecesPerPlayer).fill('blank'),
-            blackPieces: Array(piecesPerPlayer).fill('blank'),
-            whitePiecePositions: Array(piecesPerPlayer).fill('start'),
-            blackPiecePositions: Array(piecesPerPlayer).fill('start'),
+            whitePiecePositions: Array(piecesPerPlayer).fill(0), // All pieces start at path index 0
+            blackPiecePositions: Array(piecesPerPlayer).fill(0), // All pieces start at path index 0
             selectedPiece: null,
             gameStarted: false,
             gamePhase: 'initial-roll',
@@ -606,12 +596,10 @@ export class GameState {
         }
 
         if (!this.data.gameStarted) {
-            // Reset piece arrays if game hasn't started
+            // Reset piece positions if game hasn't started
             const piecesPerPlayer = this.getPiecesPerPlayer();
-            this.data.whitePieces = Array(piecesPerPlayer).fill('blank');
-            this.data.blackPieces = Array(piecesPerPlayer).fill('blank');
-            this.data.whitePiecePositions = Array(piecesPerPlayer).fill('start');
-            this.data.blackPiecePositions = Array(piecesPerPlayer).fill('start');
+            this.data.whitePiecePositions = Array(piecesPerPlayer).fill(0); // All pieces start at path index 0
+            this.data.blackPiecePositions = Array(piecesPerPlayer).fill(0); // All pieces start at path index 0
             this.data.selectedPiece = null;
             this.data.eligiblePieces = [];
             this.data.legalMoves = [];
@@ -783,32 +771,27 @@ export class GameState {
         const currentPos = currentPositions[pieceIndex];
 
         // Don't start animation if piece is already moving
-        if (currentPos === 'moving') {
+        if (currentPos === IS_MOVING) {
             return false;
         }
 
-        let toPosition: number | 'start';
+        let toPosition: number;
 
         // Calculate destination position (as path index)
         // Note: Move validation has already been done by canPieceMove() before this point
-        if (currentPos === 'start') {
-            toPosition = diceRoll - 1; // Convert 1-based dice roll to 0-based path index
-        } else {
-            const currentPathIndex = currentPos as number;
-            const newPathIndex = currentPathIndex + diceRoll;
+        const newPathIndex = currentPos + diceRoll;
 
-            if (newPathIndex >= playerPath.length) {
-                toPosition = 'start'; // Piece completes circuit
-            } else {
-                toPosition = newPathIndex;
-            }
+        if (newPathIndex >= playerPath.length) {
+            toPosition = playerPath.length - 1; // Piece completes circuit (final path index)
+        } else {
+            toPosition = newPathIndex;
         }
 
         // Set up animation state
         this.data.animatingPiece = {
             player,
             index: pieceIndex,
-            fromPosition: currentPos as number | 'start',
+            fromPosition: currentPos,
             toPosition,
             originalDiceRoll: this.data.diceTotal,
             isAnimating: true
@@ -816,9 +799,9 @@ export class GameState {
 
         // Set piece position to 'moving' so it doesn't render at source or destination
         if (player === 'white') {
-            this.data.whitePiecePositions[pieceIndex] = 'moving';
+            this.data.whitePiecePositions[pieceIndex] = IS_MOVING;
         } else {
-            this.data.blackPiecePositions[pieceIndex] = 'moving';
+            this.data.blackPiecePositions[pieceIndex] = IS_MOVING;
         }
 
         this.notify();
@@ -862,7 +845,7 @@ export class GameState {
             };
 
             // Set captured piece position to 'moving' during animation
-            capturedPositions[capturedIndex] = 'moving';
+            capturedPositions[capturedIndex] = IS_MOVING;
         }
 
         // Reset animation state
@@ -910,8 +893,8 @@ export class GameState {
     getAnimationData(): {
         player: 'white' | 'black',
         index: number,
-        fromPosition: number | 'start',
-        toPosition: number | 'start',
+        fromPosition: number,
+        toPosition: number,
         waypoints: number[],
         flipWaypointIndex: number | null
     } | null {
@@ -955,9 +938,9 @@ export class GameState {
 
         // Move captured piece to start position
         if (player === 'white') {
-            this.data.whitePiecePositions[index] = 'start';
+            this.data.whitePiecePositions[index] = 0; // Start position is path index 0
         } else {
-            this.data.blackPiecePositions[index] = 'start';
+            this.data.blackPiecePositions[index] = 0; // Start position is path index 0
         }
 
         // Clear captured piece animation state
@@ -981,46 +964,31 @@ export class GameState {
         }
 
         const currentPositions = player === 'white' ? this.data.whitePiecePositions : this.data.blackPiecePositions;
-        const currentPieces = player === 'white' ? this.data.whitePieces : this.data.blackPieces;
         const currentPos = currentPositions[pieceIndex];
 
         // Handle the movement based on the legal move's destination
-        if (legalMove.destinationSquare === 'complete') {
+        if (legalMove.destinationSquare === BOARD_FINISH) {
             // Bear off - piece completes the circuit
-            currentPositions[pieceIndex] = 'start';
-            currentPieces[pieceIndex] = 'spots'; // Keep spots state to indicate completion
+            const playerPath = player === 'white' ? this.whitePath : this.blackPath;
+            currentPositions[pieceIndex] = playerPath.length - 1; // Final path index represents completion
             return { extraTurn: legalMove.extraTurn, captureInfo }; // No capture possible when bearing off
         } else {
             // Normal move along the path
-            let destinationPathIndex: number;
-            const destinationSquare = legalMove.destinationSquare as number;
+            const destinationSquare = legalMove.destinationSquare;
 
-            if (currentPos === 'start') {
-                // Move from start
-                destinationPathIndex = diceRoll - 1; // Convert to 0-based index
-                currentPositions[pieceIndex] = destinationPathIndex;
-            } else {
-                // Move along the path
-                const currentPathIndex = currentPos as number;
-                destinationPathIndex = currentPathIndex + diceRoll;
-                currentPositions[pieceIndex] = destinationPathIndex;
-            }
+            currentPositions[pieceIndex] = currentPos + diceRoll;
 
-            // Handle flip squares using pre-calculated information
-            if (legalMove.flipSquareIndex !== undefined) {
-                currentPieces[pieceIndex] = 'spots';
-            }
+            // Note: Flip handling is no longer needed - piece appearance is determined by path position
 
             // Handle opponent piece capture if the move indicates a capture
             if (legalMove.capture) {
                 const opponentPositions = player === 'white' ? this.data.blackPiecePositions : this.data.whitePiecePositions;
-                const opponentPieces = player === 'white' ? this.data.blackPieces : this.data.whitePieces;
                 const opponentPath = player === 'white' ? this.blackPath : this.whitePath;
                 const opponentPlayer = player === 'white' ? 'black' : 'white';
 
                 const capturedPieceIndex = opponentPositions.findIndex(pos => {
-                    if (pos === 'start' || pos === 'moving') return false;
-                    return opponentPath[pos as number] === destinationSquare;
+                    if (pos === 0 || pos === IS_MOVING) return false; // Not at start, not moving
+                    return opponentPath[pos] === destinationSquare;
                 });
 
                 if (capturedPieceIndex !== -1) {
@@ -1028,11 +996,10 @@ export class GameState {
                     captureInfo = {
                         player: opponentPlayer,
                         index: capturedPieceIndex,
-                        fromPosition: opponentPositions[capturedPieceIndex] as number
+                        fromPosition: opponentPositions[capturedPieceIndex]
                     };
 
-                    opponentPositions[capturedPieceIndex] = 'start';
-                    opponentPieces[capturedPieceIndex] = 'blank';
+                    opponentPositions[capturedPieceIndex] = 0; // Send back to start (path index 0)
                 }
             }
         }
@@ -1050,21 +1017,20 @@ export class GameState {
 
         const currentPlayer = this.data.currentPlayer;
         const currentPositions = currentPlayer === 'white' ? this.data.whitePiecePositions : this.data.blackPiecePositions;
-        const currentPieceStates = currentPlayer === 'white' ? this.data.whitePieces : this.data.blackPieces;
         const piecesToEvaluate: number[] = [];
 
-        // Find the leftmost piece still in starting area (if any)
-        const leftmostStartIndex = currentPositions.findIndex((pos, idx) => {
-            return pos === 'start' && currentPieceStates[idx] === 'blank';
+        // Find the leftmost piece still in starting area (path index 0, and not showing spots yet)
+        const leftmostStartIndex = currentPositions.findIndex((pos) => {
+            return pos === 0 && !this.shouldPieceShowSpots(pos, currentPlayer);
         });
 
         if (leftmostStartIndex !== -1) {
             piecesToEvaluate.push(leftmostStartIndex);
         }
 
-        // Add all pieces that are on the board (excluding moving pieces)
+        // Add all pieces that are on the board (excluding moving pieces and start position)
         currentPositions.forEach((pos, index) => {
-            if (pos !== 'start' && pos !== 'moving') {
+            if (pos !== 0 && pos !== IS_MOVING) { // Not at start, not moving
                 piecesToEvaluate.push(index);
             }
         });
@@ -1096,18 +1062,13 @@ export class GameState {
         const move: Move = {
             pieceIndex,
             legal: false,
-            destinationSquare: null,
+            destinationSquare: BOARD_FINISH,
             capture: false,
             extraTurn: false
         };
 
         let destinationPathIndex: number;
-
-        if (currentPos === 'start') {
-            destinationPathIndex = this.data.diceTotal - 1; // Convert 1-based dice to 0-based path index
-        } else {
-            destinationPathIndex = currentPos as number + this.data.diceTotal;
-        }
+        destinationPathIndex = currentPos + this.data.diceTotal;
 
         if (destinationPathIndex >= currentPlayerPath.length) {
             // Attempting to bear off (complete the circuit)
@@ -1128,28 +1089,14 @@ export class GameState {
                 }
             }
 
-            move.destinationSquare = 'complete';
+            move.destinationSquare = BOARD_FINISH; // Completion goes to finish square
             move.legal = true;
 
             // Calculate flip information for bear-off moves
-            const flipSquares = ruleSet.getFlipSquares();
-            if (currentPos === 'start') {
-                // Check all squares from start to end of path
-                for (let i = 0; i < currentPlayerPath.length; i++) {
-                    if (flipSquares.includes(currentPlayerPath[i])) {
-                        move.flipSquareIndex = i;
-                        break;
-                    }
-                }
-            } else {
-                // Check squares from current position to end of path
-                const currentPathIndex = currentPos as number;
-                for (let i = currentPathIndex + 1; i < currentPlayerPath.length; i++) {
-                    if (flipSquares.includes(currentPlayerPath[i])) {
-                        move.flipSquareIndex = i;
-                        break;
-                    }
-                }
+            const gamePath = this.getCurrentGamePath();
+            const currentPathIndex = currentPos;
+            if (currentPathIndex < gamePath.flipIndex) {
+                move.flipSquareIndex = gamePath.flipIndex;
             }
 
             return move;
@@ -1160,8 +1107,8 @@ export class GameState {
 
         // Check if destination is occupied by same color piece (blocking)
         const isSameColorBlocking = currentPositions.some((pos, idx) => {
-            if (pos === 'start' || pos === 'moving' || idx === pieceIndex) return false;
-            return currentPlayerPath[pos as number] === destinationSquare;
+            if (pos === IS_MOVING || idx === pieceIndex) return false; // Skip moving pieces and self
+            return pos === destinationPathIndex;
         });
 
         if (isSameColorBlocking) {
@@ -1198,24 +1145,10 @@ export class GameState {
         }
 
         // Calculate flip information for normal moves
-        const flipSquares = ruleSet.getFlipSquares();
-        if (currentPos === 'start') {
-            // Check all squares from start to destination
-            for (let i = 0; i <= destinationPathIndex; i++) {
-                if (flipSquares.includes(currentPlayerPath[i])) {
-                    move.flipSquareIndex = i;
-                    break;
-                }
-            }
-        } else {
-            // Check squares from current position to destination
-            const currentPathIndex = currentPos as number;
-            for (let i = currentPathIndex + 1; i <= destinationPathIndex; i++) {
-                if (flipSquares.includes(currentPlayerPath[i])) {
-                    move.flipSquareIndex = i;
-                    break;
-                }
-            }
+        const gamePath = this.getCurrentGamePath();
+        const currentPathIndex = currentPos;
+        if (currentPathIndex < gamePath.flipIndex && destinationPathIndex >= gamePath.flipIndex) {
+            move.flipSquareIndex = gamePath.flipIndex;
         }
 
         move.legal = true;
@@ -1246,18 +1179,18 @@ export class GameState {
     }
 
     // Get destination square for selected piece
-    getDestinationSquare(): number | 'complete' | null {
-        if (!this.data.selectedPiece || this.data.diceTotal === 0) return null;
+    getDestinationSquare(): number {
+        if (!this.data.selectedPiece || this.data.diceTotal === 0) return BOARD_FINISH;
 
         // If this piece is currently animating, use the stored destination
         if (this.data.animatingPiece &&
             this.data.animatingPiece.player === this.data.selectedPiece.player &&
             this.data.animatingPiece.index === this.data.selectedPiece.index) {
-            if (this.data.animatingPiece.toPosition === 'start') {
-                return 'complete';
+            const playerPath = this.data.animatingPiece.player === 'white' ? this.whitePath : this.blackPath;
+            if (this.data.animatingPiece.toPosition >= playerPath.length - 1) { // Piece completes circuit
+                return BOARD_FINISH; // Completion goes to finish square
             } else {
                 // Convert path index to board square
-                const playerPath = this.data.animatingPiece.player === 'white' ? this.whitePath : this.blackPath;
                 return playerPath[this.data.animatingPiece.toPosition as number];
             }
         }
@@ -1273,13 +1206,13 @@ export class GameState {
         let blackHouses = 0;
 
         HOUSE_SQUARES.forEach(square => {
-            const whiteOnSquare = this.data.whitePiecePositions.some(pos => {
-                if (pos === 'start' || pos === 'moving') return false;
-                return this.whitePath[pos as number] === square;
+            const whiteOnSquare = this.data.whitePiecePositions.some((pos) => {
+                if (pos === 0 || pos === IS_MOVING) return false; // Start or moving pieces
+                return this.whitePath[pos] === square;
             });
-            const blackOnSquare = this.data.blackPiecePositions.some(pos => {
-                if (pos === 'start' || pos === 'moving') return false;
-                return this.blackPath[pos as number] === square;
+            const blackOnSquare = this.data.blackPiecePositions.some((pos) => {
+                if (pos === 0 || pos === IS_MOVING) return false; // Start or moving pieces
+                return this.blackPath[pos] === square;
             });
 
             if (whiteOnSquare && !blackOnSquare) whiteHouses++;
@@ -1295,13 +1228,13 @@ export class GameState {
         let blackTemples = 0;
 
         TEMPLE_SQUARES.forEach(square => {
-            const whiteOnSquare = this.data.whitePiecePositions.some(pos => {
-                if (pos === 'start' || pos === 'moving') return false;
-                return this.whitePath[pos as number] === square;
+            const whiteOnSquare = this.data.whitePiecePositions.some((pos) => {
+                if (pos === 0 || pos === IS_MOVING) return false; // Start or moving pieces
+                return this.whitePath[pos] === square;
             });
-            const blackOnSquare = this.data.blackPiecePositions.some(pos => {
-                if (pos === 'start' || pos === 'moving') return false;
-                return this.blackPath[pos as number] === square;
+            const blackOnSquare = this.data.blackPiecePositions.some((pos) => {
+                if (pos === 0 || pos === IS_MOVING) return false; // Start or moving pieces
+                return this.blackPath[pos] === square;
             });
 
             if (whiteOnSquare && !blackOnSquare) whiteTemples++;
@@ -1340,14 +1273,16 @@ export class GameState {
         const ruleSet = this.getCurrentRuleSet();
         const piecesToWin = ruleSet.getPiecesToWin();
 
-        // Count completed pieces for each player (spotted pieces that are back at start)
-        const whiteCompletedPieces = this.data.whitePieces.filter((piece, index) =>
-            piece === 'spots' && this.data.whitePiecePositions[index] === 'start'
-        ).length;
+        // Count completed pieces for each player (pieces that completed the circuit and returned to start)
+        const whiteCompletedPieces = this.data.whitePiecePositions.filter((pos) => {
+            // A piece is completed if it's back at position 0 and shows spots (has completed the circuit)
+            return pos === 0 && this.shouldPieceShowSpots(pos, 'white');
+        }).length;
 
-        const blackCompletedPieces = this.data.blackPieces.filter((piece, index) =>
-            piece === 'spots' && this.data.blackPiecePositions[index] === 'start'
-        ).length;
+        const blackCompletedPieces = this.data.blackPiecePositions.filter((pos) => {
+            // A piece is completed if it's back at position 0 and shows spots (has completed the circuit)
+            return pos === 0 && this.shouldPieceShowSpots(pos, 'black');
+        }).length;
 
         if (whiteCompletedPieces >= piecesToWin) return 'white';
         if (blackCompletedPieces >= piecesToWin) return 'black';

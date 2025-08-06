@@ -392,9 +392,7 @@ export class ComputerPlayerAgent implements PlayerAgent {
     private evaluateGameState(gameState: GameState): number {
         // Use a simplified position evaluation
         const myPositions = this.color === 'white' ? gameState.state.whitePiecePositions : gameState.state.blackPiecePositions;
-        const myPieces = this.color === 'white' ? gameState.state.whitePieces : gameState.state.blackPieces;
         const opponentPositions = this.color === 'white' ? gameState.state.blackPiecePositions : gameState.state.whitePiecePositions;
-        const opponentPieces = this.color === 'white' ? gameState.state.blackPieces : gameState.state.whitePieces;
 
         let score = 0;
 
@@ -403,24 +401,24 @@ export class ComputerPlayerAgent implements PlayerAgent {
         const pathLength = myPath.length;
         const completedPieceValue = pathLength * 2; // 2x path length
 
-        // Count completed pieces
-        const myCompleted = myPieces.filter((piece, index) => piece === 'spots' && myPositions[index] === 'start').length;
-        const opponentCompleted = opponentPieces.filter((piece, index) => piece === 'spots' && opponentPositions[index] === 'start').length;
+        // Count completed pieces (pieces at position 0 that show spots)
+        const myCompleted = myPositions.filter((pos) => pos === 0 && gameState.shouldPieceShowSpots(pos, this.color)).length;
+        const opponentCompleted = opponentPositions.filter((pos) => pos === 0 && gameState.shouldPieceShowSpots(pos, this.color === 'white' ? 'black' : 'white')).length;
 
         score += myCompleted * completedPieceValue;
         score -= opponentCompleted * completedPieceValue;
 
         // Evaluate piece advancement using gamma curve
         myPositions.forEach(pos => {
-            if (pos !== 'start' && pos !== 'moving') {
-                const advancementScore = this.calculateAdvancementScore(pos as number, pathLength);
+            if (pos !== 0 && pos !== -1) { // Not at start, not captured/moving
+                const advancementScore = this.calculateAdvancementScore(pos, pathLength);
                 score += advancementScore;
             }
         });
 
         opponentPositions.forEach(pos => {
-            if (pos !== 'start' && pos !== 'moving') {
-                const advancementScore = this.calculateAdvancementScore(pos as number, pathLength);
+            if (pos !== 0 && pos !== -1) { // Not at start, not captured/moving
+                const advancementScore = this.calculateAdvancementScore(pos, pathLength);
                 score -= advancementScore; // Opponent advancement hurts us
             }
         });
@@ -494,22 +492,22 @@ export class ComputerPlayerAgent implements PlayerAgent {
         const myPositions = this.color === 'white' ? gameState.state.whitePiecePositions : gameState.state.blackPiecePositions;
         const currentPosition = myPositions[pieceIndex];
 
-        // Skip evaluation for pieces that are currently moving (in animation)
-        if (currentPosition === 'moving') {
+        // Skip evaluation for pieces that are captured/moving (position -1)
+        if (currentPosition === -1) {
             return {
                 pieceIndex,
                 score: AI_SCORES.INVALID_MOVE,
-                reasons: ['Piece is currently moving']
+                reasons: ['Piece is currently captured or moving']
             };
         }
 
         // Base scoring based on move type
-        if (legalMove.destinationSquare === 'complete') {
+        if (legalMove.destinationSquare === 25) { // BOARD_FINISH
             // Piece completes the circuit - highest priority
             score += AI_SCORES.PIECE_COMPLETION;
             reasons.push('Piece reaches home (wins!)');
-        } else if (currentPosition === 'start') {
-            // Getting piece into play
+        } else if (currentPosition === 0) {
+            // Getting piece into play from start
             score += AI_SCORES.ENTER_PLAY;
             reasons.push('Getting piece into play');
         } else {
@@ -531,14 +529,14 @@ export class ComputerPlayerAgent implements PlayerAgent {
         }
 
         // Positional bonus for pieces further along the path
-        if (currentPosition !== 'start' && typeof currentPosition === 'number') {
+        if (currentPosition !== 0 && currentPosition !== -1) {
             const pathIndex = currentPosition;
             score += Math.floor(pathIndex / 2); // Small bonus for advancement
             reasons.push(`Advancing piece at position ${pathIndex}`);
         }
 
         // Penalty for moves that put piece in danger (only if not landing on safe square)
-        if (legalMove.destinationSquare !== 'complete' && typeof legalMove.destinationSquare === 'number') {
+        if (legalMove.destinationSquare !== 25 && typeof legalMove.destinationSquare === 'number') { // Not BOARD_FINISH
             const destinationSquare = legalMove.destinationSquare;
             const ruleSet = gameState.getCurrentRuleSet();
             const safeSquares = ruleSet.getSafeSquares();
@@ -571,11 +569,11 @@ export class ComputerPlayerAgent implements PlayerAgent {
     private isPositionDangerous(
         destinationSquare: number,
         opponentPath: number[],
-        opponentPositions: (number | 'start' | 'moving')[]
+        opponentPositions: number[]
     ): boolean {
         return opponentPositions.some(pos => {
-            if (pos === 'start' || pos === 'moving') return false;
-            const opponentPathIndex = pos as number;
+            if (pos === 0 || pos === -1) return false; // Skip start and captured/moving pieces
+            const opponentPathIndex = pos;
 
             // Check if opponent could reach our destination with any dice roll (1-4)
             for (let roll = 1; roll <= 4; roll++) {
