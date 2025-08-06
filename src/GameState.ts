@@ -27,9 +27,10 @@ export interface Move {
     pieceIndex: number;
     legal: boolean;
     destinationSquare: number; // Board square number (1-24 on-board, 25 for completion)
+    fromPosition: number; // Path index where piece starts
+    toPosition: number; // Path index where piece ends up
     capture: boolean;
     extraTurn: boolean;
-    flipSquareIndex?: number; // Path index where piece should flip (if any)
     why?: MoveIllegalReason;
 }
 
@@ -69,7 +70,6 @@ export interface GameStateData {
         index: number,
         fromPosition: number, // Path index (0 = start, IS_MOVING = moving)
         toPosition: number, // Path index (path.length - 1 = complete)
-        originalDiceRoll: number,
         isAnimating: boolean
     } | null;
     animatingCapturedPiece: {
@@ -251,18 +251,15 @@ export class GameState {
         const waypoints: number[] = [];
         let flipWaypointIndex: number | null = null;
 
-        // Try to find the legal move for this animation to get pre-calculated flip info
-        let flipSquarePathIndex: number | undefined;
-        if (this.data.animatingPiece) {
-            const legalMove = this.data.legalMoves.find(move => move.pieceIndex === this.data.animatingPiece!.index);
-            flipSquarePathIndex = legalMove?.flipSquareIndex;
-        }
+        // Get the flip index from the current game path
+        const gamePath = this.getCurrentGamePath();
+        const flipIndex = gamePath.flipIndex;
 
         // Add all squares between fromPosition and toPosition (exclusive of from, inclusive of to)
         for (let i = fromPosition + 1; i <= toPosition; i++) {
             waypoints.push(path[i]);
-            // Check if this is the pre-calculated flip square
-            if (flipWaypointIndex === null && flipSquarePathIndex !== undefined && i === flipSquarePathIndex) {
+            // Check if this is the flip square
+            if (flipWaypointIndex === null && i === flipIndex) {
                 flipWaypointIndex = waypoints.length - 1; // Index in waypoints array
             }
         }
@@ -739,17 +736,24 @@ export class GameState {
             return false;
         }
 
+        // Find the legal move for this piece
+        const legalMove = this.data.legalMoves.find(move => move.pieceIndex === pieceIndex);
+        if (!legalMove) {
+            // This shouldn't happen since the move should have been validated
+            throw new Error(`No legal move found for piece ${pieceIndex}`);
+        }
+
         // Check if animations are enabled
         if (this.settings.pieceAnimations) {
-            return this.startPieceAnimation(this.data.currentPlayer, pieceIndex, this.data.diceTotal);
+            return this.startPieceAnimation(this.data.currentPlayer, legalMove);
         } else {
-            return this.executeMoveImmediately(this.data.currentPlayer, pieceIndex, this.data.diceTotal);
+            return this.executeMoveImmediately(this.data.currentPlayer, legalMove);
         }
     }
 
     // Immediate move (no animation)
-    private executeMoveImmediately(player: 'white' | 'black', pieceIndex: number, diceRoll: number): boolean {
-        const result = this.executeMoveWithCaptureInfo(player, pieceIndex, diceRoll);
+    private executeMoveImmediately(player: 'white' | 'black', legalMove: Move): boolean {
+        const result = this.executeMoveWithCaptureInfo(player, legalMove);
         const extraTurn = result.extraTurn;
 
         // Reset turn state and handle player switching
@@ -765,9 +769,9 @@ export class GameState {
     }
 
     // Animation methods
-    private startPieceAnimation(player: 'white' | 'black', pieceIndex: number, diceRoll: number): boolean {
+    private startPieceAnimation(player: 'white' | 'black', legalMove: Move): boolean {
+        const pieceIndex = legalMove.pieceIndex;
         const currentPositions = player === 'white' ? this.data.whitePiecePositions : this.data.blackPiecePositions;
-        const playerPath = player === 'white' ? this.whitePath : this.blackPath;
         const currentPos = currentPositions[pieceIndex];
 
         // Don't start animation if piece is already moving
@@ -775,25 +779,16 @@ export class GameState {
             return false;
         }
 
-        let toPosition: number;
-
-        // Calculate destination position (as path index)
-        // Note: Move validation has already been done by canPieceMove() before this point
-        const newPathIndex = currentPos + diceRoll;
-
-        if (newPathIndex >= playerPath.length) {
-            toPosition = playerPath.length - 1; // Piece completes circuit (final path index)
-        } else {
-            toPosition = newPathIndex;
-        }
+        // Use the provided legal move data
+        const fromPosition = legalMove.fromPosition;
+        const toPosition = legalMove.toPosition;
 
         // Set up animation state
         this.data.animatingPiece = {
             player,
             index: pieceIndex,
-            fromPosition: currentPos,
+            fromPosition,
             toPosition,
-            originalDiceRoll: this.data.diceTotal,
             isAnimating: true
         };
 
@@ -817,7 +812,7 @@ export class GameState {
         // Clear selected piece immediately to prevent UI from showing destination marker
         this.data.selectedPiece = null;
 
-        const { player, index, originalDiceRoll } = this.data.animatingPiece;
+        const { player, index } = this.data.animatingPiece;
 
         // First, restore the piece to its original position for executeMoveWithCaptureInfo to work correctly
         if (player === 'white') {
@@ -827,7 +822,7 @@ export class GameState {
         }
 
         // Use executeMoveWithCaptureInfo to handle all the game logic (captures, extra turns, treasury, etc.)
-        const moveResult = this.executeMoveWithCaptureInfo(player, index, originalDiceRoll);
+        const moveResult = this.executeMoveWithCaptureInfo(player, this.data.legalMoves.find(move => move.pieceIndex === index)!);
         const extraTurn = moveResult.extraTurn;
 
         // Handle captured piece animation if there was a capture and animations are enabled
@@ -953,30 +948,22 @@ export class GameState {
     }
 
     // Version of executeMove that returns capture information for animations
-    private executeMoveWithCaptureInfo(player: 'white' | 'black', pieceIndex: number, diceRoll: number): { extraTurn: boolean, captureInfo: { player: 'white' | 'black', index: number, fromPosition: number } | null } {
+    private executeMoveWithCaptureInfo(player: 'white' | 'black', legalMove: Move): { extraTurn: boolean, captureInfo: { player: 'white' | 'black', index: number, fromPosition: number } | null } {
         let captureInfo: { player: 'white' | 'black', index: number, fromPosition: number } | null = null;
 
-        // Find the legal move for this piece
-        const legalMove = this.data.legalMoves.find(move => move.pieceIndex === pieceIndex);
-        if (!legalMove) {
-            // This shouldn't happen since the move should have been validated
-            throw new Error(`No legal move found for piece ${pieceIndex}`);
-        }
-
+        const pieceIndex = legalMove.pieceIndex;
         const currentPositions = player === 'white' ? this.data.whitePiecePositions : this.data.blackPiecePositions;
-        const currentPos = currentPositions[pieceIndex];
+
+        currentPositions[pieceIndex] = legalMove.toPosition;
 
         // Handle the movement based on the legal move's destination
         if (legalMove.destinationSquare === BOARD_FINISH) {
             // Bear off - piece completes the circuit
-            const playerPath = player === 'white' ? this.whitePath : this.blackPath;
-            currentPositions[pieceIndex] = playerPath.length - 1; // Final path index represents completion
             return { extraTurn: legalMove.extraTurn, captureInfo }; // No capture possible when bearing off
         } else {
             // Normal move along the path
             const destinationSquare = legalMove.destinationSquare;
 
-            currentPositions[pieceIndex] = currentPos + diceRoll;
 
             // Note: Flip handling is no longer needed - piece appearance is determined by path position
 
@@ -1063,6 +1050,8 @@ export class GameState {
             pieceIndex,
             legal: false,
             destinationSquare: BOARD_FINISH,
+            fromPosition: currentPos,
+            toPosition: currentPos, // Will be updated below
             capture: false,
             extraTurn: false
         };
@@ -1070,14 +1059,18 @@ export class GameState {
         let destinationPathIndex: number;
         destinationPathIndex = currentPos + this.data.diceTotal;
 
-        if (destinationPathIndex >= currentPlayerPath.length) {
+        if (destinationPathIndex >= currentPlayerPath.length - 1) {
             // Attempting to bear off (complete the circuit)
 
             // Check if exact roll is required to bear off
-            if (ruleSet.getExactRollNeededToBearOff() && destinationPathIndex > currentPlayerPath.length) {
+            if (ruleSet.getExactRollNeededToBearOff() && destinationPathIndex > currentPlayerPath.length - 1) {
                 move.why = 'exact-roll-needed-to-bear-off';
+                move.toPosition = currentPos; // No movement if illegal
                 return move;
             }
+
+            destinationPathIndex = currentPlayerPath.length - 1;
+            move.toPosition = destinationPathIndex;
 
             // Check if gate square is occupied by opponent piece (only if gate keeper rule is enabled by ruleset)
             if (ruleSet.getGateKeeperEnabled()) {
@@ -1085,6 +1078,7 @@ export class GameState {
                 const opponentPiecesOnGate = this.getPiecesOnSquare(GATE_SQUARE, opponentPlayer);
                 if (opponentPiecesOnGate.length > 0) {
                     move.why = 'blocked-by-gatekeeper';
+                    move.toPosition = currentPos; // No movement if illegal
                     return move;
                 }
             }
@@ -1092,18 +1086,12 @@ export class GameState {
             move.destinationSquare = BOARD_FINISH; // Completion goes to finish square
             move.legal = true;
 
-            // Calculate flip information for bear-off moves
-            const gamePath = this.getCurrentGamePath();
-            const currentPathIndex = currentPos;
-            if (currentPathIndex < gamePath.flipIndex) {
-                move.flipSquareIndex = gamePath.flipIndex;
-            }
-
             return move;
         }
 
         const destinationSquare = currentPlayerPath[destinationPathIndex];
         move.destinationSquare = destinationSquare;
+        move.toPosition = destinationPathIndex;
 
         // Check if destination is occupied by same color piece (blocking)
         const isSameColorBlocking = currentPositions.some((pos, idx) => {
@@ -1113,6 +1101,7 @@ export class GameState {
 
         if (isSameColorBlocking) {
             move.why = 'blocked-by-same-color';
+            move.toPosition = currentPos; // No movement if illegal
             return move;
         }
 
@@ -1123,6 +1112,7 @@ export class GameState {
             const opponentPiecesAtDestination = this.getPiecesOnSquare(destinationSquare, opponentPlayer);
             if (opponentPiecesAtDestination.length > 0) {
                 move.why = 'blocked-by-safe-square';
+                move.toPosition = currentPos; // No movement if illegal
                 return move;
             }
         }
@@ -1142,13 +1132,6 @@ export class GameState {
         if ((ROSETTE_SQUARES as readonly number[]).includes(destinationSquare) &&
             ruleSet.getExtraTurnOnRosette()) {
             move.extraTurn = true;
-        }
-
-        // Calculate flip information for normal moves
-        const gamePath = this.getCurrentGamePath();
-        const currentPathIndex = currentPos;
-        if (currentPathIndex < gamePath.flipIndex && destinationPathIndex >= gamePath.flipIndex) {
-            move.flipSquareIndex = gamePath.flipIndex;
         }
 
         move.legal = true;
