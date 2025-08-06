@@ -112,72 +112,25 @@ const GameLayout: React.FC<GameLayoutProps> = ({
         if (isCapturedPieceAnimating) {
             // Captured pieces become blank and go to the rightmost empty slot
             // Count existing blank pieces (excluding the captured piece itself)
-            const existingBlankCount = positions.filter((pos, idx) => {
-                if (idx === pieceIndex) return false; // Don't count the captured piece itself
-                const inHome = pos === 0 ||
-                    (animatingPiece && animatingPiece.player === player &&
-                        animatingPiece.index === idx &&
-                        (animatingPiece.fromPosition === 0 || animatingPiece.toPosition === 0 || animatingPiece.toPosition === completionIndex));
-                return !gameState.shouldPieceShowSpots(pos, player) && inHome;
+            const existingBlankCount = positions.filter((pos) => {
+                return pos === 0;
             }).length;
 
             // The rightmost empty slot is just before the existing blank pieces
             // Layout: [Completed][Completed][Empty][Empty][CAPTURE HERE][Blank][Blank]
             targetSlot = gameState.getPiecesPerPlayer() - existingBlankCount - 1;
-        } else if (gameState.shouldPieceShowSpots(position, player)) {
-            // Completed pieces go on the left
-            if (isAnimatingToHome && animatingPiece && animatingPiece.toPosition === completionIndex) {
-                // When a piece is completing its circuit and returning home as a spotted piece,
-                // it should go to the leftmost empty slot (next available slot after existing completed pieces)
-                const existingCompletedCount = positions.filter((pos, idx) => {
-                    if (idx === pieceIndex) return false; // Don't count this piece itself
-                    const inHome = pos === 0 ||
-                        (animatingPiece && animatingPiece.player === player &&
-                            animatingPiece.index === idx &&
-                            (animatingPiece.fromPosition === 0 || animatingPiece.toPosition === 0 || animatingPiece.toPosition === completionIndex));
-                    return gameState.shouldPieceShowSpots(pos, player) && inHome;
-                }).length;
-
-                targetSlot = existingCompletedCount; // Next available leftmost slot
-            } else {
-                // For pieces already at home, find which completed piece this is (0-indexed from left)
-                const completedPieces = positions.map((pos, idx) => ({ position: pos, index: idx }))
-                    .filter(item => {
-                        const inHome = item.position === 0 ||
-                            (animatingPiece && animatingPiece.player === player &&
-                                animatingPiece.index === item.index &&
-                                (animatingPiece.fromPosition === 0 || animatingPiece.toPosition === 0 || animatingPiece.toPosition === completionIndex));
-                        return gameState.shouldPieceShowSpots(item.position, player) && inHome;
-                    })
-                    .sort((a, b) => a.index - b.index); // Sort by original index for consistency
-
-                const thisCompletedIndex = completedPieces.findIndex(item => item.index === pieceIndex);
-                targetSlot = thisCompletedIndex >= 0 ? thisCompletedIndex : 0;
-            }
-        } else {
-            // Blank pieces go on the right
-            const blankPieces = positions.map((pos, idx) => ({ position: pos, index: idx }))
-                .filter(item => {
-                    const inHome = item.position === 0 ||
-                        (animatingPiece && animatingPiece.player === player &&
-                            animatingPiece.index === item.index &&
-                            (animatingPiece.fromPosition === 0 || animatingPiece.toPosition === 0 || animatingPiece.toPosition === completionIndex)) ||
-                        (animatingCapturedPiece && animatingCapturedPiece.player === player &&
-                            animatingCapturedPiece.index === item.index);
-                    return !gameState.shouldPieceShowSpots(item.position, player) && inHome;
-                })
-                .sort((a, b) => a.index - b.index); // Sort by original index for consistency
-
-            const thisBlankIndex = blankPieces.findIndex(item => item.index === pieceIndex);
-            const completedCount = positions.filter((pos, idx) => {
-                const inHome = pos === 0 ||
-                    (animatingPiece && animatingPiece.player === player &&
-                        animatingPiece.index === idx &&
-                        (animatingPiece.fromPosition === 0 || animatingPiece.toPosition === 0 || animatingPiece.toPosition === completionIndex));
-                return gameState.shouldPieceShowSpots(pos, player) && inHome;
+        } else if (isAnimatingToHome) {
+            const existingCompletedCount = positions.filter((pos) => {
+                return pos === completionIndex;
             }).length;
 
-            targetSlot = completedCount + 1 + (thisBlankIndex >= 0 ? thisBlankIndex : 0);
+            targetSlot = existingCompletedCount; // Next available leftmost slot
+        } else {
+            const existingBlankCount = positions.filter((pos) => {
+                return pos === 0;
+            }).length;
+
+            targetSlot = gameState.getPiecesPerPlayer() - existingBlankCount - 1; // Rightmost empty slot
         }
 
         // Calculate position within the home grid
