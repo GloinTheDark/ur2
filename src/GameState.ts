@@ -1021,7 +1021,7 @@ export class GameState {
 
         // Find the leftmost piece still in starting area (path index 0, and not showing spots yet)
         const leftmostStartIndex = currentPositions.findIndex((pos) => {
-            return pos === 0 && !this.shouldPieceShowSpots(pos, currentPlayer);
+            return pos === 0;
         });
 
         if (leftmostStartIndex !== -1) {
@@ -1273,15 +1273,15 @@ export class GameState {
         const ruleSet = this.getCurrentRuleSet();
         const piecesToWin = ruleSet.getPiecesToWin();
 
-        // Count completed pieces for each player (pieces that completed the circuit and returned to start)
+        // Count completed pieces for each player (pieces that completed the circuit)
         const whiteCompletedPieces = this.data.whitePiecePositions.filter((pos) => {
-            // A piece is completed if it's back at position 0 and shows spots (has completed the circuit)
-            return pos === 0 && this.shouldPieceShowSpots(pos, 'white');
+            // A piece is completed if it's at the final path index
+            return pos === this.whitePath.length - 1;
         }).length;
 
         const blackCompletedPieces = this.data.blackPiecePositions.filter((pos) => {
-            // A piece is completed if it's back at position 0 and shows spots (has completed the circuit)
-            return pos === 0 && this.shouldPieceShowSpots(pos, 'black');
+            // A piece is completed if it's at the final path index
+            return pos === this.blackPath.length - 1;
         }).length;
 
         if (whiteCompletedPieces >= piecesToWin) return 'white';

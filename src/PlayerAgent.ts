@@ -536,7 +536,7 @@ export class ComputerPlayerAgent implements PlayerAgent {
         }
 
         // Penalty for moves that put piece in danger (only if not landing on safe square)
-        if (legalMove.destinationSquare !== 25 && typeof legalMove.destinationSquare === 'number') { // Not BOARD_FINISH
+        if (legalMove.destinationSquare !== 25) {
             const destinationSquare = legalMove.destinationSquare;
             const ruleSet = gameState.getCurrentRuleSet();
             const safeSquares = ruleSet.getSafeSquares();

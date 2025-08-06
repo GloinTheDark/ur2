@@ -27,18 +27,22 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
     const blankIcon = isWhite ? whiteBlank : blackBlank;
     const spotsIcon = isWhite ? whiteSpots : blackSpots;
 
+    // Get player path to determine completion index
+    const playerPath = gameState.getPlayerPath(player);
+    const completionIndex = playerPath.length - 1;
+
     // Count pieces by type and location using the new position system
     const completedCount = positions.filter((pos) =>
-        pos === 0 && gameState.shouldPieceShowSpots(pos, player)
+        pos === completionIndex
     ).length;
 
     const blankPiecesInHome = positions.filter((pos) =>
-        pos === 0 && !gameState.shouldPieceShowSpots(pos, player)
+        pos === 0
     ).length;
 
-    // Get eligible blank pieces (for clicking) - pieces at position 0 that don't show spots yet
+    // Get eligible blank pieces (for clicking) - pieces at position 0
     const eligibleBlankPieces = state.eligiblePieces.filter(idx =>
-        positions[idx] === 0 && !gameState.shouldPieceShowSpots(positions[idx], player)
+        positions[idx] === 0
     );
 
     // Check if any piece is selected and eligible to complete
@@ -212,7 +216,6 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
                             // Check if this leftmost blank piece is selected
                             isSelected = isLeftmostBlankSlot && !!(selectedPiece &&
                                 selectedPiece.player === player &&
-                                !gameState.shouldPieceShowSpots(positions[selectedPiece.index], player) &&
                                 positions[selectedPiece.index] === 0);
 
                             if (isEligible) {
