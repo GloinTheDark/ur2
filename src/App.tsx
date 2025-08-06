@@ -398,7 +398,7 @@ function App() {
 
       {/* Game Title - Always show */}
       <div style={{
-        marginTop: state.gameStarted ? '20px' : '50px',
+        marginTop: '20px',
         textAlign: 'center'
       }}>
         <h1 style={{
@@ -411,13 +411,14 @@ function App() {
           Royal Game of Ur
         </h1>
         <div style={{
-          fontSize: state.gameStarted ? '0.9rem' : '1rem',
+          fontSize: state.gameStarted ? '1.35rem' : '1.5rem',
           color: 'var(--subtitle-color, #666)',
           marginBottom: state.gameStarted ? '16px' : '20px',
           fontWeight: '500',
-          opacity: 0.8
+          opacity: 0.9,
+          filter: 'var(--dark-mode-filter, none)'
         }}>
-          {settings.currentRuleSet}
+          Ruleset: {settings.currentRuleSet}
         </div>
       </div>
 

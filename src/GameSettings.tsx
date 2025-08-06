@@ -152,8 +152,8 @@ const GameSettings: React.FC<GameSettingsProps> = ({
                         style={{
                             padding: '16px',
                             borderRadius: '8px',
-                            border: `2px solid ${settings.currentRuleSet === ruleSet.name ? '#4CAF50' : '#ddd'}`,
-                            backgroundColor: settings.currentRuleSet === ruleSet.name ? '#e8f5e8' : 'var(--button-bg, #f9f9f9)',
+                            border: `2px solid ${settings.currentRuleSet === ruleSet.name ? '#4CAF50' : 'var(--border-color, #ddd)'}`,
+                            backgroundColor: settings.currentRuleSet === ruleSet.name ? 'var(--highlight-bg, #e8f5e8)' : 'var(--button-bg, #f9f9f9)',
                             cursor: 'pointer',
                             width: '100%',
                             maxWidth: '500px',
