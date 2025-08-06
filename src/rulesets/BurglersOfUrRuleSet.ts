@@ -5,7 +5,7 @@ import type { GameState } from '../GameState';
 // Action-packed variant with more aggressive gameplay
 export class BurglersOfUrRuleSet extends RuleSet {
     readonly name = "Burglers of Ur";
-    readonly description = "Fast-paced variant with aggressive rules and special squares for dynamic gameplay";
+    readonly description = "Strategic variant with aggressive rules and special squares for dynamic gameplay";
 
     // More pieces for longer, more strategic games
     readonly piecesPerPlayer = 7;
@@ -79,6 +79,6 @@ export class BurglersOfUrRuleSet extends RuleSet {
 
     // Victory condition: first to get 5 pieces home wins (not all pieces)
     getPiecesToWin(): number {
-        return 5; // Faster victory condition - need 5 out of 7 pieces
+        return 4; // Faster victory condition - need 4 out of 7 pieces
     }
 }
