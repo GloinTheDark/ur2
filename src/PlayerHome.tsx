@@ -136,7 +136,7 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
             if (state.eligiblePieces.length === 0) {
                 // No eligible pieces, turn will end automatically
                 return {
-                    message: 'No moves available',
+                    message: 'No moves available: pass turn',
                     type: isAI ? 'static' : 'pass-button'
                 };
             } else {
@@ -376,7 +376,7 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
                     fontWeight: '500',
                     color: titleColor,
                     filter: 'var(--dark-mode-filter, none)',
-                    minHeight: '20px',
+                    height: '32px', // Fixed height to prevent layout shifts
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -385,14 +385,7 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
                         const status = getStatusMessage();
                         return (status.type === 'roll-button' || status.type === 'pass-button') ? 'pointer' : 'default';
                     })(),
-                    padding: (() => {
-                        const status = getStatusMessage();
-                        return (status.type === 'roll-button' || status.type === 'pass-button') ? '4px 8px' : '0';
-                    })(),
-                    borderRadius: (() => {
-                        const status = getStatusMessage();
-                        return (status.type === 'roll-button' || status.type === 'pass-button') ? '4px' : '0';
-                    })(),
+                    borderRadius: '4px',
                     backgroundColor: (() => {
                         const status = getStatusMessage();
                         if (status.type === 'roll-button') return 'rgba(51, 136, 255, 0.2)';
@@ -403,7 +396,7 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
                         const status = getStatusMessage();
                         if (status.type === 'roll-button') return '1px solid rgba(51, 136, 255, 0.5)';
                         if (status.type === 'pass-button') return '1px solid rgba(255, 136, 0, 0.5)';
-                        return 'none';
+                        return '1px solid transparent';
                     })(),
                     transition: 'all 0.2s ease'
                 }}
