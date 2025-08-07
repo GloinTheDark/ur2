@@ -1029,7 +1029,7 @@ export class GameState {
 
         // Add all pieces that are on the board (excluding moving pieces and start position)
         currentPositions.forEach((pos, index) => {
-            if (pos !== 0 && pos !== IS_MOVING) { // Not at start, not moving
+            if (pos !== 0 && pos != this.endOfPath && pos !== IS_MOVING) { // Not at start, not moving
                 piecesToEvaluate.push(index);
             }
         });
@@ -1106,34 +1106,25 @@ export class GameState {
         move.toPosition = destinationPathIndex;
 
         // Check if destination is occupied by same color piece (blocking)
-        const isSameColorBlocking = currentPositions.some((pos, idx) => {
-            if (pos === IS_MOVING || idx === pieceIndex) return false; // Skip moving pieces and self
-            return pos === destinationPathIndex;
-        });
-
+        const isSameColorBlocking = this.getPiecesOnSquare(destinationSquare, currentPlayer).length > 0;
         if (isSameColorBlocking) {
             move.why = 'blocked-by-same-color';
             move.toPosition = currentPos; // No movement if illegal
             return move;
         }
 
-        // Check if destination is a safe square occupied by opponent piece
-        const safeSquares = ruleSet.getSafeSquares();
-        if (safeSquares.includes(destinationSquare)) {
-            const opponentPlayer = currentPlayer === 'white' ? 'black' : 'white';
-            const opponentPiecesAtDestination = this.getPiecesOnSquare(destinationSquare, opponentPlayer);
-            if (opponentPiecesAtDestination.length > 0) {
+        // Check if destination is occupied by opponent piece
+        const opponentPlayer = currentPlayer === 'white' ? 'black' : 'white';
+        const opponentPiecesAtDestination = this.getPiecesOnSquare(destinationSquare, opponentPlayer);
+        if (opponentPiecesAtDestination.length > 0) {
+            // Check if destination is a safe square occupied by opponent piece
+            const safeSquares = ruleSet.getSafeSquares();
+            if (safeSquares.includes(destinationSquare)) {
                 move.why = 'blocked-by-safe-square';
                 move.toPosition = currentPos; // No movement if illegal
                 return move;
             }
-        }
-
-        // Check for capture
-        const opponentPlayer = currentPlayer === 'white' ? 'black' : 'white';
-        const opponentPiecesAtDestination = this.getPiecesOnSquare(destinationSquare, opponentPlayer);
-
-        if (opponentPiecesAtDestination.length > 0) {
+            // If not a safe square, we can capture the opponent piece
             move.capture = true;
             if (ruleSet.getExtraTurnOnCapture()) {
                 move.extraTurn = true;
