@@ -402,8 +402,8 @@ export class ComputerPlayerAgent implements PlayerAgent {
         const completedPieceValue = pathLength * 2; // 2x path length
 
         // Count completed pieces (pieces at position 0 that show spots)
-        const myCompleted = myPositions.filter((pos) => pos === 0 && gameState.shouldPieceShowSpots(pos, this.color)).length;
-        const opponentCompleted = opponentPositions.filter((pos) => pos === 0 && gameState.shouldPieceShowSpots(pos, this.color === 'white' ? 'black' : 'white')).length;
+        const myCompleted = myPositions.filter((pos) => pos === gameState.getEndOfPath()).length;
+        const opponentCompleted = opponentPositions.filter((pos) => pos === gameState.getEndOfPath()).length;
 
         score += myCompleted * completedPieceValue;
         score -= opponentCompleted * completedPieceValue;
