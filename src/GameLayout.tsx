@@ -87,9 +87,8 @@ const GameLayout: React.FC<GameLayoutProps> = ({
             animatingPiece.index === pieceIndex &&
             animatingPiece.fromPosition === 0;
 
-        // Get player path to determine completion index
-        const playerPath = gameState.getPlayerPath(player);
-        const completionIndex = playerPath.length - 1;
+        // Get completion index
+        const completionIndex = gameState.getEndOfPath();
 
         const isAnimatingToHome = animatingPiece &&
             animatingPiece.player === player &&

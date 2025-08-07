@@ -28,8 +28,7 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
     const spotsIcon = isWhite ? whiteSpots : blackSpots;
 
     // Get player path to determine completion index
-    const playerPath = gameState.getPlayerPath(player);
-    const completionIndex = playerPath.length - 1;
+    const completionIndex = gameState.getEndOfPath();
 
     // Count pieces by type and location using the new position system
     const completedCount = positions.filter((pos) =>

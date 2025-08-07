@@ -52,8 +52,7 @@ const PieceAnimator: React.FC<PieceAnimatorProps> = ({
             }
 
             // Get end position - check if completing circuit
-            const playerPath = gameState.getPlayerPath(player);
-            if (toPosition === playerPath.length - 1) {
+            if (toPosition === gameState.getEndOfPath()) {
                 endPos = getHomePosition(player, index);
             } else {
                 // Convert path index to board square using GameState helper

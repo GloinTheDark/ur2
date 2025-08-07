@@ -100,6 +100,7 @@ export class GameState {
     // Game paths - dynamically loaded from current rule set
     private whitePath: number[] = [];
     private blackPath: number[] = [];
+    private endOfPath: number = 0; // Final path index for both players (paths have same length)
 
     constructor(settings: GameSettings) {
         this.settings = settings;
@@ -107,6 +108,7 @@ export class GameState {
         const defaultPaths = getPathPair(DEFAULT_RULE_SET.pathType);
         this.whitePath = [...defaultPaths.white];
         this.blackPath = [...defaultPaths.black];
+        this.endOfPath = this.whitePath.length - 1; // Both paths have same length
         this.data = this.createInitialState();
         this.updatePathsFromRuleSet();
     }
@@ -156,6 +158,7 @@ export class GameState {
         // Copy paths
         cloned.whitePath = [...this.whitePath];
         cloned.blackPath = [...this.blackPath];
+        cloned.endOfPath = this.endOfPath;
 
         return cloned;
     }
@@ -166,6 +169,7 @@ export class GameState {
         const paths = getPathPair(ruleSet.pathType);
         this.whitePath = paths.white;
         this.blackPath = paths.black;
+        this.endOfPath = this.whitePath.length - 1; // Both paths have same length
     }
 
     // Get current paths (for debugging/inspection)
@@ -214,6 +218,11 @@ export class GameState {
         return [...this.blackPath];
     }
 
+    // Get end of path index (final position for piece completion)
+    getEndOfPath(): number {
+        return this.endOfPath;
+    }
+
     getPlayerPath(player: 'white' | 'black'): number[] {
         return player === 'white' ? this.getWhitePath() : this.getBlackPath();
     }
@@ -230,8 +239,7 @@ export class GameState {
     }
 
     isPieceCompleted(pathIndex: number): boolean {
-        const path = this.getPlayerPath(this.data.currentPlayer);
-        return pathIndex === path.length - 1;
+        return pathIndex === this.endOfPath;
     }
 
     isPieceMoving(pathIndex: number): boolean {
@@ -954,14 +962,14 @@ export class GameState {
         const pieceIndex = legalMove.pieceIndex;
         const currentPositions = player === 'white' ? this.data.whitePiecePositions : this.data.blackPiecePositions;
 
-        currentPositions[pieceIndex] = legalMove.toPosition;
-
         // Handle the movement based on the legal move's destination
         if (legalMove.destinationSquare === BOARD_FINISH) {
             // Bear off - piece completes the circuit
+            currentPositions[pieceIndex] = this.endOfPath; // Final path index represents completion
             return { extraTurn: legalMove.extraTurn, captureInfo }; // No capture possible when bearing off
         } else {
             // Normal move along the path
+            currentPositions[pieceIndex] = legalMove.toPosition;
             const destinationSquare = legalMove.destinationSquare;
 
 
@@ -1059,17 +1067,17 @@ export class GameState {
         let destinationPathIndex: number;
         destinationPathIndex = currentPos + this.data.diceTotal;
 
-        if (destinationPathIndex >= currentPlayerPath.length - 1) {
+        if (destinationPathIndex >= this.endOfPath) {
             // Attempting to bear off (complete the circuit)
 
             // Check if exact roll is required to bear off
-            if (ruleSet.getExactRollNeededToBearOff() && destinationPathIndex > currentPlayerPath.length - 1) {
+            if (ruleSet.getExactRollNeededToBearOff() && destinationPathIndex > this.endOfPath) {
                 move.why = 'exact-roll-needed-to-bear-off';
                 move.toPosition = currentPos; // No movement if illegal
                 return move;
             }
 
-            destinationPathIndex = currentPlayerPath.length - 1;
+            destinationPathIndex = this.endOfPath;
             move.toPosition = destinationPathIndex;
 
             // Check if gate square is occupied by opponent piece (only if gate keeper rule is enabled by ruleset)
@@ -1170,7 +1178,7 @@ export class GameState {
             this.data.animatingPiece.player === this.data.selectedPiece.player &&
             this.data.animatingPiece.index === this.data.selectedPiece.index) {
             const playerPath = this.data.animatingPiece.player === 'white' ? this.whitePath : this.blackPath;
-            if (this.data.animatingPiece.toPosition >= playerPath.length - 1) { // Piece completes circuit
+            if (this.data.animatingPiece.toPosition >= this.endOfPath) { // Piece completes circuit
                 return BOARD_FINISH; // Completion goes to finish square
             } else {
                 // Convert path index to board square
@@ -1259,12 +1267,12 @@ export class GameState {
         // Count completed pieces for each player (pieces that completed the circuit)
         const whiteCompletedPieces = this.data.whitePiecePositions.filter((pos) => {
             // A piece is completed if it's at the final path index
-            return pos === this.whitePath.length - 1;
+            return pos === this.endOfPath;
         }).length;
 
         const blackCompletedPieces = this.data.blackPiecePositions.filter((pos) => {
             // A piece is completed if it's at the final path index
-            return pos === this.blackPath.length - 1;
+            return pos === this.endOfPath;
         }).length;
 
         if (whiteCompletedPieces >= piecesToWin) return 'white';

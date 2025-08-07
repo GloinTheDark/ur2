@@ -68,11 +68,6 @@ export abstract class RuleSet {
         };
     }
 
-    // Path validation
-    isValidPath(path: number[]): boolean {
-        return path.length > 0 && path.every(square => square >= 1 && square <= 24);
-    }
-
     // Convert rule set to game settings format
     toGameSettings(): {
         piecesPerPlayer: number;
