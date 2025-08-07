@@ -142,7 +142,7 @@ const PlayerDiceRoller = forwardRef<PlayerDiceRollerRef, PlayerDiceRollerProps>(
                         alt="Temple Blessing"
                         title="Temple Blessing: Reroll if total is 0"
                         style={{
-                            height: '24px',
+                            height: '30px',
                             marginLeft: '4px'
                         }}
                     />
@@ -155,7 +155,7 @@ const PlayerDiceRoller = forwardRef<PlayerDiceRollerRef, PlayerDiceRollerProps>(
                         alt="House Bonus"
                         title="House Bonus: +1 to dice roll"
                         style={{
-                            height: '24px',
+                            height: '30px',
                             marginLeft: '4px'
                         }}
                     />
@@ -165,10 +165,10 @@ const PlayerDiceRoller = forwardRef<PlayerDiceRollerRef, PlayerDiceRollerProps>(
             {/* Total display */}
             {isCurrentPlayer && state.diceTotal > 0 && (
                 <div style={{
-                    fontSize: '1.1rem',
+                    fontSize: '1.5rem',
                     fontWeight: 'bold',
-                    color: player === 'white' ? '#666' : '#333',
-                    marginLeft: '8px'
+                    color: '#646cff',
+                    marginLeft: '4px'
                 }}>
                     = {state.diceTotal}
                 </div>
