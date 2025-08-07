@@ -246,6 +246,32 @@ function App() {
           flexDirection: 'column',
           gap: '8px'
         }}>
+          {/* Debug Logging Control Button - Always available in debug mode, positioned first */}
+          <button
+            onClick={() => setShowLoggingControl(true)}
+            style={{
+              padding: '8px 16px',
+              fontSize: '14px',
+              fontWeight: 'bold',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              backgroundColor: '#ff9500',
+              color: '#fff',
+              border: 'none',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
+              transition: 'all 0.2s ease'
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.transform = 'translateY(-1px)';
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.4)';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.3)';
+            }}
+          >
+            🐛 Logging
+          </button>
           {/* Game-specific debug buttons - only show when game is started */}
           {state.gameStarted && (
             <>
@@ -359,32 +385,6 @@ function App() {
               )}
             </>
           )}
-          {/* Debug Logging Control Button - Always available in debug mode */}
-          <button
-            onClick={() => setShowLoggingControl(true)}
-            style={{
-              padding: '8px 16px',
-              fontSize: '14px',
-              fontWeight: 'bold',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              backgroundColor: '#ff9500',
-              color: '#fff',
-              border: 'none',
-              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
-              transition: 'all 0.2s ease'
-            }}
-            onMouseOver={(e) => {
-              e.currentTarget.style.transform = 'translateY(-1px)';
-              e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.4)';
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.3)';
-            }}
-          >
-            🐛 Logging
-          </button>
           <div style={{
             fontSize: '12px',
             color: '#ccc',
