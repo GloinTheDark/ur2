@@ -100,7 +100,7 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
 
         // Get current player agent to determine if AI or human
         const currentPlayerAgent = gameState.getCurrentPlayerAgent();
-        const isAI = currentPlayerAgent?.playerType === 'computer';
+        const isAI = currentPlayerAgent?.playerType === 'computer' && !gameState.isDebugPaused();
 
         // Check if animating
         if (gameState.isAnimating()) {

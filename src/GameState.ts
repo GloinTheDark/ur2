@@ -464,6 +464,10 @@ export class GameState {
         this.notify(); // Trigger state change to resume AI if unpaused
     }
 
+    isDebugPaused(): boolean {
+        return this.debugPaused;
+    }
+
     stepAI(): void {
         if (!this.debugPaused) return; // Only step when paused
 
