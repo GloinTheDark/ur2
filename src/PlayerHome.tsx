@@ -8,6 +8,7 @@ import blackSpots from './assets/BlackSpots.svg';
 import goToSquare from './assets/GoTo.svg';
 import templeSquare from './assets/TempleSquare.svg';
 import houseSquare from './assets/HouseSquare.svg';
+import PlayerDiceRoller from './PlayerDiceRoller';
 
 interface PlayerHomeProps {
     player: 'white' | 'black';
@@ -464,6 +465,20 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
                     return null;
                 })()}
             </div>
+
+            {/* Player Dice Roller */}
+            {state.gameStarted && state.gamePhase === 'playing' && (
+                <div style={{
+                    marginTop: '12px',
+                    display: 'flex',
+                    justifyContent: 'center'
+                }}>
+                    <PlayerDiceRoller
+                        player={player}
+                        gameState={gameState}
+                    />
+                </div>
+            )}
         </div>
     );
 };

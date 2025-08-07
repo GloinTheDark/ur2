@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from 'react'
 import './App.css'
 import { useGameState } from './useGameState'
-import DiceRoller from './DiceRoller'
-import type { DiceRollerRef } from './DiceRoller'
+import DualDiceRoller from './DualDiceRoller'
+import type { DualDiceRollerRef } from './DualDiceRoller'
 import GameSetup from './GameSetup'
 import GameSettings from './GameSettings'
 import UserPreferences from './UserPreferences'
@@ -40,7 +40,7 @@ function App() {
   const [showPreferences, setShowPreferences] = useState<boolean>(false);
   const [showQuitConfirm, setShowQuitConfirm] = useState<boolean>(false);
   const [showLoggingControl, setShowLoggingControl] = useState<boolean>(false);
-  const diceRollerRef = useRef<DiceRollerRef>(null);
+  const dualDiceRollerRef = useRef<DualDiceRollerRef>(null);
 
   // Debug mode - check URL parameter
   const [isDebugMode] = useState(() => {
@@ -72,7 +72,7 @@ function App() {
       black: blackPlayer,
       whiteDifficulty: whiteDifficulty || undefined,
       blackDifficulty: blackDifficulty || undefined
-    }, diceRollerRef);
+    });
   };
 
   // Save settings to localStorage
@@ -910,7 +910,7 @@ function App() {
 
       {state.gameStarted && !winner && (
         <div style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <DiceRoller ref={diceRollerRef} gameState={gameState} />
+          <DualDiceRoller ref={dualDiceRollerRef} gameState={gameState} />
         </div>
       )}
     </div>

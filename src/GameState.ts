@@ -1,4 +1,3 @@
-import React from 'react';
 import {
     ROSETTE_SQUARES,
     GATE_SQUARE,
@@ -10,7 +9,6 @@ import { getRuleSetByName, DEFAULT_RULE_SET } from './RuleSets';
 import type { RuleSet } from './RuleSet';
 import { HumanPlayerAgent, ComputerPlayerAgent } from './PlayerAgent';
 import type { PlayerAgent, PlayerType } from './PlayerAgent';
-import type { DiceRollerRef } from './DiceRoller';
 import { AppLog } from './AppSettings';
 
 // Board square constants
@@ -62,6 +60,9 @@ export interface GameStateData {
     diceAnimating: boolean;
     houseBonusApplied: boolean;
     templeBlessingApplied: boolean;
+    // Previous dice rolls for each player (for display when not their turn)
+    whitePreviousDiceRolls: number[];
+    blackPreviousDiceRolls: number[];
     eligiblePieces: number[];
     legalMoves: Move[];
     illegalMoves: Move[];
@@ -91,7 +92,6 @@ export class GameState {
     private whitePlayer: PlayerAgent | null = null;
     private blackPlayer: PlayerAgent | null = null;
     private playerManagerActive: boolean = false;
-    private diceRollerRef: React.RefObject<DiceRollerRef | null> | null = null;
     private handlingStateChange: boolean = false; // Prevent concurrent handler execution
 
     // Debug mode
@@ -148,6 +148,8 @@ export class GameState {
             diceAnimating: this.data.diceAnimating,
             houseBonusApplied: this.data.houseBonusApplied,
             templeBlessingApplied: this.data.templeBlessingApplied,
+            whitePreviousDiceRolls: [...this.data.whitePreviousDiceRolls],
+            blackPreviousDiceRolls: [...this.data.blackPreviousDiceRolls],
             eligiblePieces: [...this.data.eligiblePieces],
             legalMoves: this.data.legalMoves.map(move => ({ ...move })),
             illegalMoves: this.data.illegalMoves.map(move => ({ ...move })),
@@ -221,6 +223,11 @@ export class GameState {
     // Get end of path index (final position for piece completion)
     getEndOfPath(): number {
         return this.endOfPath;
+    }
+
+    // Get previous dice rolls for each player
+    getPreviousDiceRolls(player: 'white' | 'black'): number[] {
+        return player === 'white' ? [...this.data.whitePreviousDiceRolls] : [...this.data.blackPreviousDiceRolls];
     }
 
     getPlayerPath(player: 'white' | 'black'): number[] {
@@ -314,6 +321,9 @@ export class GameState {
 
     private createInitialState(): GameStateData {
         const piecesPerPlayer = this.getPiecesPerPlayer();
+        const currentRuleSet = this.getCurrentRuleSet();
+        const diceCount = currentRuleSet.diceCount;
+
         return {
             currentPlayer: 'white',
             whitePiecePositions: Array(piecesPerPlayer).fill(0), // All pieces start at path index 0
@@ -329,6 +339,8 @@ export class GameState {
             diceAnimating: false,
             houseBonusApplied: false,
             templeBlessingApplied: false,
+            whitePreviousDiceRolls: Array(diceCount).fill(0), // Initialize with zeros
+            blackPreviousDiceRolls: Array(diceCount).fill(0), // Initialize with zeros
             eligiblePieces: [],
             legalMoves: [],
             illegalMoves: [],
@@ -398,11 +410,11 @@ export class GameState {
     }
 
     // Player Management
-    setupPlayers(config: PlayerConfiguration, diceRollerRef: React.RefObject<DiceRollerRef | null>): void {
+    setupPlayers(
+        config: PlayerConfiguration
+    ): void {
         // Clean up existing players
         this.cleanupPlayers();
-
-        this.diceRollerRef = diceRollerRef;
 
         // Create player agents based on configuration
         this.whitePlayer = this.createPlayerAgent('white', config.white, config.whiteDifficulty);
@@ -436,8 +448,6 @@ export class GameState {
             this.blackPlayer.cleanup();
             this.blackPlayer = null;
         }
-
-        this.diceRollerRef = null;
     }
 
     getCurrentPlayerAgent(): PlayerAgent | null {
@@ -675,6 +685,7 @@ export class GameState {
         if (!this.isSimulation) {
             AppLog.dice(`Dice rolled: ${newRolls.join(', ')} (Total: ${rollResult.total})`);
         }
+
         this.data.diceRolls = newRolls;
         this.data.diceTotal = rollResult.total;
         this.data.houseBonusApplied = rollResult.houseBonusApplied;
@@ -692,18 +703,29 @@ export class GameState {
             return;
         }
 
-        // Check if animations are enabled and DiceRoller ref is available
-        if (this.settings.diceAnimations && this.diceRollerRef?.current) {
-            AppLog.dice('Starting animated dice roll');
-            this.diceRollerRef.current.triggerRoll();
-        } else {
-            AppLog.dice('Starting direct dice roll (no animation)');
-            // Roll immediately without animation
-            this.rollDice();
+        // Check if animations are enabled
+        if (this.settings.diceAnimations) {
+            AppLog.dice(`Starting animated dice roll for ${this.data.currentPlayer} player`);
+            // Set the animation flag to trigger auto-animation in PlayerDiceRoller
+            this.startDiceAnimation();
+            return;
         }
+
+        AppLog.dice('Starting direct dice roll (no animation)');
+        // Roll immediately without animation
+        this.rollDice();
     }
 
     resetTurn(extraTurn: boolean): void {
+        // Store current dice rolls as previous dice rolls before clearing them
+        if (this.data.diceRolls.length > 0) {
+            if (this.data.currentPlayer === 'white') {
+                this.data.whitePreviousDiceRolls = [...this.data.diceRolls];
+            } else {
+                this.data.blackPreviousDiceRolls = [...this.data.diceRolls];
+            }
+        }
+
         // Reset dice state
         this.data.diceRolls = [];
         this.data.diceTotal = 0;
