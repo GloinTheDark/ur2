@@ -37,7 +37,7 @@ export class PlayerManager {
                 if (difficulty === 'random') {
                     return new RandomPlayerAgent(color);
                 } else {
-                    return new ComputerPlayerAgent(color, difficulty || 'medium');
+                    return new ComputerPlayerAgent(color);
                 }
             default:
                 throw new Error(`Unknown player type: ${type}`);

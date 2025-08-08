@@ -785,17 +785,21 @@ export class GameState {
             throw new Error(`No legal move found for piece ${pieceIndex}`);
         }
 
-        // Check if animations are enabled
+        return this.startLegalMove(legalMove);
+    }
+
+    // Start a legal move (animation or immediate)
+    private startLegalMove(legalMove: Move): boolean {
         if (this.settings.pieceAnimations) {
-            return this.startPieceAnimation(this.data.currentPlayer, legalMove);
+            return this.startPieceAnimation(legalMove);
         } else {
-            return this.executeMoveImmediately(this.data.currentPlayer, legalMove);
+            return this.executeMoveImmediately(legalMove);
         }
     }
 
     // Immediate move (no animation)
-    private executeMoveImmediately(player: 'white' | 'black', legalMove: Move): boolean {
-        const result = this.executeMoveWithCaptureInfo(player, legalMove);
+    private executeMoveImmediately(legalMove: Move): boolean {
+        const result = this.executeMoveWithCaptureInfo(legalMove);
         const extraTurn = result.extraTurn;
 
         // Reset turn state and handle player switching
@@ -811,9 +815,10 @@ export class GameState {
     }
 
     // Animation methods
-    private startPieceAnimation(player: 'white' | 'black', legalMove: Move): boolean {
+    private startPieceAnimation(legalMove: Move): boolean {
+        const player = this.data.currentPlayer;
         const pieceIndex = legalMove.pieceIndex;
-        const currentPositions = player === 'white' ? this.data.whitePiecePositions : this.data.blackPiecePositions;
+        const currentPositions = this.data.currentPlayer === 'white' ? this.data.whitePiecePositions : this.data.blackPiecePositions;
         const currentPos = currentPositions[pieceIndex];
 
         // Don't start animation if piece is already moving
@@ -864,7 +869,7 @@ export class GameState {
         }
 
         // Use executeMoveWithCaptureInfo to handle all the game logic (captures, extra turns, treasury, etc.)
-        const moveResult = this.executeMoveWithCaptureInfo(player, this.data.legalMoves.find(move => move.pieceIndex === index)!);
+        const moveResult = this.executeMoveWithCaptureInfo(this.data.legalMoves.find(move => move.pieceIndex === index)!);
         const extraTurn = moveResult.extraTurn;
 
         // Handle captured piece animation if there was a capture and animations are enabled
@@ -990,7 +995,8 @@ export class GameState {
     }
 
     // Version of executeMove that returns capture information for animations
-    private executeMoveWithCaptureInfo(player: 'white' | 'black', legalMove: Move): { extraTurn: boolean, captureInfo: { player: 'white' | 'black', index: number, fromPosition: number } | null } {
+    private executeMoveWithCaptureInfo(legalMove: Move): { extraTurn: boolean, captureInfo: { player: 'white' | 'black', index: number, fromPosition: number } | null } {
+        const player = this.data.currentPlayer;
         let captureInfo: { player: 'white' | 'black', index: number, fromPosition: number } | null = null;
 
         const pieceIndex = legalMove.pieceIndex;
@@ -1081,7 +1087,7 @@ export class GameState {
     }
 
     // Calculate move information for a piece
-    calculateMove(pieceIndex: number): Move {
+    calculateMoves(pieceIndex: number): Move[] {
         const currentPlayer = this.data.currentPlayer;
         const currentPositions = currentPlayer === 'white' ? this.data.whitePiecePositions : this.data.blackPiecePositions;
         const currentPlayerPath = currentPlayer === 'white' ? this.whitePath : this.blackPath;
@@ -1108,7 +1114,7 @@ export class GameState {
             if (ruleSet.getExactRollNeededToBearOff() && destinationPathIndex > this.endOfPath) {
                 move.why = 'exact-roll-needed-to-bear-off';
                 move.toPosition = currentPos; // No movement if illegal
-                return move;
+                return [move]; // Return array with single move
             }
 
             destinationPathIndex = this.endOfPath;
@@ -1121,14 +1127,14 @@ export class GameState {
                 if (opponentPiecesOnGate.length > 0) {
                     move.why = 'blocked-by-gatekeeper';
                     move.toPosition = currentPos; // No movement if illegal
-                    return move;
+                    return [move]; // Return array with single move
                 }
             }
 
             move.destinationSquare = BOARD_FINISH; // Completion goes to finish square
             move.legal = true;
 
-            return move;
+            return [move]; // Return array with single move
         }
 
         const destinationSquare = currentPlayerPath[destinationPathIndex];
@@ -1140,7 +1146,7 @@ export class GameState {
         if (isSameColorBlocking) {
             move.why = 'blocked-by-same-color';
             move.toPosition = currentPos; // No movement if illegal
-            return move;
+            return [move]; // Return array with single move
         }
 
         // Check if destination is occupied by opponent piece
@@ -1152,7 +1158,7 @@ export class GameState {
             if (safeSquares.includes(destinationSquare)) {
                 move.why = 'blocked-by-safe-square';
                 move.toPosition = currentPos; // No movement if illegal
-                return move;
+                return [move]; // Return array with single move
             }
             // If not a safe square, we can capture the opponent piece
             move.capture = true;
@@ -1168,7 +1174,14 @@ export class GameState {
         }
 
         move.legal = true;
-        return move;
+        return [move]; // Return array with single move
+    }
+
+    // Convenience method to get the first (and currently only) move for a piece
+    // This maintains backward compatibility and simplifies common use cases
+    calculateMove(pieceIndex: number): Move {
+        const moves = this.calculateMoves(pieceIndex);
+        return moves[0]; // Return the first move (there's always at least one)
     }
 
     // Get all possible moves for the current player
@@ -1176,9 +1189,10 @@ export class GameState {
         const piecesToEvaluate = this.getPiecesToEvaluate();
         const moves: Move[] = [];
 
-        // For each piece that should be evaluated, calculate its move
+        // For each piece that should be evaluated, calculate its moves and add them all
         piecesToEvaluate.forEach(pieceIndex => {
-            moves.push(this.calculateMove(pieceIndex));
+            const pieceMoves = this.calculateMoves(pieceIndex);
+            moves.push(...pieceMoves); // Spread operator to add all moves from the array
         });
 
         return moves;
@@ -1194,9 +1208,9 @@ export class GameState {
         return [...this.data.illegalMoves];
     }
 
-    // Get destination square for selected piece
-    getDestinationSquare(): number {
-        if (!this.data.selectedPiece || this.data.diceTotal === 0) return BOARD_FINISH;
+    // Get destination squares for selected piece
+    getDestinationSquares(): number[] {
+        if (!this.data.selectedPiece || this.data.diceTotal === 0) return [];
 
         // If this piece is currently animating, use the stored destination
         if (this.data.animatingPiece &&
@@ -1204,16 +1218,16 @@ export class GameState {
             this.data.animatingPiece.index === this.data.selectedPiece.index) {
             const playerPath = this.data.animatingPiece.player === 'white' ? this.whitePath : this.blackPath;
             if (this.data.animatingPiece.toPosition >= this.endOfPath) { // Piece completes circuit
-                return BOARD_FINISH; // Completion goes to finish square
+                return [BOARD_FINISH]; // Completion goes to finish square
             } else {
                 // Convert path index to board square
-                return playerPath[this.data.animatingPiece.toPosition as number];
+                return [playerPath[this.data.animatingPiece.toPosition as number]];
             }
         }
 
-        // Use the new Move system to get destination
-        const move = this.calculateMove(this.data.selectedPiece.index);
-        return move.destinationSquare;
+        // Use the new Move system to get all possible destinations
+        const moves = this.calculateMoves(this.data.selectedPiece.index);
+        return moves.map(move => move.destinationSquare);
     }
 
     // Calculate house control for house bonus rule

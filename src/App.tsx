@@ -636,8 +636,8 @@ function App() {
               const isBlackedOut = BoardUtils.isBlackedOutSquare(squareNumber);
 
               // Check if this square is the destination for the selected piece
-              const destinationSquare = gameState.getDestinationSquare();
-              const isDestinationSquare = destinationSquare === squareNumber;
+              const destinationSquares = gameState.getDestinationSquares();
+              const isDestinationSquare = destinationSquares.includes(squareNumber);
 
               // Get pieces on this square (excluding moving pieces)
               const whitePiecesOnSquare = gameState.getPiecesOnSquare(squareNumber, 'white');

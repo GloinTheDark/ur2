@@ -49,7 +49,7 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
     const selectedPiece = state.selectedPiece;
     const canCompleteToHome = selectedPiece &&
         selectedPiece.player === player &&
-        gameState.getDestinationSquare() === 25; // BOARD_FINISH means completion
+        gameState.getDestinationSquares().includes(25); // BOARD_FINISH means completion
 
     const homeStyle = isWhite ? {
         backgroundColor: '#ccc',
