@@ -827,16 +827,9 @@ export class GameState {
     }
 
     // Animation methods
-    private startPieceAnimation(legalMove: Move): boolean {
+    private startPieceAnimation(move: Move): boolean {
         const player = this.data.currentPlayer;
-        const pieceIndex = legalMove.pieceIndex;
-        const currentPositions = this.data.currentPlayer === 'white' ? this.data.whitePiecePositions : this.data.blackPiecePositions;
-        const currentPos = currentPositions[pieceIndex];
-
-        // Don't start animation if piece is already moving
-        if (currentPos === IS_MOVING) {
-            return false;
-        }
+        const pieceIndex = move.pieceIndex;
 
         // Set up animation state
         this.data.animatingPiece = {
@@ -867,16 +860,6 @@ export class GameState {
         const move = this.data.currentMove; // Ensure we use the current move
         if (!move) {
             throw new Error('No current move available during animation completion');
-        }
-
-        const player = this.data.currentPlayer;
-        const { pieceIndex, fromPosition } = move;
-
-        // First, restore the piece to its original position for executeMoveWithCaptureInfo to work correctly
-        if (player === 'white') {
-            this.data.whitePiecePositions[pieceIndex] = fromPosition;
-        } else {
-            this.data.blackPiecePositions[pieceIndex] = fromPosition;
         }
 
         this.executeMoveWithCaptureInfo(move);
@@ -1027,7 +1010,6 @@ export class GameState {
                 opponentPositions[capturedIndex] = 0;
             });
         }
-
     }
 
 
