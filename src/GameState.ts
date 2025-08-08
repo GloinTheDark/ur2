@@ -1042,9 +1042,11 @@ export class GameState {
 
         const currentPlayer = this.data.currentPlayer;
         const currentPositions = currentPlayer === 'white' ? this.data.whitePiecePositions : this.data.blackPiecePositions;
+        const ruleSet = this.getCurrentRuleSet();
+        const allowStacking = ruleSet.getAllowPieceStacking();
         const piecesToEvaluate: number[] = [];
 
-        // Find the leftmost piece still in starting area (path index 0, and not showing spots yet)
+        // Find the leftmost piece still in starting area (path index 0)
         const leftmostStartIndex = currentPositions.findIndex((pos) => {
             return pos === 0;
         });
@@ -1053,12 +1055,30 @@ export class GameState {
             piecesToEvaluate.push(leftmostStartIndex);
         }
 
-        // Add all pieces that are on the board (excluding moving pieces and start position)
-        currentPositions.forEach((pos, index) => {
-            if (pos !== 0 && pos != this.endOfPath && pos !== IS_MOVING) { // Not at start, not moving
-                piecesToEvaluate.push(index);
-            }
-        });
+        if (allowStacking) {
+            // When stacking is allowed, only the top piece (lowest index) on each square can move
+            const squareToTopPiece = new Map<number, number>();
+
+            // Find the top piece (lowest index) for each square
+            currentPositions.forEach((pos, index) => {
+                if (pos !== 0 && pos !== this.endOfPath && pos !== IS_MOVING) { // Not at start, not completed, not moving
+                    const square = this.getSquareFromPathIndex(currentPlayer, pos);
+                    if (!squareToTopPiece.has(square) || index < squareToTopPiece.get(square)!) {
+                        squareToTopPiece.set(square, index);
+                    }
+                }
+            });
+
+            // Add only the top pieces to evaluation list
+            piecesToEvaluate.push(...squareToTopPiece.values());
+        } else {
+            // Traditional rules: add all pieces that are on the board
+            currentPositions.forEach((pos, index) => {
+                if (pos !== 0 && pos !== this.endOfPath && pos !== IS_MOVING) { // Not at start, not completed, not moving
+                    piecesToEvaluate.push(index);
+                }
+            });
+        }
 
         return piecesToEvaluate;
     }
@@ -1134,7 +1154,7 @@ export class GameState {
 
         // Check if destination is occupied by same color piece (blocking)
         const isSameColorBlocking = this.getPiecesOnSquare(destinationSquare, currentPlayer).length > 0;
-        if (isSameColorBlocking) {
+        if (isSameColorBlocking && !ruleSet.getAllowPieceStacking()) {
             move.why = 'blocked-by-same-color';
             move.toPosition = currentPos; // No movement if illegal
             return [move]; // Return array with single move
