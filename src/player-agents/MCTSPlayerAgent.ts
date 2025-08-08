@@ -1,10 +1,10 @@
-import { GameState } from '../GameState';
+import { GameState, type Move } from '../GameState';
 import { AppLog } from '../AppSettings';
 import type { PlayerAgent, PlayerType } from './PlayerAgent';
 import { AI_DELAYS } from './PlayerAgent';
 
 interface MoveEvaluation {
-    pieceIndex: number;
+    move: Move;
     score: number;
     reasons: string[];
 }
@@ -83,12 +83,12 @@ export class MCTSPlayerAgent implements PlayerAgent {
 
         AppLog.ai(`MCTS onMoveRequired: Thinking with Monte Carlo Tree Search...`);
 
-        const eligiblePieces = gameState.state.eligiblePieces;
-        AppLog.ai(`MCTS onMoveRequired: Found ${eligiblePieces.length} eligible pieces: [${eligiblePieces.join(', ')}]`);
+        const legalMoves = gameState.getLegalMoves();
+        AppLog.ai(`MCTS onMoveRequired: Found ${legalMoves.length} legal moves: [${legalMoves.map(move => move.toString()).join(', ')}]`);
 
-        if (eligiblePieces.length === 0) {
+        if (legalMoves.length === 0) {
             // No moves available, pass turn
-            AppLog.playerAgent(`MCTS onMoveRequired: No eligible pieces, checking if should pass turn`);
+            AppLog.playerAgent(`MCTS onMoveRequired: No legal moves, checking if should pass turn`);
             if (gameState.shouldShowPassButton()) {
                 AppLog.playerAgent(`MCTS onMoveRequired: Passing turn`);
                 // Add a short delay to make it feel more natural
@@ -103,9 +103,9 @@ export class MCTSPlayerAgent implements PlayerAgent {
         // Select a piece using Monte Carlo Tree Search with timing
         AppLog.ai(`MCTS onMoveRequired: Running MCTS analysis`);
         const thinkStartTime = performance.now();
-        const selectedPieceIndex = await this.selectMCTSMove(gameState, eligiblePieces);
+        const move = await this.selectMCTSMove(gameState);
         const actualThinkTime = performance.now() - thinkStartTime;
-        AppLog.ai(`MCTS onMoveRequired: Selected piece ${selectedPieceIndex}`);
+        AppLog.ai(`MCTS onMoveRequired: Selected piece ${move}`);
 
         // Delay to ensure minimum thinking time
         const minThinkTime = AI_DELAYS.MIN_THINK;
@@ -115,12 +115,12 @@ export class MCTSPlayerAgent implements PlayerAgent {
             await this.delay(remainingThinkTime);
         }
 
-        gameState.selectPiece(selectedPieceIndex);
+        gameState.selectPiece(move.pieceIndex);
 
         // Small delay before moving
         await this.delay(AI_DELAYS.MOVE_PIECE);
-        AppLog.playerAgent(`MCTS onMoveRequired: Moving piece ${selectedPieceIndex}`);
-        gameState.movePiece(selectedPieceIndex);
+        AppLog.playerAgent(`MCTS onMoveRequired: Moving piece ${move.pieceIndex} to ${move.destinationSquare}`);
+        gameState.startLegalMove(move);
         AppLog.playerAgent(`MCTS onMoveRequired: Move completed for ${this.color} player`);
     }
 
@@ -132,23 +132,23 @@ export class MCTSPlayerAgent implements PlayerAgent {
         return 'Computer (MCTS)';
     }
 
-    private async selectMCTSMove(gameState: GameState, eligiblePieces: number[]): Promise<number> {
+    private async selectMCTSMove(gameState: GameState): Promise<Move> {
         const startTime = performance.now();
 
-        const legalMoves = gameState.getLegalMoves().filter(move => eligiblePieces.includes(move.pieceIndex));
+        const legalMoves = gameState.getLegalMoves();
 
         if (legalMoves.length === 1) {
-            return legalMoves[0].pieceIndex;
+            return legalMoves[0];
         }
 
-        let bestPiece = eligiblePieces[0];
+        let bestMove = legalMoves[0];
         let bestScore = -Infinity;
 
         AppLog.mcts(`MCTS: Evaluating ${legalMoves.length} possible moves with ${MCTS_CONFIG.SIMULATIONS} simulations each`);
 
         // Evaluate each possible move using Monte Carlo simulations
         for (const move of legalMoves) {
-            const score = await this.evaluateMoveWithMCTS(gameState, move.pieceIndex);
+            const score = await this.evaluateMoveWithMCTS(gameState, move);
 
             // Get piece starting position for logging
             const myPositions = this.color === 'white' ? gameState.state.whitePiecePositions : gameState.state.blackPiecePositions;
@@ -158,7 +158,7 @@ export class MCTSPlayerAgent implements PlayerAgent {
 
             if (score > bestScore) {
                 bestScore = score;
-                bestPiece = move.pieceIndex;
+                bestMove = move;
             }
 
             // Yield time to UI between move evaluations
@@ -173,23 +173,23 @@ export class MCTSPlayerAgent implements PlayerAgent {
             AppLog.mcts(`MCTS: Exceeded time budget! ${elapsedTime.toFixed(2)}ms > 1500ms`);
         }
 
-        AppLog.mcts(`MCTS: Selected piece ${bestPiece} with score ${bestScore.toFixed(4)}`);
+        AppLog.mcts(`MCTS: Selected piece ${bestMove.pieceIndex} with score ${bestScore.toFixed(4)}`);
 
-        return bestPiece;
+        return bestMove;
     }
 
     // Public method for debug purposes - allows external access to AI decision making
-    public async evaluateAndSelectPiece(gameState: GameState, eligiblePieces: number[]): Promise<number> {
-        return await this.selectMCTSMove(gameState, eligiblePieces);
+    public async evaluateAndSelectPiece(gameState: GameState): Promise<number> {
+        return (await this.selectMCTSMove(gameState)).pieceIndex;
     }
 
-    private async evaluateMoveWithMCTS(gameState: GameState, pieceIndex: number): Promise<number> {
+    private async evaluateMoveWithMCTS(gameState: GameState, move: Move): Promise<number> {
         // Get the heuristic evaluation as a baseline
-        const heuristicEval = this.evaluateMove(gameState, pieceIndex);
+        const heuristicEval = this.evaluateMove(gameState, move);
         const heuristicScore = heuristicEval.score;
 
         // For debugging: log the heuristic evaluation
-        AppLog.mcts(`MCTS Debug: Piece ${pieceIndex} heuristic: ${heuristicScore} (${heuristicEval.reasons.join(', ')})`);
+        AppLog.mcts(`MCTS Debug: Piece ${move.pieceIndex} heuristic: ${heuristicScore} (${heuristicEval.reasons.join(', ')})`);
 
         // Normalize the heuristic score to a reasonable range for MCTS
         if (heuristicScore === AI_SCORES.INVALID_MOVE) {
@@ -213,8 +213,8 @@ export class MCTSPlayerAgent implements PlayerAgent {
                 const simulatedState = this.cloneGameState(gameState);
 
                 // Make the move we're evaluating
-                simulatedState.selectPiece(pieceIndex);
-                simulatedState.movePiece(pieceIndex);
+                simulatedState.selectPiece(move.pieceIndex);
+                simulatedState.startLegalMove(move);
 
                 // Run simulation - extra turns will be valued naturally through position evaluation
                 const simulationScore = this.runSimulation(simulatedState, MCTS_CONFIG.MAX_DEPTH);
@@ -246,7 +246,7 @@ export class MCTSPlayerAgent implements PlayerAgent {
         const finalScore = (heuristicWeight * normalizedHeuristic) + (simulationWeight * simulationComponent);
 
         // For debugging: log the components
-        AppLog.mcts(`MCTS Debug: Piece ${pieceIndex} simulation avg: ${averageSimulation.toFixed(2)}, final: ${finalScore.toFixed(4)}`);
+        AppLog.mcts(`MCTS Debug: Piece ${move.pieceIndex} simulation avg: ${averageSimulation.toFixed(2)}, final: ${finalScore.toFixed(4)}`);
 
         return finalScore;
     }
@@ -286,7 +286,7 @@ export class MCTSPlayerAgent implements PlayerAgent {
 
             // Make the move
             clonedState.selectPiece(move.pieceIndex);
-            clonedState.movePiece(move.pieceIndex);
+            clonedState.startLegalMove(move);
 
             // Continue simulation - extra turns will be valued naturally through position evaluation
             const score = this.runSimulation(clonedState, depth - 1);
@@ -364,35 +364,33 @@ export class MCTSPlayerAgent implements PlayerAgent {
         return gameState.clone();
     }
 
-    private evaluateMove(gameState: GameState, pieceIndex: number): MoveEvaluation {
+    private evaluateMove(gameState: GameState, move: Move): MoveEvaluation {
         let score = 0;
         const reasons: string[] = [];
 
         // Find the legal move for this piece
-        const legalMove = gameState.getLegalMoves().find(move => move.pieceIndex === pieceIndex);
-        if (!legalMove) {
+        if (!move) {
             return {
-                pieceIndex,
+                move,
                 score: AI_SCORES.INVALID_MOVE,
                 reasons: ['No legal move found for piece']
             };
         }
 
         // Get current position
-        const myPositions = this.color === 'white' ? gameState.state.whitePiecePositions : gameState.state.blackPiecePositions;
-        const currentPosition = myPositions[pieceIndex];
+        const currentPosition = move.fromPosition;
 
         // Skip evaluation for pieces that are captured/moving (position -1)
         if (currentPosition === -1) {
             return {
-                pieceIndex,
+                move,
                 score: AI_SCORES.INVALID_MOVE,
                 reasons: ['Piece is currently captured or moving']
             };
         }
 
         // Base scoring based on move type
-        if (legalMove.destinationSquare === 25) { // BOARD_FINISH
+        if (move.destinationSquare === 25) { // BOARD_FINISH
             // Piece completes the circuit - highest priority
             score += AI_SCORES.PIECE_COMPLETION;
             reasons.push('Piece reaches home (wins!)');
@@ -407,13 +405,13 @@ export class MCTSPlayerAgent implements PlayerAgent {
         }
 
         // Bonus for capturing opponent pieces
-        if (legalMove.capture) {
+        if (move.capture) {
             score += AI_SCORES.CAPTURE;
             reasons.push('Capturing opponent piece');
         }
 
         // Bonus for extra turns (rosettes, captures, or bear-off depending on rule set)
-        if (legalMove.extraTurn) {
+        if (move.extraTurn) {
             score += AI_SCORES.EXTRA_TURN;
             reasons.push('Gets extra turn');
         }
@@ -426,8 +424,8 @@ export class MCTSPlayerAgent implements PlayerAgent {
         }
 
         // Penalty for moves that put piece in danger (only if not landing on safe square)
-        if (legalMove.destinationSquare !== 25) {
-            const destinationSquare = legalMove.destinationSquare;
+        if (move.destinationSquare !== 25) {
+            const destinationSquare = move.destinationSquare;
             const ruleSet = gameState.getCurrentRuleSet();
             const safeSquares = ruleSet.getSafeSquares();
 
@@ -450,7 +448,7 @@ export class MCTSPlayerAgent implements PlayerAgent {
         }
 
         return {
-            pieceIndex,
+            move,
             score,
             reasons
         };

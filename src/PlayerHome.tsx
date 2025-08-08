@@ -237,7 +237,14 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
                                 isDestination = true;
                                 clickHandler = () => {
                                     if (selectedPiece) {
-                                        gameState.movePiece(selectedPiece.index);
+                                        const legalMoves = gameState.getLegalMoves();
+                                        const moveToMake = legalMoves.find(move =>
+                                            move.pieceIndex === selectedPiece.index &&
+                                            move.destinationSquare === 25
+                                        );
+                                        if (moveToMake) {
+                                            gameState.startLegalMove(moveToMake);
+                                        }
                                     }
                                 };
                             }

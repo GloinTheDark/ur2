@@ -55,12 +55,12 @@ export class RandomPlayerAgent implements PlayerAgent {
             return;
         }
 
-        const eligiblePieces = gameState.state.eligiblePieces;
-        AppLog.ai(`Random onMoveRequired: Found ${eligiblePieces.length} eligible pieces: [${eligiblePieces.join(', ')}]`);
+        const legalMoves = gameState.getLegalMoves();
+        AppLog.ai(`Random onMoveRequired: Found ${legalMoves.length} legal moves`);
 
-        if (eligiblePieces.length === 0) {
+        if (legalMoves.length === 0) {
             // No moves available, pass turn
-            AppLog.playerAgent(`Random onMoveRequired: No eligible pieces, checking if should pass turn`);
+            AppLog.playerAgent(`Random onMoveRequired: No legal moves, checking if should pass turn`);
             if (gameState.shouldShowPassButton()) {
                 AppLog.playerAgent(`Random onMoveRequired: Passing turn`);
                 // Add a short delay to make it feel more natural
@@ -76,18 +76,18 @@ export class RandomPlayerAgent implements PlayerAgent {
         AppLog.ai(`Random onMoveRequired: Thinking randomly...`);
         await this.delay(AI_DELAYS.MIN_THINK * 0.25 + Math.random() * AI_DELAYS.MIN_THINK * 0.75); // Random delay between 25%-100% of MIN_THINK
 
-        // Pick a random piece from eligible pieces
-        const randomIndex = Math.floor(Math.random() * eligiblePieces.length);
-        const selectedPieceIndex = eligiblePieces[randomIndex];
+        // Pick a random legal move
+        const randomIndex = Math.floor(Math.random() * legalMoves.length);
+        const selectedMove = legalMoves[randomIndex];
 
-        AppLog.ai(`Random onMoveRequired: Randomly selected piece ${selectedPieceIndex} from ${eligiblePieces.length} options`);
+        AppLog.ai(`Random onMoveRequired: Randomly selected move for piece ${selectedMove.pieceIndex} to ${selectedMove.destinationSquare} from ${legalMoves.length} options`);
 
-        gameState.selectPiece(selectedPieceIndex);
+        gameState.selectPiece(selectedMove.pieceIndex);
 
         // Small delay before moving
         await this.delay(AI_DELAYS.MOVE_PIECE);
-        AppLog.playerAgent(`Random onMoveRequired: Moving piece ${selectedPieceIndex}`);
-        gameState.movePiece(selectedPieceIndex);
+        AppLog.playerAgent(`Random onMoveRequired: Moving piece ${selectedMove.pieceIndex} to ${selectedMove.destinationSquare}`);
+        gameState.startLegalMove(selectedMove);
         AppLog.playerAgent(`Random onMoveRequired: Move completed for ${this.color} player`);
     }
 

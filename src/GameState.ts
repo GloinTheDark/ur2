@@ -97,6 +97,9 @@ export class GameState {
     // Debug mode
     private debugPaused: boolean = false;
 
+    // Current move being executed (for animation completion)
+    private currentMove: Move | null = null;
+
     // Game paths - dynamically loaded from current rule set
     private whitePath: number[] = [];
     private blackPath: number[] = [];
@@ -161,6 +164,9 @@ export class GameState {
         cloned.whitePath = [...this.whitePath];
         cloned.blackPath = [...this.blackPath];
         cloned.endOfPath = this.endOfPath;
+
+        // Copy current move state
+        cloned.currentMove = this.currentMove ? { ...this.currentMove } : null;
 
         return cloned;
     }
@@ -552,7 +558,7 @@ export class GameState {
 
         // Use the AI's selection logic to choose the best piece
         const computerAgent = currentPlayerAgent as import('./PlayerAgent').ComputerPlayerAgent;
-        const selectedPieceIndex = await computerAgent.evaluateAndSelectPiece(this, this.data.eligiblePieces);
+        const selectedPieceIndex = await computerAgent.evaluateAndSelectPiece(this);
 
         AppLog.gameState(`Debug: AI selected piece ${selectedPieceIndex}`);
         this.selectPiece(selectedPieceIndex);
@@ -725,6 +731,7 @@ export class GameState {
     }
 
     resetTurn(extraTurn: boolean): void {
+        this.currentMove = null;
         // Store current dice rolls as previous dice rolls before clearing them
         if (this.data.diceRolls.length > 0) {
             if (this.data.currentPlayer === 'white') {
@@ -773,23 +780,26 @@ export class GameState {
     }
 
     // Piece movement
-    movePiece(pieceIndex: number): boolean {
+    movePiece(pieceIndex: number, destinationSquare: number): boolean {
         if (!this.data.selectedPiece || this.data.selectedPiece.index !== pieceIndex || this.data.diceTotal === 0) {
             return false;
         }
 
-        // Find the legal move for this piece
-        const legalMove = this.data.legalMoves.find(move => move.pieceIndex === pieceIndex);
+        // Find the legal move for this piece and destination
+        const legalMove = this.data.legalMoves.find(move =>
+            move.pieceIndex === pieceIndex && move.destinationSquare === destinationSquare
+        );
         if (!legalMove) {
             // This shouldn't happen since the move should have been validated
-            throw new Error(`No legal move found for piece ${pieceIndex}`);
+            throw new Error(`No legal move found for piece ${pieceIndex} to destination ${destinationSquare}`);
         }
 
         return this.startLegalMove(legalMove);
     }
 
     // Start a legal move (animation or immediate)
-    private startLegalMove(legalMove: Move): boolean {
+    startLegalMove(legalMove: Move): boolean {
+        this.currentMove = legalMove; // Store current move for animation completion
         if (this.settings.pieceAnimations) {
             return this.startPieceAnimation(legalMove);
         } else {
@@ -869,7 +879,10 @@ export class GameState {
         }
 
         // Use executeMoveWithCaptureInfo to handle all the game logic (captures, extra turns, treasury, etc.)
-        const moveResult = this.executeMoveWithCaptureInfo(this.data.legalMoves.find(move => move.pieceIndex === index)!);
+        if (!this.currentMove) {
+            throw new Error('No current move available during animation completion');
+        }
+        const moveResult = this.executeMoveWithCaptureInfo(this.currentMove);
         const extraTurn = moveResult.extraTurn;
 
         // Handle captured piece animation if there was a capture and animations are enabled

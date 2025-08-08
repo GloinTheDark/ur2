@@ -757,7 +757,14 @@ function App() {
                       onClick={(e) => {
                         e.stopPropagation();
                         if (state.selectedPiece) {
-                          gameState.movePiece(state.selectedPiece.index);
+                          const legalMoves = gameState.getLegalMoves();
+                          const moveToMake = legalMoves.find(move =>
+                            move.pieceIndex === state.selectedPiece!.index &&
+                            move.destinationSquare === squareNumber
+                          );
+                          if (moveToMake) {
+                            gameState.startLegalMove(moveToMake);
+                          }
                         }
                       }}
                     />

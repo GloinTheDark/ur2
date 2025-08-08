@@ -1,10 +1,10 @@
-import { GameState } from '../GameState';
+import { GameState, type Move } from '../GameState';
 import { AppLog } from '../AppSettings';
 import type { PlayerAgent, PlayerType } from './PlayerAgent';
 import { AI_DELAYS } from './PlayerAgent';
 
 interface MoveEvaluation {
-    pieceIndex: number;
+    move: Move;
     score: number;
     reasons: string[];
 }
@@ -75,12 +75,12 @@ export class ComputerPlayerAgent implements PlayerAgent {
 
         AppLog.ai(`AI onMoveRequired: Thinking with heuristic analysis...`);
 
-        const eligiblePieces = gameState.state.eligiblePieces;
-        AppLog.ai(`AI onMoveRequired: Found ${eligiblePieces.length} eligible pieces: [${eligiblePieces.join(', ')}]`);
+        const legalMoves = gameState.getLegalMoves();
+        AppLog.ai(`AI onMoveRequired: Found ${legalMoves.length} legal moves: [${legalMoves.map(move => move.toString()).join(', ')}]`);
 
-        if (eligiblePieces.length === 0) {
+        if (legalMoves.length === 0) {
             // No moves available, pass turn
-            AppLog.playerAgent(`AI onMoveRequired: No eligible pieces, checking if should pass turn`);
+            AppLog.playerAgent(`AI onMoveRequired: No legal moves, checking if should pass turn`);
             if (gameState.shouldShowPassButton()) {
                 AppLog.playerAgent(`AI onMoveRequired: Passing turn`);
                 // Add a short delay to make it feel more natural
@@ -95,9 +95,9 @@ export class ComputerPlayerAgent implements PlayerAgent {
         // Select a piece based on heuristic strategy with timing
         AppLog.ai(`AI onMoveRequired: Selecting best move with heuristic analysis`);
         const thinkStartTime = performance.now();
-        const selectedPieceIndex = await this.selectBestMove(gameState, eligiblePieces);
+        const bestMove = await this.selectBestMove(gameState);
         const actualThinkTime = performance.now() - thinkStartTime;
-        AppLog.ai(`AI onMoveRequired: Selected piece ${selectedPieceIndex}`);
+        AppLog.ai(`AI onMoveRequired: Selected move ${bestMove.pieceIndex} to ${bestMove.destinationSquare} in ${actualThinkTime.toFixed(0)}ms`);
 
         // Delay to ensure minimum thinking time
         const minThinkTime = AI_DELAYS.MIN_THINK;
@@ -107,12 +107,11 @@ export class ComputerPlayerAgent implements PlayerAgent {
             await this.delay(remainingThinkTime);
         }
 
-        gameState.selectPiece(selectedPieceIndex);
+        gameState.selectPiece(bestMove.pieceIndex);
 
         // Small delay before moving
         await this.delay(AI_DELAYS.MOVE_PIECE);
-        AppLog.playerAgent(`AI onMoveRequired: Moving piece ${selectedPieceIndex}`);
-        gameState.movePiece(selectedPieceIndex);
+        gameState.startLegalMove(bestMove);
         AppLog.playerAgent(`AI onMoveRequired: Move completed for ${this.color} player`);
     }
 
@@ -124,31 +123,31 @@ export class ComputerPlayerAgent implements PlayerAgent {
         return 'Computer';
     }
 
-    private async selectBestMove(gameState: GameState, eligiblePieces: number[]): Promise<number> {
+    private async selectBestMove(gameState: GameState): Promise<Move> {
         // Use simple heuristic evaluation to choose the best move
-        const rankedMoves = this.rankMoves(gameState, eligiblePieces);
+        const rankedMoves = this.rankMoves(gameState);
 
         // Ensure we have moves to choose from
         if (rankedMoves.length === 0) {
-            return eligiblePieces[0]; // Fallback to first eligible piece
+            throw new Error(`No legal moves available for ${this.color} player`);
         }
 
         // Choose the best move (highest score)
-        return rankedMoves[0].pieceIndex;
+        return rankedMoves[0].move;
     }
 
     // Public method for debug purposes - allows external access to AI decision making
-    public async evaluateAndSelectPiece(gameState: GameState, eligiblePieces: number[]): Promise<number> {
-        return await this.selectBestMove(gameState, eligiblePieces);
+    public async evaluateAndSelectPiece(gameState: GameState): Promise<number> {
+        return (await this.selectBestMove(gameState)).pieceIndex;
     }
 
-    private rankMoves(gameState: GameState, eligiblePieces: number[]): MoveEvaluation[] {
-        AppLog.ai(`AI: Ranking ${eligiblePieces.length} eligible pieces for ${this.color} player`);
+    private rankMoves(gameState: GameState): MoveEvaluation[] {
+        AppLog.ai(`AI: Ranking ${gameState.getLegalMoves().length} eligible pieces for ${this.color} player`);
 
         const moves: MoveEvaluation[] = [];
 
-        for (const pieceIndex of eligiblePieces) {
-            const evaluation = this.evaluateMove(gameState, pieceIndex);
+        for (const move of gameState.getLegalMoves()) {
+            const evaluation = this.evaluateMove(gameState, move);
             moves.push(evaluation);
         }
 
@@ -158,41 +157,30 @@ export class ComputerPlayerAgent implements PlayerAgent {
         // Log the ranking results
         AppLog.ai(`AI: Move rankings for ${this.color}:`);
         rankedMoves.forEach((move, index) => {
-            AppLog.ai(`  ${index + 1}. Piece ${move.pieceIndex}: ${move.score} points (${move.reasons.join(', ')})`);
+            AppLog.ai(`  ${index + 1}. Piece ${move.move.pieceIndex}: ${move.score} points (${move.reasons.join(', ')})`);
         });
 
         return rankedMoves;
     }
 
-    private evaluateMove(gameState: GameState, pieceIndex: number): MoveEvaluation {
+    private evaluateMove(gameState: GameState, move: Move): MoveEvaluation {
         let score = 0;
         const reasons: string[] = [];
 
         // Find the legal move for this piece
-        const legalMove = gameState.getLegalMoves().find(move => move.pieceIndex === pieceIndex);
-        if (!legalMove) {
+        if (!move) {
             return {
-                pieceIndex,
+                move: move,
                 score: AI_SCORES.INVALID_MOVE,
                 reasons: ['No legal move found for piece']
             };
         }
 
         // Get current position
-        const myPositions = this.color === 'white' ? gameState.state.whitePiecePositions : gameState.state.blackPiecePositions;
-        const currentPosition = myPositions[pieceIndex];
-
-        // Skip evaluation for pieces that are captured/moving (position -1)
-        if (currentPosition === -1) {
-            return {
-                pieceIndex,
-                score: AI_SCORES.INVALID_MOVE,
-                reasons: ['Piece is currently captured or moving']
-            };
-        }
+        const currentPosition = move.fromPosition;
 
         // Base scoring based on move type
-        if (legalMove.destinationSquare === 25) { // BOARD_FINISH
+        if (move.destinationSquare === 25) { // BOARD_FINISH
             // Piece completes the circuit - highest priority
             score += AI_SCORES.PIECE_COMPLETION;
             reasons.push('Piece reaches home (wins!)');
@@ -207,13 +195,13 @@ export class ComputerPlayerAgent implements PlayerAgent {
         }
 
         // Bonus for capturing opponent pieces
-        if (legalMove.capture) {
+        if (move.capture) {
             score += AI_SCORES.CAPTURE;
             reasons.push('Capturing opponent piece');
         }
 
         // Bonus for extra turns (rosettes, captures, or bear-off depending on rule set)
-        if (legalMove.extraTurn) {
+        if (move.extraTurn) {
             score += AI_SCORES.EXTRA_TURN;
             reasons.push('Gets extra turn');
         }
@@ -226,8 +214,8 @@ export class ComputerPlayerAgent implements PlayerAgent {
         }
 
         // Penalty for moves that put piece in danger (only if not landing on safe square)
-        if (legalMove.destinationSquare !== 25) {
-            const destinationSquare = legalMove.destinationSquare;
+        if (move.destinationSquare !== 25) {
+            const destinationSquare = move.destinationSquare;
             const ruleSet = gameState.getCurrentRuleSet();
             const safeSquares = ruleSet.getSafeSquares();
 
@@ -250,7 +238,7 @@ export class ComputerPlayerAgent implements PlayerAgent {
         }
 
         return {
-            pieceIndex,
+            move,
             score,
             reasons
         };
