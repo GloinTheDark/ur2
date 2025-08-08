@@ -3,7 +3,7 @@ import type { GameState } from '../GameState';
 
 // RaceEngine rule set - fast-paced variant with Masters path
 export class RaceEngineRuleSet extends RuleSet {
-    readonly name = "RaceEngine";
+    readonly name = "Race Engine";
     readonly description = "Fast-paced racing variant using Masters path with 4 dice and 5 pieces";
 
     // RaceEngine game setup
