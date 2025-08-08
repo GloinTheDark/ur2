@@ -9,7 +9,7 @@ import { PIECE_SIZE } from './UIConstants';
 interface PieceAnimatorProps {
     gameState: GameState;
     getSquarePosition: (square: number) => { x: number; y: number } | null;
-    getHomePosition: (player: 'white' | 'black', pieceIndex: number) => { x: number; y: number } | null;
+    getHomePosition: (player: 'white' | 'black') => { x: number; y: number } | null;
 }
 
 interface AnimationState {
@@ -37,14 +37,14 @@ const PieceAnimator: React.FC<PieceAnimatorProps> = ({
 
         if (animationData && !animationState) {
             // Start new animation
-            const { player, index, fromPosition, toPosition, waypoints, flipWaypointIndex } = animationData;
+            const { player, fromPosition, toPosition, waypoints, flipWaypointIndex } = animationData;
 
             let startPos: { x: number; y: number } | null = null;
             let endPos: { x: number; y: number } | null = null;
 
             // Get start position
             if (fromPosition === 0) {
-                startPos = getHomePosition(player, index);
+                startPos = getHomePosition(player);
             } else {
                 // Convert path index to board square using GameState helper
                 const boardSquare = gameState.getSquareFromPathIndex(player, fromPosition);
@@ -53,7 +53,7 @@ const PieceAnimator: React.FC<PieceAnimatorProps> = ({
 
             // Get end position - check if completing circuit
             if (toPosition === gameState.getEndOfPath()) {
-                endPos = getHomePosition(player, index);
+                endPos = getHomePosition(player);
             } else {
                 // Convert path index to board square using GameState helper
                 const boardSquare = gameState.getSquareFromPathIndex(player, toPosition);

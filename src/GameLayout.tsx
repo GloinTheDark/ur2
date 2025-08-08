@@ -53,7 +53,8 @@ const GameLayout: React.FC<GameLayoutProps> = ({
     }, []);
 
     // Calculate position of a piece in a player's home area
-    const getHomePosition = useCallback((player: 'white' | 'black', pieceIndex: number): { x: number; y: number } | null => {
+    // This is used for animating pieces to and from home
+    const getHomePosition = useCallback((player: 'white' | 'black'): { x: number; y: number } | null => {
         const homeRef = player === 'white' ? whiteHomeRef : blackHomeRef;
 
         if (!homeRef.current || !containerRef.current) {
@@ -75,55 +76,32 @@ const GameLayout: React.FC<GameLayoutProps> = ({
         const state = gameState.state;
         const positions = player === 'white' ? state.whitePiecePositions : state.blackPiecePositions;
 
-        const position = positions[pieceIndex];
 
         // For animations, we need to handle pieces that are 'moving' from start or to start
         // Check if this piece is currently animating from start position
         const isPieceAnimating = state.isPieceAnimating;
-        const isCapturedPieceAnimating = state.isCapturedPieceAnimating;
         const currentMove = state.currentMove;
 
-        const isAnimatingFromStart = isPieceAnimating &&
-            state.currentPlayer === player &&
-            currentMove &&
-            currentMove.pieceIndex === pieceIndex &&
-            currentMove.fromPosition === 0;
+        if (!currentMove) {
+            return null; // No current move to evaluate
+        }
 
         // Get completion index
         const completionIndex = gameState.getEndOfPath();
 
-        const isAnimatingToHome = isPieceAnimating &&
-            state.currentPlayer === player &&
-            currentMove &&
-            currentMove.pieceIndex === pieceIndex &&
-            (currentMove.toPosition === 0 || currentMove.toPosition === completionIndex);
-
-        // If piece is not in start position and not animating from/to home, don't show in home
-        if (position !== 0 && !isAnimatingFromStart && !isAnimatingToHome && !isCapturedPieceAnimating) {
-            return null;
-        }
+        const isAnimatingToHome = isPieceAnimating && currentMove.destinationSquare === 25;
 
         // Determine target slot based on piece type
         let targetSlot = 0;
 
-        // Special handling for captured pieces - they always go to the rightmost empty slot
-        if (isCapturedPieceAnimating) {
-            // Captured pieces become blank and go to the rightmost empty slot
-            // Count existing blank pieces (excluding the captured piece itself)
-            const existingBlankCount = positions.filter((pos) => {
-                return pos === 0;
-            }).length;
-
-            // The rightmost empty slot is just before the existing blank pieces
-            // Layout: [Completed][Completed][Empty][Empty][CAPTURE HERE][Blank][Blank]
-            targetSlot = gameState.getPiecesPerPlayer() - existingBlankCount - 1;
-        } else if (isAnimatingToHome) {
+        if (isAnimatingToHome) {
             const existingCompletedCount = positions.filter((pos) => {
                 return pos === completionIndex;
             }).length;
 
             targetSlot = existingCompletedCount; // Next available leftmost slot
         } else {
+            // used for moving pieces from start and moving captured pieces back to start
             const existingBlankCount = positions.filter((pos) => {
                 return pos === 0;
             }).length;

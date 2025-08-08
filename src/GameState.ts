@@ -917,7 +917,6 @@ export class GameState {
     // Get current animation data
     getAnimationData(): {
         player: 'white' | 'black',
-        index: number,
         fromPosition: number,
         toPosition: number,
         waypoints: number[],
@@ -928,11 +927,10 @@ export class GameState {
         }
 
         const player = this.data.currentPlayer;
-        const { pieceIndex, fromPosition, toPosition } = this.data.currentMove;
+        const { fromPosition, toPosition } = this.data.currentMove;
         const waypointData = this.getAnimationWaypoints(player, fromPosition, toPosition);
         return {
             player,
-            index: pieceIndex,
             fromPosition,
             toPosition,
             waypoints: waypointData.waypoints,
@@ -943,7 +941,6 @@ export class GameState {
     // Get current captured piece animation data
     getCapturedPieceAnimationData(): {
         player: 'white' | 'black',
-        index: number,
         fromPosition: number
     } | null {
         if (!this.data.isCapturedPieceAnimating || !this.data.currentMove) {
@@ -952,8 +949,7 @@ export class GameState {
 
         const player = this.getCurrentOpponent();
         const fromPosition = this.data.currentMove.toPosition;
-        const index = this.data.currentMove.capturedPieces[0]; // Assuming single capture for simplicity
-        return { player, index, fromPosition };
+        return { player, fromPosition };
     }
 
     // Called when captured piece animation completes
