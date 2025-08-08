@@ -640,14 +640,8 @@ function App() {
               const isDestinationSquare = destinationSquares.includes(squareNumber);
 
               // Get pieces on this square (excluding moving pieces)
-              const whitePiecesOnSquare = gameState.getPiecesOnSquare(squareNumber, 'white');
-              const blackPiecesOnSquare = gameState.getPiecesOnSquare(squareNumber, 'black');
-
-              // Check if any piece on this square is eligible to move (only during active gameplay and not during animation)
-              const hasEligiblePiece = gameState.hasEligiblePieceOnSquare(squareNumber) && !winner;
-
-              // Check if any piece on this square is selected
-              const hasSelectedPiece = gameState.hasSelectedPieceOnSquare(squareNumber);
+              const whitePiecesOnSquare = gameState.getPiecesOnSquare(squareNumber, 'white').sort((a, b) => b - a);
+              const blackPiecesOnSquare = gameState.getPiecesOnSquare(squareNumber, 'black').sort((a, b) => b - a);
 
               return (
                 <div
@@ -751,7 +745,7 @@ function App() {
                         position: 'absolute',
                         top: 0,
                         left: 0,
-                        zIndex: 3,
+                        zIndex: 10,
                         cursor: 'pointer'
                       }}
                       onClick={(e) => {
@@ -773,115 +767,79 @@ function App() {
                   {/* Display pieces on this square */}
                   {(whitePiecesOnSquare.length > 0 || blackPiecesOnSquare.length > 0) && (
                     <>
-                      {/* Green highlight circle for eligible pieces (only during active gameplay and if no piece is selected) */}
-                      {hasEligiblePiece && !hasSelectedPiece && (
-                        <div
-                          className="highlight-circle"
-                          style={{
-                            position: 'absolute',
-                            width: `${HIGHLIGHT_CIRCLE_SIZE}px`,
-                            height: `${HIGHLIGHT_CIRCLE_SIZE}px`,
-                            borderRadius: '50%',
-                            zIndex: 1
-                          }}
-                        />
+                      {[
+                        { pieces: whitePiecesOnSquare, player: 'white' as const, positions: state.whitePiecePositions, blankImage: whiteBlank, spotsImage: whiteSpots },
+                        { pieces: blackPiecesOnSquare, player: 'black' as const, positions: state.blackPiecePositions, blankImage: blackBlank, spotsImage: blackSpots }
+                      ].map(({ pieces, player, positions, blankImage, spotsImage }) =>
+                        pieces.map((pieceIndex, stackIndex) => {
+                          const isEligible = state.gameStarted && !winner && state.currentPlayer === player && !gameState.isAnimating() && state.eligiblePieces.includes(pieceIndex);
+                          const isSelected = state.selectedPiece !== null && state.selectedPiece.player === player && state.selectedPiece.index === pieceIndex;
+
+                          // Calculate stacking offset (5px higher per stack level, 1 zIndex higher)
+                          const stackOffset = stackIndex * 5;
+                          const stackZIndex = 2 + stackIndex;
+
+                          return (
+                            <div
+                              key={`${player}-${pieceIndex}`}
+                              style={{
+                                position: 'relative',
+                                cursor: isEligible ? 'pointer' : 'default'
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (isEligible) {
+                                  gameState.selectPiece(pieceIndex as number);
+                                }
+                              }}
+                            >
+                              {isEligible && !isSelected && (
+                                <div
+                                  className="highlight-circle"
+                                  style={{
+                                    position: 'absolute',
+                                    width: `${HIGHLIGHT_CIRCLE_SIZE}px`,
+                                    height: `${HIGHLIGHT_CIRCLE_SIZE}px`,
+                                    borderRadius: '50%',
+                                    top: `calc(50% - ${stackOffset}px)`,
+                                    left: '50%',
+                                    transform: 'translate(-50%, -50%)',
+                                    zIndex: stackZIndex - 1
+                                  }}
+                                />
+                              )}
+                              {isSelected && (
+                                <div
+                                  className="selected-circle"
+                                  style={{
+                                    position: 'absolute',
+                                    width: `${HIGHLIGHT_CIRCLE_SIZE}px`,
+                                    height: `${HIGHLIGHT_CIRCLE_SIZE}px`,
+                                    borderRadius: '50%',
+                                    top: `calc(50% - ${stackOffset}px)`,
+                                    left: '50%',
+                                    transform: 'translate(-50%, -50%)',
+                                    zIndex: stackZIndex - 1
+                                  }}
+                                />
+                              )}
+                              <img
+                                src={gameState.shouldPieceShowSpots(positions[pieceIndex], player) ? spotsImage : blankImage}
+                                alt={`${player.charAt(0).toUpperCase() + player.slice(1)} piece ${pieceIndex + 1}`}
+                                style={{
+                                  width: `${PIECE_SIZE}px`,
+                                  height: `${PIECE_SIZE}px`,
+                                  position: 'absolute',
+                                  top: `calc(50% - ${stackOffset}px)`,
+                                  left: '50%',
+                                  transform: 'translate(-50%, -50%)',
+                                  zIndex: stackZIndex
+                                }}
+                              />
+                            </div>
+                          );
+                        })
                       )}
-                      {whitePiecesOnSquare.map((pieceIndex) => {
-                        const isEligible = state.gameStarted && !winner && state.currentPlayer === 'white' && !gameState.isAnimating() && state.eligiblePieces.includes(pieceIndex);
-                        const isSelected = state.selectedPiece !== null && state.selectedPiece.player === 'white' && state.selectedPiece.index === pieceIndex;
-                        return (
-                          <div
-                            key={`white-${pieceIndex}`}
-                            style={{
-                              position: 'relative',
-                              cursor: isEligible ? 'pointer' : 'default'
-                            }}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (isEligible) {
-                                gameState.selectPiece(pieceIndex as number);
-                              }
-                            }}
-                          >
-                            {isSelected && (
-                              <div
-                                className="selected-circle"
-                                style={{
-                                  position: 'absolute',
-                                  width: `${HIGHLIGHT_CIRCLE_SIZE}px`,
-                                  height: `${HIGHLIGHT_CIRCLE_SIZE}px`,
-                                  borderRadius: '50%',
-                                  top: '50%',
-                                  left: '50%',
-                                  transform: 'translate(-50%, -50%)',
-                                  zIndex: 1
-                                }}
-                              />
-                            )}
-                            <img
-                              src={gameState.shouldPieceShowSpots(state.whitePiecePositions[pieceIndex], 'white') ? whiteSpots : whiteBlank}
-                              alt={`White piece ${pieceIndex + 1}`}
-                              style={{
-                                width: `${PIECE_SIZE}px`,
-                                height: `${PIECE_SIZE}px`,
-                                position: 'absolute',
-                                top: '50%',
-                                left: '50%',
-                                transform: 'translate(-50%, -50%)',
-                                zIndex: 2
-                              }}
-                            />
-                          </div>
-                        );
-                      })}
-                      {blackPiecesOnSquare.map((pieceIndex) => {
-                        const isEligible = state.gameStarted && !winner && state.currentPlayer === 'black' && !gameState.isAnimating() && state.eligiblePieces.includes(pieceIndex);
-                        const isSelected = state.selectedPiece !== null && state.selectedPiece.player === 'black' && state.selectedPiece.index === pieceIndex;
-                        return (
-                          <div
-                            key={`black-${pieceIndex}`}
-                            style={{
-                              position: 'relative',
-                              cursor: isEligible ? 'pointer' : 'default'
-                            }}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (isEligible) {
-                                gameState.selectPiece(pieceIndex as number);
-                              }
-                            }}
-                          >
-                            {isSelected && (
-                              <div
-                                className="selected-circle"
-                                style={{
-                                  position: 'absolute',
-                                  width: `${HIGHLIGHT_CIRCLE_SIZE}px`,
-                                  height: `${HIGHLIGHT_CIRCLE_SIZE}px`,
-                                  borderRadius: '50%',
-                                  top: '50%',
-                                  left: '50%',
-                                  transform: 'translate(-50%, -50%)',
-                                  zIndex: 1
-                                }}
-                              />
-                            )}
-                            <img
-                              src={gameState.shouldPieceShowSpots(state.blackPiecePositions[pieceIndex], 'black') ? blackSpots : blackBlank}
-                              alt={`Black piece ${pieceIndex + 1}`}
-                              style={{
-                                width: `${PIECE_SIZE}px`,
-                                height: `${PIECE_SIZE}px`,
-                                position: 'absolute',
-                                top: '50%',
-                                left: '50%',
-                                transform: 'translate(-50%, -50%)',
-                                zIndex: 2
-                              }}
-                            />
-                          </div>
-                        );
-                      })}
                     </>
                   )}
                 </div>
