@@ -7,8 +7,8 @@ import {
 import { getPathPair, getPath } from './GamePaths';
 import { getRuleSetByName, DEFAULT_RULE_SET } from './RuleSets';
 import type { RuleSet } from './RuleSet';
-import { HumanPlayerAgent, ComputerPlayerAgent } from './PlayerAgent';
-import type { PlayerAgent, PlayerType } from './PlayerAgent';
+import { HumanPlayerAgent, ComputerPlayerAgent, MCTSPlayerAgent, RandomPlayerAgent } from './player-agents';
+import type { PlayerAgent, PlayerType } from './player-agents';
 import { AppLog } from './AppSettings';
 
 // Board square constants
@@ -35,8 +35,8 @@ export interface Move {
 export interface PlayerConfiguration {
     white: PlayerType;
     black: PlayerType;
-    whiteDifficulty?: 'easy' | 'medium' | 'hard';
-    blackDifficulty?: 'easy' | 'medium' | 'hard';
+    whiteAgentType?: 'computer' | 'mcts' | 'random';
+    blackAgentType?: 'computer' | 'mcts' | 'random';
 }
 
 export interface GameSettings {
@@ -417,20 +417,28 @@ export class GameState {
         this.cleanupPlayers();
 
         // Create player agents based on configuration
-        this.whitePlayer = this.createPlayerAgent('white', config.white, config.whiteDifficulty);
-        this.blackPlayer = this.createPlayerAgent('black', config.black, config.blackDifficulty);
+        this.whitePlayer = this.createPlayerAgent('white', config.white, config.whiteAgentType);
+        this.blackPlayer = this.createPlayerAgent('black', config.black, config.blackAgentType);
 
         // Start the player manager
         this.playerManagerActive = true;
         this.handleGameStateChange();
     }
 
-    private createPlayerAgent(color: 'white' | 'black', type: PlayerType, difficulty?: 'easy' | 'medium' | 'hard'): PlayerAgent {
+    private createPlayerAgent(color: 'white' | 'black', type: PlayerType, agentType?: 'computer' | 'mcts' | 'random'): PlayerAgent {
         switch (type) {
             case 'human':
                 return new HumanPlayerAgent(color);
             case 'computer':
-                return new ComputerPlayerAgent(color, difficulty || 'medium');
+                switch (agentType) {
+                    case 'random':
+                        return new RandomPlayerAgent(color);
+                    case 'mcts':
+                        return new MCTSPlayerAgent(color);
+                    case 'computer':
+                    default:
+                        return new ComputerPlayerAgent(color);
+                }
             default:
                 throw new Error(`Unknown player type: ${type}`);
         }

@@ -1,5 +1,5 @@
 import { GameState } from './GameState';
-import { HumanPlayerAgent, ComputerPlayerAgent } from './PlayerAgent';
+import { HumanPlayerAgent, ComputerPlayerAgent, RandomPlayerAgent } from './PlayerAgent';
 import type { PlayerAgent, PlayerType } from './PlayerAgent';
 
 export type GameMode = 'human-vs-human' | 'human-vs-computer' | 'computer-vs-human';
@@ -7,8 +7,8 @@ export type GameMode = 'human-vs-human' | 'human-vs-computer' | 'computer-vs-hum
 export interface PlayerConfiguration {
     white: PlayerType;
     black: PlayerType;
-    whiteDifficulty?: 'easy' | 'medium' | 'hard';
-    blackDifficulty?: 'easy' | 'medium' | 'hard';
+    whiteDifficulty?: 'easy' | 'medium' | 'hard' | 'random';
+    blackDifficulty?: 'easy' | 'medium' | 'hard' | 'random';
 }
 
 export class PlayerManager {
@@ -29,12 +29,16 @@ export class PlayerManager {
         this.unsubscribe = this.gameState.subscribe(() => this.handleGameStateChange());
     }
 
-    private createPlayerAgent(color: 'white' | 'black', type: PlayerType, difficulty?: 'easy' | 'medium' | 'hard'): PlayerAgent {
+    private createPlayerAgent(color: 'white' | 'black', type: PlayerType, difficulty?: 'easy' | 'medium' | 'hard' | 'random'): PlayerAgent {
         switch (type) {
             case 'human':
                 return new HumanPlayerAgent(color);
             case 'computer':
-                return new ComputerPlayerAgent(color, difficulty || 'medium');
+                if (difficulty === 'random') {
+                    return new RandomPlayerAgent(color);
+                } else {
+                    return new ComputerPlayerAgent(color, difficulty || 'medium');
+                }
             default:
                 throw new Error(`Unknown player type: ${type}`);
         }

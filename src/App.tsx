@@ -11,7 +11,7 @@ import LoggingControl from './LoggingControl'
 import type { UserPreferencesData } from './UserPreferences'
 import PlayerHome from './PlayerHome'
 import GameLayout from './GameLayout'
-import type { PlayerType } from './PlayerAgent'
+import type { PlayerType } from './player-agents'
 import type { GameSettings as GameSettingsType } from './GameState'
 import { BoardUtils, BOARD_COLUMNS, BOARD_ROWS, TOTAL_SQUARES } from './BoardLayout'
 import { getRuleSetByName } from './RuleSets'
@@ -60,7 +60,7 @@ function App() {
   const winner = gameState.checkWinCondition();
 
   // Handle game setup completion
-  const handleGameSetup = async (whitePlayer: PlayerType, blackPlayer: PlayerType, whiteDifficulty: 'easy' | 'medium' | 'hard' | null, blackDifficulty: 'easy' | 'medium' | 'hard' | null) => {
+  const handleGameSetup = async (whitePlayer: PlayerType, blackPlayer: PlayerType, whiteAgentType: 'computer' | 'mcts' | 'random' | null, blackAgentType: 'computer' | 'mcts' | 'random' | null) => {
     setShowGameSetup(false); // Close the setup modal
 
     // Start the game directly - no intermediate welcome screen
@@ -70,8 +70,8 @@ function App() {
     gameState.setupPlayers({
       white: whitePlayer,
       black: blackPlayer,
-      whiteDifficulty: whiteDifficulty || undefined,
-      blackDifficulty: blackDifficulty || undefined
+      whiteAgentType: whiteAgentType || undefined,
+      blackAgentType: blackAgentType || undefined
     });
   };
 

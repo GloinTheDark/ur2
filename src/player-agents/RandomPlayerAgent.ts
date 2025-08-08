@@ -1,0 +1,105 @@
+import { GameState } from '../GameState';
+import { AppLog } from '../AppSettings';
+import type { PlayerAgent, PlayerType } from './PlayerAgent';
+import { AI_DELAYS } from './PlayerAgent';
+
+export class RandomPlayerAgent implements PlayerAgent {
+    readonly playerType: PlayerType = 'computer';
+    readonly color: 'white' | 'black';
+
+    constructor(color: 'white' | 'black') {
+        this.color = color;
+    }
+
+    async onTurnStart(gameState: GameState): Promise<void> {
+        AppLog.playerAgent(`Random onTurnStart: ${this.color} player called`);
+
+        // Computer automatically rolls dice when it's their turn
+        // PlayerManager ensures this is only called for computer players
+
+        // Defensive check: only act if it's actually this computer's turn
+        if (gameState.state.currentPlayer !== this.color) {
+            AppLog.playerAgent(`Random onTurnStart: Not ${this.color}'s turn (current: ${gameState.state.currentPlayer}), returning`);
+            return;
+        }
+
+        if (gameState.state.gamePhase === 'playing' &&
+            gameState.state.diceRolls.length === 0) {
+
+            AppLog.playerAgent(`Random onTurnStart: Rolling dice for ${this.color} player`);
+
+            // Add a small delay to make it feel more natural
+            await this.delay(AI_DELAYS.ROLL_DICE);
+
+            // Use centralized dice roll function
+            gameState.startDiceRoll();
+        } else {
+            AppLog.playerAgent(`Random onTurnStart: Not rolling dice - gamePhase: ${gameState.state.gamePhase}, diceRolls: ${gameState.state.diceRolls.length}`);
+        }
+    }
+
+    async onMoveRequired(gameState: GameState): Promise<void> {
+        AppLog.playerAgent(`Random onMoveRequired: ${this.color} player called`);
+
+        // PlayerManager ensures this is only called for computer players
+
+        // Defensive check: only act if it's actually this computer's turn
+        if (gameState.state.currentPlayer !== this.color) {
+            AppLog.playerAgent(`Random onMoveRequired: Not ${this.color}'s turn (current: ${gameState.state.currentPlayer}), returning`);
+            return;
+        }
+
+        // Don't act if a piece has already been selected (prevents multiple calls)
+        if (gameState.state.selectedPiece !== null) {
+            AppLog.playerAgent(`Random onMoveRequired: Piece already selected (${gameState.state.selectedPiece}), returning`);
+            return;
+        }
+
+        const eligiblePieces = gameState.state.eligiblePieces;
+        AppLog.ai(`Random onMoveRequired: Found ${eligiblePieces.length} eligible pieces: [${eligiblePieces.join(', ')}]`);
+
+        if (eligiblePieces.length === 0) {
+            // No moves available, pass turn
+            AppLog.playerAgent(`Random onMoveRequired: No eligible pieces, checking if should pass turn`);
+            if (gameState.shouldShowPassButton()) {
+                AppLog.playerAgent(`Random onMoveRequired: Passing turn`);
+                // Add a short delay to make it feel more natural
+                await this.delay(AI_DELAYS.MIN_THINK);
+                gameState.passTurn();
+            } else {
+                AppLog.playerAgent(`Random onMoveRequired: Pass button not available, not passing`);
+            }
+            return;
+        }
+
+        // Add some thinking time to make it feel more natural
+        AppLog.ai(`Random onMoveRequired: Thinking randomly...`);
+        await this.delay(AI_DELAYS.MIN_THINK * 0.25 + Math.random() * AI_DELAYS.MIN_THINK * 0.75); // Random delay between 25%-100% of MIN_THINK
+
+        // Pick a random piece from eligible pieces
+        const randomIndex = Math.floor(Math.random() * eligiblePieces.length);
+        const selectedPieceIndex = eligiblePieces[randomIndex];
+
+        AppLog.ai(`Random onMoveRequired: Randomly selected piece ${selectedPieceIndex} from ${eligiblePieces.length} options`);
+
+        gameState.selectPiece(selectedPieceIndex);
+
+        // Small delay before moving
+        await this.delay(AI_DELAYS.MOVE_PIECE);
+        AppLog.playerAgent(`Random onMoveRequired: Moving piece ${selectedPieceIndex}`);
+        gameState.movePiece(selectedPieceIndex);
+        AppLog.playerAgent(`Random onMoveRequired: Move completed for ${this.color} player`);
+    }
+
+    cleanup(): void {
+        // No cleanup needed for random players
+    }
+
+    getPlayerName(): string {
+        return 'Computer (Random)';
+    }
+
+    private delay(ms: number): Promise<void> {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+}

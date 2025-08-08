@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import type { PlayerType } from './PlayerAgent';
+import type { PlayerType } from './player-agents';
 
 export interface GameSetupProps {
-    onStartGame: (whitePlayer: PlayerType, blackPlayer: PlayerType, whiteDifficulty: 'easy' | 'medium' | 'hard' | null, blackDifficulty: 'easy' | 'medium' | 'hard' | null) => void;
+    onStartGame: (whitePlayer: PlayerType, blackPlayer: PlayerType, whiteAgentType: 'computer' | 'mcts' | 'random' | null, blackAgentType: 'computer' | 'mcts' | 'random' | null) => void;
 }
 
-type PlayerOption = 'human' | 'easy-computer' | 'medium-computer' | 'hard-computer';
+type PlayerOption = 'human' | 'computer' | 'mcts' | 'random';
 
 interface GameSetupState {
     whitePlayerOption: PlayerOption;
@@ -51,39 +51,43 @@ const GameSetup: React.FC<GameSetupProps> = ({ onStartGame }) => {
     }, [whitePlayerOption, blackPlayerOption, isLoaded]);
 
     const handleStartGame = () => {
-        const { type: whiteType, difficulty: whiteDifficulty } = parsePlayerOption(whitePlayerOption);
-        const { type: blackType, difficulty: blackDifficulty } = parsePlayerOption(blackPlayerOption);
+        const { type: whiteType, agentType: whiteAgentType } = parsePlayerOption(whitePlayerOption);
+        const { type: blackType, agentType: blackAgentType } = parsePlayerOption(blackPlayerOption);
 
-        onStartGame(whiteType, blackType, whiteDifficulty, blackDifficulty);
+        onStartGame(whiteType, blackType, whiteAgentType, blackAgentType);
     };
 
-    const parsePlayerOption = (option: PlayerOption): { type: PlayerType; difficulty: 'easy' | 'medium' | 'hard' | null } => {
+    const parsePlayerOption = (option: PlayerOption): { type: PlayerType; agentType: 'computer' | 'mcts' | 'random' | null } => {
         switch (option) {
             case 'human':
-                return { type: 'human', difficulty: null };
-            case 'easy-computer':
-                return { type: 'computer', difficulty: 'easy' };
-            case 'medium-computer':
-                return { type: 'computer', difficulty: 'medium' };
-            case 'hard-computer':
-                return { type: 'computer', difficulty: 'hard' };
+                return { type: 'human', agentType: null };
+            case 'computer':
+                return { type: 'computer', agentType: 'computer' };
+            case 'mcts':
+                return { type: 'computer', agentType: 'mcts' };
+            case 'random':
+                return { type: 'computer', agentType: 'random' };
             default:
-                return { type: 'human', difficulty: null };
+                return { type: 'human', agentType: null };
         }
     };
 
     const getGameModeDescription = (): string => {
-        const { type: whiteType, difficulty: whiteDifficulty } = parsePlayerOption(whitePlayerOption);
-        const { type: blackType, difficulty: blackDifficulty } = parsePlayerOption(blackPlayerOption);
+        const { type: whiteType, agentType: whiteAgentType } = parsePlayerOption(whitePlayerOption);
+        const { type: blackType, agentType: blackAgentType } = parsePlayerOption(blackPlayerOption);
 
         if (whiteType === 'human' && blackType === 'human') {
             return 'Two players taking turns on the same device';
         } else if (whiteType === 'human' && blackType === 'computer') {
-            return `You play as White against ${blackDifficulty} computer`;
+            const computerType = blackAgentType === 'computer' ? 'Computer' : blackAgentType === 'mcts' ? 'Computer (MCTS)' : 'Random Computer';
+            return `You play as White against ${computerType}`;
         } else if (whiteType === 'computer' && blackType === 'human') {
-            return `You play as Black against ${whiteDifficulty} computer`;
+            const computerType = whiteAgentType === 'computer' ? 'Computer' : whiteAgentType === 'mcts' ? 'Computer (MCTS)' : 'Random Computer';
+            return `You play as Black against ${computerType}`;
         } else {
-            return `Watch ${whiteDifficulty} computer (White) vs ${blackDifficulty} computer (Black)`;
+            const whiteComputerType = whiteAgentType === 'computer' ? 'Computer' : whiteAgentType === 'mcts' ? 'Computer (MCTS)' : 'Random Computer';
+            const blackComputerType = blackAgentType === 'computer' ? 'Computer' : blackAgentType === 'mcts' ? 'Computer (MCTS)' : 'Random Computer';
+            return `Watch ${whiteComputerType} (White) vs ${blackComputerType} (Black)`;
         }
     };
 
@@ -128,9 +132,9 @@ const GameSetup: React.FC<GameSetupProps> = ({ onStartGame }) => {
                     style={selectStyle}
                 >
                     <option value="human">Human</option>
-                    <option value="easy-computer">Easy Computer</option>
-                    <option value="medium-computer">Medium Computer</option>
-                    <option value="hard-computer">Hard Computer</option>
+                    <option value="computer">Computer</option>
+                    <option value="mcts">Computer (MCTS)</option>
+                    <option value="random">Random Computer</option>
                 </select>
             </div>
 
@@ -142,9 +146,9 @@ const GameSetup: React.FC<GameSetupProps> = ({ onStartGame }) => {
                     style={selectStyle}
                 >
                     <option value="human">Human</option>
-                    <option value="easy-computer">Easy Computer</option>
-                    <option value="medium-computer">Medium Computer</option>
-                    <option value="hard-computer">Hard Computer</option>
+                    <option value="computer">Computer</option>
+                    <option value="mcts">Computer (MCTS)</option>
+                    <option value="random">Random Computer</option>
                 </select>
             </div>
 
