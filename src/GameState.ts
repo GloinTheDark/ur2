@@ -951,8 +951,8 @@ export class GameState {
 
         const player = this.getCurrentOpponent();
         const fromPosition = this.data.currentMove.toPosition;
-        return { 
-            player, 
+        return {
+            player,
             fromPosition,
             stackSize: this.data.currentMove.capturedPieces.length
         };
