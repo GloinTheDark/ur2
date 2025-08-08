@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { GameState } from './GameState';
 import whiteBlank from './assets/WhiteBlank.svg';
 import blackBlank from './assets/BlackBlank.svg';
-import { PIECE_SIZE } from './UIConstants';
+import { PIECE_SIZE, STACK_OFFSET } from './UIConstants';
 
 interface CapturedPieceAnimatorProps {
     gameState: GameState;
@@ -97,7 +97,7 @@ const CapturedPieceAnimator: React.FC<CapturedPieceAnimatorProps> = ({
         return null;
     }
 
-    const { player } = capturedAnimationData;
+    const { player, stackSize } = capturedAnimationData;
 
     // Calculate current position
     const { startPosition, endPosition, progress } = animationState;
@@ -107,6 +107,29 @@ const CapturedPieceAnimator: React.FC<CapturedPieceAnimatorProps> = ({
     // Captured pieces are always blank when they return home
     const getPieceImage = () => {
         return player === 'white' ? whiteBlank : blackBlank;
+    };
+
+    // Render all pieces in the stack
+    const renderStackPieces = () => {
+        const pieces = [];
+        for (let i = 0; i < stackSize; i++) {
+            pieces.push(
+                <img
+                    key={i}
+                    src={getPieceImage()}
+                    alt={`Captured ${player} piece ${i + 1}`}
+                    style={{
+                        position: 'absolute',
+                        left: i * STACK_OFFSET,
+                        top: i * STACK_OFFSET,
+                        width: '100%',
+                        height: '100%',
+                        display: 'block'
+                    }}
+                />
+            );
+        }
+        return pieces;
     };
 
     return (
@@ -123,15 +146,7 @@ const CapturedPieceAnimator: React.FC<CapturedPieceAnimatorProps> = ({
                 opacity: 0.8 // Slightly transparent to distinguish from regular pieces
             }}
         >
-            <img
-                src={getPieceImage()}
-                alt={`Captured ${player} piece`}
-                style={{
-                    width: '100%',
-                    height: '100%',
-                    display: 'block'
-                }}
-            />
+            {renderStackPieces()}
         </div>
     );
 };

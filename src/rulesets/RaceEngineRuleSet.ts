@@ -54,4 +54,9 @@ export class RaceEngineRuleSet extends RuleSet {
     getAllowPieceStacking(): boolean {
         return true;
     }
+
+    // Special RaceEngine rule: stacked pieces move together as one unit
+    stacksMoveAsOne(): boolean {
+        return true;
+    }
 }

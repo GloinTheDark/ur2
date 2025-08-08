@@ -47,6 +47,11 @@ export abstract class RuleSet {
         return false; // Default: pieces cannot stack
     }
 
+    // Stack movement - whether stacked pieces move together as one unit
+    stacksMoveAsOne(): boolean {
+        return false; // Default: stacks don't move as one
+    }
+
     // Dice roll calculation and UI feedback
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     calculateDiceRoll(diceValues: number[], _gameState: GameState): {

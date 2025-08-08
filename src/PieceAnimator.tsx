@@ -4,7 +4,7 @@ import whiteBlank from './assets/WhiteBlank.svg';
 import whiteSpots from './assets/WhiteSpots.svg';
 import blackBlank from './assets/BlackBlank.svg';
 import blackSpots from './assets/BlackSpots.svg';
-import { PIECE_SIZE } from './UIConstants';
+import { PIECE_SIZE, STACK_OFFSET } from './UIConstants';
 
 interface PieceAnimatorProps {
     gameState: GameState;
@@ -180,7 +180,7 @@ const PieceAnimator: React.FC<PieceAnimatorProps> = ({
         return null;
     }
 
-    const { player } = animationData;
+    const { player, stackSize } = animationData;
 
     // Calculate current position along the waypoint path
     const { startPosition, endPosition, waypoints, totalDistance, progress } = animationState;
@@ -263,15 +263,22 @@ const PieceAnimator: React.FC<PieceAnimatorProps> = ({
                 transition: 'none' // Disable any CSS transitions
             }}
         >
-            <img
-                src={getPieceImage()}
-                alt={`${player} piece animating`}
-                style={{
-                    width: '100%',
-                    height: '100%',
-                    display: 'block'
-                }}
-            />
+            {/* Render stack of pieces */}
+            {Array.from({ length: stackSize }, (_, index) => (
+                <img
+                    key={index}
+                    src={getPieceImage()}
+                    alt={`${player} piece ${index + 1} animating`}
+                    style={{
+                        position: 'absolute',
+                        width: '100%',
+                        height: '100%',
+                        display: 'block',
+                        top: `${-index * STACK_OFFSET}px`, // Stack pieces higher
+                        zIndex: index // Higher pieces have higher z-index
+                    }}
+                />
+            ))}
         </div>
     );
 };

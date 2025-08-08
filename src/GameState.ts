@@ -22,13 +22,14 @@ export type MoveIllegalReason =
     | 'exact-roll-needed-to-bear-off';
 
 export interface Move {
-    pieceIndex: number;
+    movingPieceIndex: number;
     legal: boolean;
     destinationSquare: number; // Board square number (1-24 on-board, 25 for completion)
     fromPosition: number; // Path index where piece starts
     toPosition: number; // Path index where piece ends up
     capture: boolean;
     capturedPieces: number[]; // Indices of captured pieces (if any)
+    movingPieces: number[]; // Indices of pieces that move together (for stack moves)
     extraTurn: boolean;
     why?: MoveIllegalReason;
 }
@@ -785,7 +786,7 @@ export class GameState {
 
         // Find the legal move for this piece and destination
         const legalMove = this.data.legalMoves.find(move =>
-            move.pieceIndex === pieceIndex && move.destinationSquare === destinationSquare
+            move.movingPieceIndex === pieceIndex && move.destinationSquare === destinationSquare
         );
         if (!legalMove) {
             // This shouldn't happen since the move should have been validated
@@ -825,17 +826,15 @@ export class GameState {
     // Animation methods
     private startPieceAnimation(move: Move): boolean {
         const player = this.data.currentPlayer;
-        const pieceIndex = move.pieceIndex;
+        const currentPositions = player === 'white' ? this.data.whitePiecePositions : this.data.blackPiecePositions;
 
         // Set up animation state
         this.data.isPieceAnimating = true;
 
-        // Set piece position to 'moving' so it doesn't render at source or destination
-        if (player === 'white') {
-            this.data.whitePiecePositions[pieceIndex] = IS_MOVING;
-        } else {
-            this.data.blackPiecePositions[pieceIndex] = IS_MOVING;
-        }
+        // Set all moving pieces position to 'moving' so they don't render at source or destination
+        move.movingPieces.forEach(pieceIndex => {
+            currentPositions[pieceIndex] = IS_MOVING;
+        });
 
         this.notify();
         return true; // Animation started successfully
@@ -920,28 +919,31 @@ export class GameState {
         fromPosition: number,
         toPosition: number,
         waypoints: number[],
-        flipWaypointIndex: number | null
+        flipWaypointIndex: number | null,
+        stackSize: number
     } | null {
         if (!this.data.isPieceAnimating || !this.data.currentMove) {
             return null;
         }
 
         const player = this.data.currentPlayer;
-        const { fromPosition, toPosition } = this.data.currentMove;
+        const { fromPosition, toPosition, movingPieces } = this.data.currentMove;
         const waypointData = this.getAnimationWaypoints(player, fromPosition, toPosition);
         return {
             player,
             fromPosition,
             toPosition,
             waypoints: waypointData.waypoints,
-            flipWaypointIndex: waypointData.flipWaypointIndex
+            flipWaypointIndex: waypointData.flipWaypointIndex,
+            stackSize: movingPieces.length
         };
     }
 
     // Get current captured piece animation data
     getCapturedPieceAnimationData(): {
         player: 'white' | 'black',
-        fromPosition: number
+        fromPosition: number,
+        stackSize: number
     } | null {
         if (!this.data.isCapturedPieceAnimating || !this.data.currentMove) {
             return null;
@@ -949,7 +951,11 @@ export class GameState {
 
         const player = this.getCurrentOpponent();
         const fromPosition = this.data.currentMove.toPosition;
-        return { player, fromPosition };
+        return { 
+            player, 
+            fromPosition,
+            stackSize: this.data.currentMove.capturedPieces.length
+        };
     }
 
     // Called when captured piece animation completes
@@ -981,14 +987,14 @@ export class GameState {
     // Version of executeMove that returns capture information for animations
     private executeMoveWithCaptureInfo(move: Move) {
         const player = this.data.currentPlayer;
-
-        const pieceIndex = move.pieceIndex;
         const currentPositions = player === 'white' ? this.data.whitePiecePositions : this.data.blackPiecePositions;
 
         // Handle the movement based on the legal move's destination
 
-        // Normal move along the path
-        currentPositions[pieceIndex] = move.toPosition;
+        // Move all pieces in the stack to the destination
+        move.movingPieces.forEach(pieceIndex => {
+            currentPositions[pieceIndex] = move.toPosition;
+        });
 
         // Handle opponent piece capture if the move indicates a capture
         if (move.capture) {
@@ -1063,7 +1069,7 @@ export class GameState {
         this.data.illegalMoves = allMoves.filter(move => !move.legal);
 
         // Build eligible pieces list from legal moves
-        this.data.eligiblePieces = this.data.legalMoves.map(move => move.pieceIndex);
+        this.data.eligiblePieces = this.data.legalMoves.map(move => move.movingPieceIndex);
     }
 
     // Calculate move information for a piece
@@ -1074,14 +1080,26 @@ export class GameState {
         const currentPos = currentPositions[pieceIndex];
         const ruleSet = this.getCurrentRuleSet();
 
+        // Determine which pieces move together
+        let movingPieces: number[];
+        if (ruleSet.stacksMoveAsOne() && currentPos !== 0) {
+            // Stack moves as one: find all friendly pieces at the same position
+            const boardSquare = this.getSquareFromPathIndex(currentPlayer, currentPos);
+            movingPieces = this.getPiecesOnSquare(boardSquare, currentPlayer);
+        } else {
+            // Traditional move: only the selected piece moves
+            movingPieces = [pieceIndex];
+        }
+
         const move: Move = {
-            pieceIndex,
+            movingPieceIndex: pieceIndex,
             legal: false,
             destinationSquare: BOARD_FINISH,
             fromPosition: currentPos,
             toPosition: currentPos, // Will be updated below
             capture: false,
             capturedPieces: [],
+            movingPieces,
             extraTurn: false
         };
 
@@ -1191,7 +1209,7 @@ export class GameState {
         if (this.data.isPieceAnimating &&
             this.data.currentPlayer === this.data.selectedPiece.player &&
             this.data.currentMove &&
-            this.data.currentMove.pieceIndex === this.data.selectedPiece.index) {
+            this.data.currentMove.movingPieceIndex === this.data.selectedPiece.index) {
             const playerPath = this.data.currentPlayer === 'white' ? this.whitePath : this.blackPath;
             if (this.data.currentMove.toPosition >= this.endOfPath) { // Piece completes circuit
                 return [BOARD_FINISH]; // Completion goes to finish square

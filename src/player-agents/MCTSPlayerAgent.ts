@@ -115,11 +115,11 @@ export class MCTSPlayerAgent implements PlayerAgent {
             await this.delay(remainingThinkTime);
         }
 
-        gameState.selectPiece(move.pieceIndex);
+        gameState.selectPiece(move.movingPieceIndex);
 
         // Small delay before moving
         await this.delay(AI_DELAYS.MOVE_PIECE);
-        AppLog.playerAgent(`MCTS onMoveRequired: Moving piece ${move.pieceIndex} to ${move.destinationSquare}`);
+        AppLog.playerAgent(`MCTS onMoveRequired: Moving piece ${move.movingPieceIndex} to ${move.destinationSquare}`);
         gameState.startLegalMove(move);
         AppLog.playerAgent(`MCTS onMoveRequired: Move completed for ${this.color} player`);
     }
@@ -152,9 +152,9 @@ export class MCTSPlayerAgent implements PlayerAgent {
 
             // Get piece starting position for logging
             const myPositions = this.color === 'white' ? gameState.state.whitePiecePositions : gameState.state.blackPiecePositions;
-            const startPosition = myPositions[move.pieceIndex];
+            const startPosition = myPositions[move.movingPieceIndex];
 
-            AppLog.mcts(`MCTS: Piece ${move.pieceIndex} (pos: ${startPosition}) scored ${score.toFixed(4)}`);
+            AppLog.mcts(`MCTS: Piece ${move.movingPieceIndex} (pos: ${startPosition}) scored ${score.toFixed(4)}`);
 
             if (score > bestScore) {
                 bestScore = score;
@@ -173,14 +173,14 @@ export class MCTSPlayerAgent implements PlayerAgent {
             AppLog.mcts(`MCTS: Exceeded time budget! ${elapsedTime.toFixed(2)}ms > 1500ms`);
         }
 
-        AppLog.mcts(`MCTS: Selected piece ${bestMove.pieceIndex} with score ${bestScore.toFixed(4)}`);
+        AppLog.mcts(`MCTS: Selected piece ${bestMove.movingPieceIndex} with score ${bestScore.toFixed(4)}`);
 
         return bestMove;
     }
 
     // Public method for debug purposes - allows external access to AI decision making
     public async evaluateAndSelectPiece(gameState: GameState): Promise<number> {
-        return (await this.selectMCTSMove(gameState)).pieceIndex;
+        return (await this.selectMCTSMove(gameState)).movingPieceIndex;
     }
 
     private async evaluateMoveWithMCTS(gameState: GameState, move: Move): Promise<number> {
@@ -189,7 +189,7 @@ export class MCTSPlayerAgent implements PlayerAgent {
         const heuristicScore = heuristicEval.score;
 
         // For debugging: log the heuristic evaluation
-        AppLog.mcts(`MCTS Debug: Piece ${move.pieceIndex} heuristic: ${heuristicScore} (${heuristicEval.reasons.join(', ')})`);
+        AppLog.mcts(`MCTS Debug: Piece ${move.movingPieceIndex} heuristic: ${heuristicScore} (${heuristicEval.reasons.join(', ')})`);
 
         // Normalize the heuristic score to a reasonable range for MCTS
         if (heuristicScore === AI_SCORES.INVALID_MOVE) {
@@ -213,7 +213,7 @@ export class MCTSPlayerAgent implements PlayerAgent {
                 const simulatedState = this.cloneGameState(gameState);
 
                 // Make the move we're evaluating
-                simulatedState.selectPiece(move.pieceIndex);
+                simulatedState.selectPiece(move.movingPieceIndex);
                 simulatedState.startLegalMove(move);
 
                 // Run simulation - extra turns will be valued naturally through position evaluation
@@ -246,7 +246,7 @@ export class MCTSPlayerAgent implements PlayerAgent {
         const finalScore = (heuristicWeight * normalizedHeuristic) + (simulationWeight * simulationComponent);
 
         // For debugging: log the components
-        AppLog.mcts(`MCTS Debug: Piece ${move.pieceIndex} simulation avg: ${averageSimulation.toFixed(2)}, final: ${finalScore.toFixed(4)}`);
+        AppLog.mcts(`MCTS Debug: Piece ${move.movingPieceIndex} simulation avg: ${averageSimulation.toFixed(2)}, final: ${finalScore.toFixed(4)}`);
 
         return finalScore;
     }
@@ -285,7 +285,7 @@ export class MCTSPlayerAgent implements PlayerAgent {
             const clonedState = this.cloneGameState(gameState);
 
             // Make the move
-            clonedState.selectPiece(move.pieceIndex);
+            clonedState.selectPiece(move.movingPieceIndex);
             clonedState.startLegalMove(move);
 
             // Continue simulation - extra turns will be valued naturally through position evaluation

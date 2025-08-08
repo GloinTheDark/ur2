@@ -753,7 +753,7 @@ function App() {
                         if (state.selectedPiece) {
                           const legalMoves = gameState.getLegalMoves();
                           const moveToMake = legalMoves.find(move =>
-                            move.pieceIndex === state.selectedPiece!.index &&
+                            move.movingPieceIndex === state.selectedPiece!.index &&
                             move.destinationSquare === squareNumber
                           );
                           if (moveToMake) {

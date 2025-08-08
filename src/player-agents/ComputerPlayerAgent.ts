@@ -97,7 +97,7 @@ export class ComputerPlayerAgent implements PlayerAgent {
         const thinkStartTime = performance.now();
         const bestMove = await this.selectBestMove(gameState);
         const actualThinkTime = performance.now() - thinkStartTime;
-        AppLog.ai(`AI onMoveRequired: Selected move ${bestMove.pieceIndex} to ${bestMove.destinationSquare} in ${actualThinkTime.toFixed(0)}ms`);
+        AppLog.ai(`AI onMoveRequired: Selected move ${bestMove.movingPieceIndex} to ${bestMove.destinationSquare} in ${actualThinkTime.toFixed(0)}ms`);
 
         // Delay to ensure minimum thinking time
         const minThinkTime = AI_DELAYS.MIN_THINK;
@@ -107,7 +107,7 @@ export class ComputerPlayerAgent implements PlayerAgent {
             await this.delay(remainingThinkTime);
         }
 
-        gameState.selectPiece(bestMove.pieceIndex);
+        gameState.selectPiece(bestMove.movingPieceIndex);
 
         // Small delay before moving
         await this.delay(AI_DELAYS.MOVE_PIECE);
@@ -138,7 +138,7 @@ export class ComputerPlayerAgent implements PlayerAgent {
 
     // Public method for debug purposes - allows external access to AI decision making
     public async evaluateAndSelectPiece(gameState: GameState): Promise<number> {
-        return (await this.selectBestMove(gameState)).pieceIndex;
+        return (await this.selectBestMove(gameState)).movingPieceIndex;
     }
 
     private rankMoves(gameState: GameState): MoveEvaluation[] {
@@ -157,7 +157,7 @@ export class ComputerPlayerAgent implements PlayerAgent {
         // Log the ranking results
         AppLog.ai(`AI: Move rankings for ${this.color}:`);
         rankedMoves.forEach((move, index) => {
-            AppLog.ai(`  ${index + 1}. Piece ${move.move.pieceIndex}: ${move.score} points (${move.reasons.join(', ')})`);
+            AppLog.ai(`  ${index + 1}. Piece ${move.move.movingPieceIndex}: ${move.score} points (${move.reasons.join(', ')})`);
         });
 
         return rankedMoves;

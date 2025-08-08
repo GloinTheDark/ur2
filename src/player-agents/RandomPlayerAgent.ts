@@ -80,13 +80,13 @@ export class RandomPlayerAgent implements PlayerAgent {
         const randomIndex = Math.floor(Math.random() * legalMoves.length);
         const selectedMove = legalMoves[randomIndex];
 
-        AppLog.ai(`Random onMoveRequired: Randomly selected move for piece ${selectedMove.pieceIndex} to ${selectedMove.destinationSquare} from ${legalMoves.length} options`);
+        AppLog.ai(`Random onMoveRequired: Randomly selected move for piece ${selectedMove.movingPieceIndex} to ${selectedMove.destinationSquare} from ${legalMoves.length} options`);
 
-        gameState.selectPiece(selectedMove.pieceIndex);
+        gameState.selectPiece(selectedMove.movingPieceIndex);
 
         // Small delay before moving
         await this.delay(AI_DELAYS.MOVE_PIECE);
-        AppLog.playerAgent(`Random onMoveRequired: Moving piece ${selectedMove.pieceIndex} to ${selectedMove.destinationSquare}`);
+        AppLog.playerAgent(`Random onMoveRequired: Moving piece ${selectedMove.movingPieceIndex} to ${selectedMove.destinationSquare}`);
         gameState.startLegalMove(selectedMove);
         AppLog.playerAgent(`Random onMoveRequired: Move completed for ${this.color} player`);
     }
