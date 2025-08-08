@@ -105,7 +105,7 @@ const PieceAnimator: React.FC<PieceAnimatorProps> = ({
             // Animation should be cleaned up
             setAnimationState(null);
         }
-    }, [gameState.state.animatingPiece, animationState, getSquarePosition, getHomePosition]);
+    }, [gameState.state.isPieceAnimating, animationState, getSquarePosition, getHomePosition]);
 
     const startAnimation = (state: AnimationState) => {
         const animate = (currentTime: number) => {

@@ -328,7 +328,7 @@ function App() {
                 </button>
               )}
               {/* Show reroll dice button when dice have been rolled (including when waiting for pass turn) */}
-              {state.diceRolls.length > 0 && !state.animatingPiece && !state.animatingCapturedPiece && (
+              {state.diceRolls.length > 0 && !state.isPieceAnimating && !state.isCapturedPieceAnimating && (
                 <button
                   onClick={() => gameState.rerollDice()}
                   style={{
@@ -356,7 +356,7 @@ function App() {
                 </button>
               )}
               {/* Show select AI piece button when paused, dice rolled, and it's an AI player's turn with eligible pieces */}
-              {isPaused && state.diceRolls.length > 0 && state.eligiblePieces.length > 0 && gameState.isCurrentPlayerComputer() && !state.animatingPiece && !state.animatingCapturedPiece && (
+              {isPaused && state.diceRolls.length > 0 && state.eligiblePieces.length > 0 && gameState.isCurrentPlayerComputer() && !state.isPieceAnimating && !state.isCapturedPieceAnimating && (
                 <button
                   onClick={() => { gameState.selectAIPiece().catch(console.error); }}
                   style={{

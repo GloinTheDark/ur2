@@ -56,7 +56,7 @@ const CapturedPieceAnimator: React.FC<CapturedPieceAnimatorProps> = ({
             // Animation should be cleaned up
             setAnimationState(null);
         }
-    }, [gameState.state.animatingCapturedPiece, animationState, getSquarePosition, getHomePosition]);
+    }, [gameState.state.isCapturedPieceAnimating, animationState, getSquarePosition, getHomePosition]);
 
     const startAnimation = (state: CapturedAnimationState) => {
         const animate = (currentTime: number) => {

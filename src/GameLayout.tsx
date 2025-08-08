@@ -79,11 +79,11 @@ const GameLayout: React.FC<GameLayoutProps> = ({
 
         // For animations, we need to handle pieces that are 'moving' from start or to start
         // Check if this piece is currently animating from start position
-        const animatingPiece = state.animatingPiece;
-        const animatingCapturedPiece = state.animatingCapturedPiece;
+        const isPieceAnimating = state.isPieceAnimating;
+        const isCapturedPieceAnimating = state.isCapturedPieceAnimating;
         const currentMove = state.currentMove;
 
-        const isAnimatingFromStart = animatingPiece &&
+        const isAnimatingFromStart = isPieceAnimating &&
             state.currentPlayer === player &&
             currentMove &&
             currentMove.pieceIndex === pieceIndex &&
@@ -92,13 +92,11 @@ const GameLayout: React.FC<GameLayoutProps> = ({
         // Get completion index
         const completionIndex = gameState.getEndOfPath();
 
-        const isAnimatingToHome = animatingPiece &&
+        const isAnimatingToHome = isPieceAnimating &&
             state.currentPlayer === player &&
             currentMove &&
             currentMove.pieceIndex === pieceIndex &&
             (currentMove.toPosition === 0 || currentMove.toPosition === completionIndex);
-
-        const isCapturedPieceAnimating = animatingCapturedPiece;
 
         // If piece is not in start position and not animating from/to home, don't show in home
         if (position !== 0 && !isAnimatingFromStart && !isAnimatingToHome && !isCapturedPieceAnimating) {

@@ -67,12 +67,8 @@ export interface GameStateData {
     eligiblePieces: number[];
     legalMoves: Move[];
     illegalMoves: Move[];
-    animatingPiece: {
-        isAnimating: boolean
-    } | null;
-    animatingCapturedPiece: {
-        isAnimating: boolean,
-    } | null;
+    isPieceAnimating: boolean;
+    isCapturedPieceAnimating: boolean;
     currentMove: Move | null; // Current move being executed (for animation completion)
 }
 
@@ -147,8 +143,8 @@ export class GameState {
             eligiblePieces: [...this.data.eligiblePieces],
             legalMoves: this.data.legalMoves.map(move => ({ ...move })),
             illegalMoves: this.data.illegalMoves.map(move => ({ ...move })),
-            animatingPiece: this.data.animatingPiece ? { ...this.data.animatingPiece } : null,
-            animatingCapturedPiece: this.data.animatingCapturedPiece ? { ...this.data.animatingCapturedPiece } : null,
+            isPieceAnimating: this.data.isPieceAnimating,
+            isCapturedPieceAnimating: this.data.isCapturedPieceAnimating,
             currentMove: this.data.currentMove ? { ...this.data.currentMove } : null
         };
 
@@ -308,7 +304,7 @@ export class GameState {
 
     // Check if any pieces on a square are eligible to move
     hasEligiblePieceOnSquare(squareNumber: number): boolean {
-        if (!this.data.gameStarted || this.data.animatingPiece?.isAnimating || this.data.animatingCapturedPiece?.isAnimating) return false;
+        if (!this.data.gameStarted || this.data.isPieceAnimating || this.data.isCapturedPieceAnimating) return false;
 
         const currentPlayerPieces = this.getPiecesOnSquare(squareNumber, this.data.currentPlayer);
 
@@ -351,8 +347,8 @@ export class GameState {
             eligiblePieces: [],
             legalMoves: [],
             illegalMoves: [],
-            animatingPiece: null,
-            animatingCapturedPiece: null,
+            isPieceAnimating: false,
+            isCapturedPieceAnimating: false,
             currentMove: null
         };
     }
@@ -832,9 +828,7 @@ export class GameState {
         const pieceIndex = move.pieceIndex;
 
         // Set up animation state
-        this.data.animatingPiece = {
-            isAnimating: true
-        };
+        this.data.isPieceAnimating = true;
 
         // Set piece position to 'moving' so it doesn't render at source or destination
         if (player === 'white') {
@@ -849,7 +843,7 @@ export class GameState {
 
     // Called when animation completes
     finishPieceAnimation(): boolean {
-        if (!this.data.animatingPiece || !this.data.animatingPiece.isAnimating) {
+        if (!this.data.isPieceAnimating) {
             return false;
         }
 
@@ -871,9 +865,7 @@ export class GameState {
             const capturedPositions = capturedPlayer === 'white' ? this.data.whitePiecePositions : this.data.blackPiecePositions;
 
             // Start captured piece animation
-            this.data.animatingCapturedPiece = {
-                isAnimating: true,
-            };
+            this.data.isCapturedPieceAnimating = true;
 
             // Set all move.capturedPieces captured piece position to 'moving' during animation
             move.capturedPieces.forEach((capturedIndex) => {
@@ -882,10 +874,10 @@ export class GameState {
         }
 
         // Reset animation state
-        this.data.animatingPiece = null;
+        this.data.isPieceAnimating = false;
 
         // If there's no captured piece animation, complete the turn immediately
-        if (!this.data.animatingCapturedPiece?.isAnimating) {
+        if (!this.data.isCapturedPieceAnimating) {
             this.completeTurn(move.extraTurn);
         }
 
@@ -907,7 +899,7 @@ export class GameState {
 
     // Check if any animation is currently in progress
     isAnimating(): boolean {
-        return this.data.diceAnimating || this.data.animatingPiece?.isAnimating === true || this.data.animatingCapturedPiece?.isAnimating === true;
+        return this.data.diceAnimating || this.data.isPieceAnimating || this.data.isCapturedPieceAnimating;
     }
 
     // Start dice animation
@@ -931,7 +923,7 @@ export class GameState {
         waypoints: number[],
         flipWaypointIndex: number | null
     } | null {
-        if (!this.data.animatingPiece?.isAnimating || !this.data.currentMove) {
+        if (!this.data.isPieceAnimating || !this.data.currentMove) {
             return null;
         }
 
@@ -954,7 +946,7 @@ export class GameState {
         index: number,
         fromPosition: number
     } | null {
-        if (!this.data.animatingCapturedPiece?.isAnimating || !this.data.currentMove) {
+        if (!this.data.isCapturedPieceAnimating || !this.data.currentMove) {
             return null;
         }
 
@@ -966,7 +958,7 @@ export class GameState {
 
     // Called when captured piece animation completes
     finishCapturedPieceAnimation(): void {
-        if (!this.data.animatingCapturedPiece?.isAnimating) {
+        if (!this.data.isCapturedPieceAnimating) {
             return;
         }
 
@@ -983,7 +975,7 @@ export class GameState {
         });
 
         // Clear captured piece animation state
-        this.data.animatingCapturedPiece = null;
+        this.data.isCapturedPieceAnimating = false;
 
         // Complete the turn with the preserved extra turn information
         this.completeTurn(move.extraTurn);
@@ -1018,7 +1010,7 @@ export class GameState {
     private getPiecesToEvaluate(): number[] {
         // Don't evaluate pieces if no dice have been rolled or if piece animations are in progress
         if (this.data.diceRolls.length === 0 || this.data.diceTotal === 0 ||
-            this.data.animatingPiece?.isAnimating || this.data.animatingCapturedPiece?.isAnimating) {
+            this.data.isPieceAnimating || this.data.isCapturedPieceAnimating) {
             return [];
         }
 
@@ -1200,7 +1192,7 @@ export class GameState {
         if (!this.data.selectedPiece || this.data.diceTotal === 0) return [];
 
         // If this piece is currently animating, use the current move destination
-        if (this.data.animatingPiece &&
+        if (this.data.isPieceAnimating &&
             this.data.currentPlayer === this.data.selectedPiece.player &&
             this.data.currentMove &&
             this.data.currentMove.pieceIndex === this.data.selectedPiece.index) {

@@ -211,7 +211,7 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
                                 eligibleBlankPieces.length > 0 &&
                                 state.gameStarted && !winner &&
                                 state.currentPlayer === player &&
-                                !(state.animatingPiece?.isAnimating || state.animatingCapturedPiece?.isAnimating);
+                                !(state.isPieceAnimating || state.isCapturedPieceAnimating);
 
                             // Check if this leftmost blank piece is selected
                             isSelected = isLeftmostBlankSlot && !!(selectedPiece &&
