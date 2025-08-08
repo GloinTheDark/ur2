@@ -4,6 +4,7 @@ export { FinkelRuleSet } from './rulesets/FinkelRuleSet';
 export { BurglersOfUrRuleSet } from './rulesets/BurglersOfUrRuleSet';
 export { BlitzRuleSet } from './rulesets/BlitzRuleSet';
 export { MastersRuleSet } from './rulesets/MastersRuleSet';
+export { RaceEngineRuleSet } from './rulesets/RaceEngineRuleSet';
 
 // Import for internal use
 import { RuleSet } from './RuleSet';
@@ -11,13 +12,15 @@ import { FinkelRuleSet } from './rulesets/FinkelRuleSet';
 import { BurglersOfUrRuleSet } from './rulesets/BurglersOfUrRuleSet';
 import { BlitzRuleSet } from './rulesets/BlitzRuleSet';
 import { MastersRuleSet } from './rulesets/MastersRuleSet';
+import { RaceEngineRuleSet } from './rulesets/RaceEngineRuleSet';
 
 // Rule set registry for easy access
 export const AVAILABLE_RULE_SETS = {
     burglers: new BurglersOfUrRuleSet(),
     finkel: new FinkelRuleSet(),
     blitz: new BlitzRuleSet(),
-    masters: new MastersRuleSet()
+    masters: new MastersRuleSet(),
+    raceengine: new RaceEngineRuleSet()
 } as const;
 
 // Get all rule sets as an array

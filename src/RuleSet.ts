@@ -42,6 +42,11 @@ export abstract class RuleSet {
         return []; // Default: no safe squares (except rosettes handled separately)
     }
 
+    // Piece stacking - whether pieces of the same color can occupy the same square
+    getAllowPieceStacking(): boolean {
+        return false; // Default: pieces cannot stack
+    }
+
     // Dice roll calculation and UI feedback
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     calculateDiceRoll(diceValues: number[], _gameState: GameState): {
