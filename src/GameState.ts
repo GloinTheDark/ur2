@@ -51,7 +51,7 @@ export interface GameStateData {
     currentPlayer: 'white' | 'black';
     whitePiecePositions: number[]; // numbers represent indices into the current rule set's white path (0 = start, IS_MOVING = moving)
     blackPiecePositions: number[]; // numbers represent indices into the current rule set's black path (0 = start, IS_MOVING = moving)
-    selectedPiece: { player: 'white' | 'black', index: number } | null;
+    selectedPiece: number | null; // Index of the selected piece (always belongs to currentPlayer)
     gameStarted: boolean;
     gamePhase: 'initial-roll' | 'playing';
     initialRollResult: number | null;
@@ -128,7 +128,7 @@ export class GameState {
             currentPlayer: this.data.currentPlayer,
             whitePiecePositions: [...this.data.whitePiecePositions],
             blackPiecePositions: [...this.data.blackPiecePositions],
-            selectedPiece: this.data.selectedPiece ? { ...this.data.selectedPiece } : null,
+            selectedPiece: this.data.selectedPiece, // Simple number copy
             gameStarted: this.data.gameStarted,
             gamePhase: this.data.gamePhase,
             initialRollResult: this.data.initialRollResult,
@@ -314,12 +314,12 @@ export class GameState {
 
     // Check if any pieces on a square are selected
     hasSelectedPieceOnSquare(squareNumber: number): boolean {
-        if (!this.data.selectedPiece) return false;
+        if (this.data.selectedPiece === null) return false;
 
-        const selectedPlayerPieces = this.getPiecesOnSquare(squareNumber, this.data.selectedPiece.player);
+        const selectedPlayerPieces = this.getPiecesOnSquare(squareNumber, this.data.currentPlayer);
 
         return selectedPlayerPieces.some(pieceIndex =>
-            this.data.selectedPiece!.index === pieceIndex
+            this.data.selectedPiece === pieceIndex
         );
     }
 
@@ -766,13 +766,11 @@ export class GameState {
     selectPiece(pieceIndex: number): void {
         if (this.data.eligiblePieces.includes(pieceIndex)) {
             // If the piece is already selected, deselect it
-            if (this.data.selectedPiece &&
-                this.data.selectedPiece.player === this.data.currentPlayer &&
-                this.data.selectedPiece.index === pieceIndex) {
+            if (this.data.selectedPiece === pieceIndex) {
                 this.data.selectedPiece = null;
             } else {
                 // Select the piece
-                this.data.selectedPiece = { player: this.data.currentPlayer, index: pieceIndex };
+                this.data.selectedPiece = pieceIndex;
             }
             this.notify();
         }
@@ -780,7 +778,7 @@ export class GameState {
 
     // Piece movement
     movePiece(pieceIndex: number, destinationSquare: number): boolean {
-        if (!this.data.selectedPiece || this.data.selectedPiece.index !== pieceIndex || this.data.diceTotal === 0) {
+        if (this.data.selectedPiece !== pieceIndex || this.data.diceTotal === 0) {
             return false;
         }
 
@@ -1203,13 +1201,12 @@ export class GameState {
 
     // Get destination squares for selected piece
     getDestinationSquares(): number[] {
-        if (!this.data.selectedPiece || this.data.diceTotal === 0) return [];
+        if (this.data.selectedPiece === null || this.data.diceTotal === 0) return [];
 
         // If this piece is currently animating, use the current move destination
         if (this.data.isPieceAnimating &&
-            this.data.currentPlayer === this.data.selectedPiece.player &&
             this.data.currentMove &&
-            this.data.currentMove.movingPieceIndex === this.data.selectedPiece.index) {
+            this.data.currentMove.movingPieceIndex === this.data.selectedPiece) {
             const playerPath = this.data.currentPlayer === 'white' ? this.whitePath : this.blackPath;
             if (this.data.currentMove.toPosition >= this.endOfPath) { // Piece completes circuit
                 return [BOARD_FINISH]; // Completion goes to finish square
@@ -1220,7 +1217,7 @@ export class GameState {
         }
 
         // Use the new Move system to get all possible destinations
-        const moves = this.calculateMoves(this.data.selectedPiece.index);
+        const moves = this.calculateMoves(this.data.selectedPiece);
         return moves.map(move => move.destinationSquare);
     }
 

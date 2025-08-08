@@ -47,8 +47,8 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
 
     // Check if any piece is selected and eligible to complete
     const selectedPiece = state.selectedPiece;
-    const canCompleteToHome = selectedPiece &&
-        selectedPiece.player === player &&
+    const canCompleteToHome = selectedPiece !== null &&
+        state.currentPlayer === player &&
         gameState.getDestinationSquares().includes(25); // BOARD_FINISH means completion
 
     const homeStyle = isWhite ? {
@@ -214,9 +214,9 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
                                 !(state.isPieceAnimating || state.isCapturedPieceAnimating);
 
                             // Check if this leftmost blank piece is selected
-                            isSelected = isLeftmostBlankSlot && !!(selectedPiece &&
-                                selectedPiece.player === player &&
-                                positions[selectedPiece.index] === 0);
+                            isSelected = isLeftmostBlankSlot && !!(selectedPiece !== null &&
+                                state.currentPlayer === player &&
+                                positions[selectedPiece] === 0);
 
                             if (isEligible) {
                                 clickHandler = () => {
@@ -236,10 +236,10 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
                             if (canCompleteToHome && isLeftmostEmptySlot) {
                                 isDestination = true;
                                 clickHandler = () => {
-                                    if (selectedPiece) {
+                                    if (selectedPiece !== null) {
                                         const legalMoves = gameState.getLegalMoves();
                                         const moveToMake = legalMoves.find(move =>
-                                            move.movingPieceIndex === selectedPiece.index &&
+                                            move.movingPieceIndex === selectedPiece &&
                                             move.destinationSquare === 25
                                         );
                                         if (moveToMake) {

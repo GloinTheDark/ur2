@@ -750,10 +750,10 @@ function App() {
                       }}
                       onClick={(e) => {
                         e.stopPropagation();
-                        if (state.selectedPiece) {
+                        if (state.selectedPiece !== null) {
                           const legalMoves = gameState.getLegalMoves();
                           const moveToMake = legalMoves.find(move =>
-                            move.movingPieceIndex === state.selectedPiece!.index &&
+                            move.movingPieceIndex === state.selectedPiece! &&
                             move.destinationSquare === squareNumber
                           );
                           if (moveToMake) {
@@ -773,7 +773,7 @@ function App() {
                       ].map(({ pieces, player, positions, blankImage, spotsImage }) =>
                         pieces.map((pieceIndex, stackIndex) => {
                           const isEligible = state.gameStarted && !winner && state.currentPlayer === player && !gameState.isAnimating() && state.eligiblePieces.includes(pieceIndex);
-                          const isSelected = state.selectedPiece !== null && state.selectedPiece.player === player && state.selectedPiece.index === pieceIndex;
+                          const isSelected = state.selectedPiece !== null && state.currentPlayer === player && state.selectedPiece === pieceIndex;
 
                           // Calculate stacking offset (5px higher per stack level, 1 zIndex higher)
                           const stackOffset = stackIndex * 5;
