@@ -81,7 +81,7 @@ export class ComputerPlayerAgent implements PlayerAgent {
         if (legalMoves.length === 0) {
             // No moves available, pass turn
             AppLog.playerAgent(`AI onMoveRequired: No legal moves, checking if should pass turn`);
-            if (gameState.shouldShowPassButton()) {
+            if (gameState.playerMustPass()) {
                 AppLog.playerAgent(`AI onMoveRequired: Passing turn`);
                 // Add a short delay to make it feel more natural
                 await this.delay(AI_DELAYS.MIN_THINK);

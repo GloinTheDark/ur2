@@ -74,7 +74,7 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
             houseControl.blackHouses > houseControl.whiteHouses) : false;
 
     // Get status message and UI behavior for this player
-    const getStatusMessage = (): { message: string, type: 'static' | 'roll-button' | 'pass-button' | 'thinking' } => {
+    const getStatusMessage = (): { message: string, type: 'static' | 'roll-button' | 'pass-button' | 'thinking' | 'select-or-pass' } => {
         // Check if game is over
         if (winner) {
             return {
@@ -141,6 +141,12 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
                 return {
                     message: 'No moves available: pass turn',
                     type: isAI ? 'static' : 'pass-button'
+                };
+            } else if (gameState.playerMayPass() && !isAI) {
+                // Player has optional moves and can choose to pass
+                return {
+                    message: 'Select piece to move or Pass Turn',
+                    type: 'select-or-pass'
                 };
             } else {
                 return {
@@ -392,19 +398,21 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
                     gap: '8px',
                     cursor: (() => {
                         const status = getStatusMessage();
-                        return (status.type === 'roll-button' || status.type === 'pass-button') ? 'pointer' : 'default';
+                        return (status.type === 'roll-button' || status.type === 'pass-button' || status.type === 'select-or-pass') ? 'pointer' : 'default';
                     })(),
                     borderRadius: '4px',
                     backgroundColor: (() => {
                         const status = getStatusMessage();
                         if (status.type === 'roll-button') return 'rgba(51, 136, 255, 0.2)';
                         if (status.type === 'pass-button') return 'rgba(255, 136, 0, 0.2)';
+                        if (status.type === 'select-or-pass') return 'rgba(102, 204, 102, 0.2)';
                         return 'transparent';
                     })(),
                     border: (() => {
                         const status = getStatusMessage();
                         if (status.type === 'roll-button') return '1px solid rgba(51, 136, 255, 0.5)';
                         if (status.type === 'pass-button') return '1px solid rgba(255, 136, 0, 0.5)';
+                        if (status.type === 'select-or-pass') return '1px solid rgba(102, 204, 102, 0.5)';
                         return '1px solid transparent';
                     })(),
                     transition: 'all 0.2s ease'
@@ -424,14 +432,14 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
                 }}
                 onMouseOver={(e) => {
                     const status = getStatusMessage();
-                    if (status.type === 'roll-button' || status.type === 'pass-button') {
+                    if (status.type === 'roll-button' || status.type === 'pass-button' || status.type === 'select-or-pass') {
                         e.currentTarget.style.transform = 'scale(1.05)';
                         e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.2)';
                     }
                 }}
                 onMouseOut={(e) => {
                     const status = getStatusMessage();
-                    if (status.type === 'roll-button' || status.type === 'pass-button') {
+                    if (status.type === 'roll-button' || status.type === 'pass-button' || status.type === 'select-or-pass') {
                         e.currentTarget.style.transform = 'scale(1)';
                         e.currentTarget.style.boxShadow = 'none';
                     }
@@ -459,7 +467,42 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
                 })()}
 
                 {/* Status message */}
-                {getStatusMessage().message}
+                {(() => {
+                    const status = getStatusMessage();
+                    if (status.type === 'select-or-pass') {
+                        return (
+                            <span>
+                                Select piece to move or{' '}
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        gameState.passTurn();
+                                    }}
+                                    style={{
+                                        background: 'rgba(255, 136, 0, 0.8)',
+                                        border: '1px solid rgba(255, 136, 0, 1)',
+                                        borderRadius: '4px',
+                                        color: 'white',
+                                        padding: '2px 6px',
+                                        fontSize: '0.8rem',
+                                        cursor: 'pointer',
+                                        fontWeight: '500'
+                                    }}
+                                    onMouseOver={(e) => {
+                                        e.currentTarget.style.background = 'rgba(255, 136, 0, 1)';
+                                    }}
+                                    onMouseOut={(e) => {
+                                        e.currentTarget.style.background = 'rgba(255, 136, 0, 0.8)';
+                                    }}
+                                >
+                                    Pass Turn
+                                </button>
+                            </span>
+                        );
+                    } else {
+                        return status.message;
+                    }
+                })()}
 
                 {/* Button icons */}
                 {(() => {
@@ -468,6 +511,8 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
                         return <span style={{ fontSize: '0.8rem', opacity: 0.7 }}>🎲</span>;
                     } else if (status.type === 'pass-button') {
                         return <span style={{ fontSize: '0.8rem', opacity: 0.7 }}>⏭️</span>;
+                    } else if (status.type === 'select-or-pass') {
+                        return <span style={{ fontSize: '0.8rem', opacity: 0.7 }}>🎯</span>;
                     }
                     return null;
                 })()}

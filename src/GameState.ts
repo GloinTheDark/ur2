@@ -1362,9 +1362,15 @@ export class GameState {
     }
 
     // Turn management
-    shouldShowPassButton(): boolean {
+    playerMustPass(): boolean {
         // Show pass button when dice have been rolled but no pieces can move
         return this.data.diceRolls.length > 0 && this.data.eligiblePieces.length === 0;
+    }
+
+    playerMayPass(): boolean {
+        // Show optional pass button when all legal moves are optional
+        return this.data.legalMoves.length > 0 &&
+            this.data.legalMoves.every(move => move.optional) && !this.playerMustPass();
     }
 
     // Start a new turn (centralized turn logging and counting)

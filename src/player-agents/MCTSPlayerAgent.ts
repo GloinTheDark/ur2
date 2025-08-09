@@ -89,7 +89,7 @@ export class MCTSPlayerAgent implements PlayerAgent {
         if (legalMoves.length === 0) {
             // No moves available, pass turn
             AppLog.playerAgent(`MCTS onMoveRequired: No legal moves, checking if should pass turn`);
-            if (gameState.shouldShowPassButton()) {
+            if (gameState.playerMustPass()) {
                 AppLog.playerAgent(`MCTS onMoveRequired: Passing turn`);
                 // Add a short delay to make it feel more natural
                 await this.delay(AI_DELAYS.MIN_THINK);
