@@ -19,7 +19,8 @@ export type MoveIllegalReason =
     | 'blocked-by-same-color'
     | 'blocked-by-safe-square'
     | 'blocked-by-gatekeeper'
-    | 'exact-roll-needed-to-bear-off';
+    | 'exact-roll-needed-to-bear-off'
+    | 'illegal-move-to-start';
 
 export interface Move {
     movingPieceIndex: number;
@@ -31,6 +32,8 @@ export interface Move {
     capturedPieces: number[]; // Indices of captured pieces (if any)
     movingPieces: number[]; // Indices of pieces that move together (for stack moves)
     extraTurn: boolean;
+    backwards: boolean; // Whether this move is backwards (negative distance)
+    optional: boolean; // Whether this move is optional (e.g., backwards moves in Tournament Engine)
     why?: MoveIllegalReason;
 }
 
@@ -274,12 +277,23 @@ export class GameState {
         const gamePath = this.getCurrentGamePath();
         const flipIndex = gamePath.flipIndex;
 
-        // Add all squares between fromPosition and toPosition (exclusive of from, inclusive of to)
-        for (let i = fromPosition + 1; i <= toPosition; i++) {
-            waypoints.push(path[i]);
-            // Check if this is the flip square
-            if (flipWaypointIndex === null && i === flipIndex) {
-                flipWaypointIndex = waypoints.length - 1; // Index in waypoints array
+        // Determine if this is a backwards move
+        const isBackwards = toPosition < fromPosition;
+
+        if (isBackwards) {
+            // For backwards moves, go from fromPosition down to toPosition
+            // Ignore flipWaypointIndex for backwards moves as requested
+            for (let i = fromPosition - 1; i >= toPosition; i--) {
+                waypoints.push(path[i]);
+            }
+        } else {
+            // For forward moves, add all squares between fromPosition and toPosition (exclusive of from, inclusive of to)
+            for (let i = fromPosition + 1; i <= toPosition; i++) {
+                waypoints.push(path[i]);
+                // Check if this is the flip square
+                if (flipWaypointIndex === null && i === flipIndex) {
+                    flipWaypointIndex = waypoints.length - 1; // Index in waypoints array
+                }
             }
         }
 
@@ -1072,11 +1086,29 @@ export class GameState {
 
     // Calculate move information for a piece
     calculateMoves(pieceIndex: number): Move[] {
+        const moves = this.calculateMovesByDistance(pieceIndex, this.data.diceTotal);
+        const ruleSet = this.getCurrentRuleSet();
+
+        if (ruleSet.canMoveBackwards()) {
+            // If the rule set allows moving backwards, also calculate moves for negative distance
+            const negativeMoves = this.calculateMovesByDistance(pieceIndex, -this.data.diceTotal);
+            return [...moves, ...negativeMoves]; // Combine both positive and negative moves
+        }
+
+        return moves;
+    }
+
+    private calculateMovesByDistance(pieceIndex: number, distance: number): Move[] {
         const currentPlayer = this.data.currentPlayer;
         const currentPositions = currentPlayer === 'white' ? this.data.whitePiecePositions : this.data.blackPiecePositions;
         const currentPlayerPath = currentPlayer === 'white' ? this.whitePath : this.blackPath;
         const currentPos = currentPositions[pieceIndex];
         const ruleSet = this.getCurrentRuleSet();
+
+        if (distance < 0 && currentPos === 0) {
+            // Cannot move backwards from start position
+            return [];
+        }
 
         // Determine which pieces move together
         let movingPieces: number[];
@@ -1098,11 +1130,20 @@ export class GameState {
             capture: false,
             capturedPieces: [],
             movingPieces,
-            extraTurn: false
+            extraTurn: false,
+            backwards: distance < 0,
+            optional: distance < 0 && ruleSet.backwardsMovesAreOptional() // Optional if backwards and rule set marks backwards as optional
         };
 
         let destinationPathIndex: number;
-        destinationPathIndex = currentPos + this.data.diceTotal;
+        destinationPathIndex = currentPos + distance;
+
+        if (destinationPathIndex < 1) {
+            // Attempting to move before the start of the path
+            move.why = 'illegal-move-to-start';
+            move.toPosition = currentPos; // No movement if illegal
+            return [move]; // Return array with single move
+        }
 
         if (destinationPathIndex >= this.endOfPath) {
             // Attempting to bear off (complete the circuit)
@@ -1140,10 +1181,20 @@ export class GameState {
 
         // Check if destination is occupied by same color piece (blocking)
         const isSameColorBlocking = this.getPiecesOnSquare(destinationSquare, currentPlayer).length > 0;
-        if (isSameColorBlocking && !ruleSet.getAllowPieceStacking()) {
-            move.why = 'blocked-by-same-color';
-            move.toPosition = currentPos; // No movement if illegal
-            return [move]; // Return array with single move
+        if (isSameColorBlocking) {
+            // If stacking is not allowed at all, block the move
+            if (!ruleSet.getAllowPieceStacking()) {
+                move.why = 'blocked-by-same-color';
+                move.toPosition = currentPos; // No movement if illegal
+                return [move]; // Return array with single move
+            }
+
+            // If stacking is only allowed on rosettes, check if destination is a rosette
+            if (ruleSet.canOnlyStackOnRosettes() && !(ROSETTE_SQUARES as readonly number[]).includes(destinationSquare)) {
+                move.why = 'blocked-by-same-color';
+                move.toPosition = currentPos; // No movement if illegal
+                return [move]; // Return array with single move
+            }
         }
 
         // Check if destination is occupied by opponent piece
@@ -1216,9 +1267,9 @@ export class GameState {
             }
         }
 
-        // Use the new Move system to get all possible destinations
+        // Use the new Move system to get all possible destinations, but only for legal moves
         const moves = this.calculateMoves(this.data.selectedPiece);
-        return moves.map(move => move.destinationSquare);
+        return moves.filter(move => move.legal).map(move => move.destinationSquare);
     }
 
     // Calculate house control for house bonus rule

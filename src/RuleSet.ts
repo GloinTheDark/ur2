@@ -52,6 +52,21 @@ export abstract class RuleSet {
         return false; // Default: stacks don't move as one
     }
 
+    // Backwards movement - whether pieces can move backwards
+    canMoveBackwards(): boolean {
+        return false; // Default: pieces cannot move backwards
+    }
+
+    // Backwards movement preference - whether backwards moves are optional (shown as separate options)
+    backwardsMovesAreOptional(): boolean {
+        return false; // Default: backwards moves are not optional (not distinguished from forward moves)
+    }
+
+    // Stack restrictions - whether pieces can only stack on rosette squares
+    canOnlyStackOnRosettes(): boolean {
+        return false; // Default: pieces can stack anywhere (if stacking is allowed)
+    }
+
     // Dice roll calculation and UI feedback
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     calculateDiceRoll(diceValues: number[], _gameState: GameState): {

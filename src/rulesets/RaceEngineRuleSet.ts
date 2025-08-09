@@ -1,25 +1,32 @@
 import { RuleSet } from '../RuleSet';
 import type { GameState } from '../GameState';
+import { ROSETTE_SQUARES } from '../BoardLayout';
 
-// RaceEngine rule set - fast-paced variant with Masters path
+// Tournament Engine rule set - fast-paced variant with Masters path
 export class RaceEngineRuleSet extends RuleSet {
-    readonly name = "Race Engine";
+    readonly name = "Tournament Engine";
     readonly description = "Fast-paced racing variant using Masters path with 4 dice and 5 pieces";
 
-    // RaceEngine game setup
+    // Tournament Engine game setup
     readonly piecesPerPlayer = 5;
     readonly diceCount = 4;
 
     // Use the Masters path configuration
     readonly pathType = "masters" as const;
 
-    // RaceEngine game mechanics
+    // Tournament Engine game mechanics
     getExtraTurnOnRosette(): boolean {
-        return true; // Landing on rosette gives extra turn
+        return false; // Rosettes don't give extra turns in Tournament Engine
     }
 
     getExtraTurnOnCapture(): boolean {
         return false; // Captures don't grant extra turns
+    }
+
+    // Tournament Engine: rosettes are safe squares where pieces cannot be captured
+    getSafeSquares(): number[] {
+        // Make all rosette squares safe (no captures allowed)
+        return [...ROSETTE_SQUARES];
     }
 
     // Standard dice roll calculation
@@ -37,8 +44,8 @@ export class RaceEngineRuleSet extends RuleSet {
 
         return {
             total,
-            templeBlessingApplied: false, // RaceEngine doesn't use temple blessings
-            houseBonusApplied: false,     // RaceEngine doesn't use house bonus
+            templeBlessingApplied: false, // Tournament Engine doesn't use temple blessings
+            houseBonusApplied: false,     // Tournament Engine doesn't use house bonus
             flags: {
                 canMove: total > 0 // Can only move if dice total is greater than 0
             }
@@ -50,13 +57,28 @@ export class RaceEngineRuleSet extends RuleSet {
         return 5;
     }
 
-    // Special RaceEngine rule: pieces of the same color can stack on the same square
+    // Special Tournament Engine rule: pieces of the same color can stack on the same square
     getAllowPieceStacking(): boolean {
         return true;
     }
 
-    // Special RaceEngine rule: stacked pieces move together as one unit
+    // Special Tournament Engine rule: stacked pieces move together as one unit
     stacksMoveAsOne(): boolean {
+        return true;
+    }
+
+    // Special Tournament Engine rule: pieces can move backwards
+    canMoveBackwards(): boolean {
+        return true;
+    }
+
+    // Special Tournament Engine rule: backwards moves are optional (shown as separate options)
+    backwardsMovesAreOptional(): boolean {
+        return true;
+    }
+
+    // Special Tournament Engine rule: pieces can only stack on rosette squares
+    canOnlyStackOnRosettes(): boolean {
         return true;
     }
 }
