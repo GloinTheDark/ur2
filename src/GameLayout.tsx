@@ -152,7 +152,7 @@ const GameLayout: React.FC<GameLayoutProps> = ({
                     getHomePosition={getHomePosition}
                 />
             )}
-            {gameState.gameSettings.pieceAnimations && gameState.getCapturedPieceAnimationData() && (
+            {gameState.isCapturedPieceAnimating() && (
                 <CapturedPieceAnimator
                     gameState={gameState}
                     getSquarePosition={getSquarePosition}

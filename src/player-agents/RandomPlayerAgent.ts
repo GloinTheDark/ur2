@@ -55,22 +55,8 @@ export class RandomPlayerAgent implements PlayerAgent {
             return;
         }
 
-        const legalMoves = gameState.getLegalMoves();
+        const legalMoves = gameState.getAllMoveOptions();
         AppLog.ai(`Random onMoveRequired: Found ${legalMoves.length} legal moves`);
-
-        if (legalMoves.length === 0) {
-            // No moves available, pass turn
-            AppLog.playerAgent(`Random onMoveRequired: No legal moves, checking if should pass turn`);
-            if (gameState.playerMustPass()) {
-                AppLog.playerAgent(`Random onMoveRequired: Passing turn`);
-                // Add a short delay to make it feel more natural
-                await this.delay(AI_DELAYS.MIN_THINK);
-                gameState.passTurn();
-            } else {
-                AppLog.playerAgent(`Random onMoveRequired: Pass button not available, not passing`);
-            }
-            return;
-        }
 
         // Add some thinking time to make it feel more natural
         AppLog.ai(`Random onMoveRequired: Thinking randomly...`);

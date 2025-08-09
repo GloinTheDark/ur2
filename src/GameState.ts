@@ -572,7 +572,6 @@ export class GameState {
         // Use the AI's selection logic to choose the best piece
         const computerAgent = currentPlayerAgent as import('./PlayerAgent').ComputerPlayerAgent;
         const selectedPieceIndex = await computerAgent.evaluateAndSelectPiece(this);
-
         AppLog.gameState(`Debug: AI selected piece ${selectedPieceIndex}`);
         this.selectPiece(selectedPieceIndex);
     }
@@ -778,6 +777,12 @@ export class GameState {
 
     // Piece selection
     selectPiece(pieceIndex: number): void {
+        if (pieceIndex < 0 || pieceIndex >= this.getPiecesPerPlayer()) {
+            this.data.selectedPiece = null; // Invalid piece index, deselect
+            this.notify();
+            return;
+        }
+
         if (this.data.eligiblePieces.includes(pieceIndex)) {
             // If the piece is already selected, deselect it
             if (this.data.selectedPiece === pieceIndex) {
@@ -811,6 +816,12 @@ export class GameState {
     // Start a legal move (animation or immediate)
     startLegalMove(move: Move): boolean {
         this.data.currentMove = move; // Store current move for animation completion
+
+        if (move.movingPieceIndex < 0 || move.movingPieceIndex >= this.getPiecesPerPlayer()) {
+            this.passTurn();
+            return false; // Invalid piece index, pass turn
+        }
+
         if (this.settings.pieceAnimations) {
             return this.startPieceAnimation(move);
         } else {
@@ -913,6 +924,16 @@ export class GameState {
         return this.data.diceAnimating || this.data.isPieceAnimating || this.data.isCapturedPieceAnimating;
     }
 
+    // Check if piece animation is in progress
+    isPieceAnimating(): boolean {
+        return this.data.isPieceAnimating;
+    }
+
+    // Check if captured piece animation is in progress
+    isCapturedPieceAnimating(): boolean {
+        return this.data.isCapturedPieceAnimating;
+    }
+
     // Start dice animation
     startDiceAnimation(): void {
         this.data.diceAnimating = true;
@@ -927,46 +948,19 @@ export class GameState {
 
     // Get current animation data
     getAnimationData(): {
-        player: 'white' | 'black',
-        fromPosition: number,
-        toPosition: number,
         waypoints: number[],
         flipWaypointIndex: number | null,
-        stackSize: number
     } | null {
         if (!this.data.isPieceAnimating || !this.data.currentMove) {
             return null;
         }
 
         const player = this.data.currentPlayer;
-        const { fromPosition, toPosition, movingPieces } = this.data.currentMove;
+        const { fromPosition, toPosition } = this.data.currentMove;
         const waypointData = this.getAnimationWaypoints(player, fromPosition, toPosition);
         return {
-            player,
-            fromPosition,
-            toPosition,
             waypoints: waypointData.waypoints,
-            flipWaypointIndex: waypointData.flipWaypointIndex,
-            stackSize: movingPieces.length
-        };
-    }
-
-    // Get current captured piece animation data
-    getCapturedPieceAnimationData(): {
-        player: 'white' | 'black',
-        fromPosition: number,
-        stackSize: number
-    } | null {
-        if (!this.data.isCapturedPieceAnimating || !this.data.currentMove) {
-            return null;
-        }
-
-        const player = this.getCurrentOpponent();
-        const fromPosition = this.data.currentMove.toPosition;
-        return {
-            player,
-            fromPosition,
-            stackSize: this.data.currentMove.capturedPieces.length
+            flipWaypointIndex: waypointData.flipWaypointIndex
         };
     }
 
@@ -1227,7 +1221,7 @@ export class GameState {
     }
 
     // Get all possible moves for the current player
-    getAllPossibleMoves(): Move[] {
+    private getAllPossibleMoves(): Move[] {
         const piecesToEvaluate = this.getPiecesToEvaluate();
         const moves: Move[] = [];
 
@@ -1238,6 +1232,44 @@ export class GameState {
         });
 
         return moves;
+    }
+
+
+    private makePassTurnMove(optional: boolean): Move {
+        const move: Move = {
+            movingPieceIndex: -1, // No piece is moving
+            legal: true, // Passing is always a legal move
+            destinationSquare: -1, // No destination square for pass
+            fromPosition: -1, // No from position for pass
+            toPosition: -1, // No to position for pass
+            capture: false, // No capture when passing
+            capturedPieces: [], // No captured pieces when passing
+            movingPieces: [], // No moving pieces when passing
+            extraTurn: false, // Passing does not grant an extra turn
+            backwards: false, // Passing is not a backwards move
+            optional: optional // Whether this pass is optional
+        };
+        return move;
+    }
+
+    getCurrentMove(): Move | null {
+        return this.data.currentMove;
+    }
+
+
+    // Get legal moves for the current player including pass turn
+    getAllMoveOptions(): Move[] {
+        // Return all possible moves, including pass turn
+        if (this.playerMustPass()) {
+            // If player must pass, return only the pass move
+            return [this.makePassTurnMove(false)];
+        }
+        if (this.playerMayPass()) {
+            // If player may pass, return all legal moves plus the optional pass move
+            const passMove = this.makePassTurnMove(true);
+            return [...this.data.legalMoves, passMove];
+        }
+        return [...this.data.legalMoves];
     }
 
     // Get legal moves for the current player

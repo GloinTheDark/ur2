@@ -4,7 +4,7 @@ import whiteBlank from './assets/WhiteBlank.svg';
 import whiteSpots from './assets/WhiteSpots.svg';
 import blackBlank from './assets/BlackBlank.svg';
 import blackSpots from './assets/BlackSpots.svg';
-import { PIECE_SIZE, STACK_OFFSET } from './UIConstants';
+import { PIECE_SIZE, STACK_OFFSET, PIECE_ANIMATION_Z_INDEX } from './UIConstants';
 
 interface PieceAnimatorProps {
     gameState: GameState;
@@ -34,10 +34,17 @@ const PieceAnimator: React.FC<PieceAnimatorProps> = ({
 
     useEffect(() => {
         const animationData = gameState.getAnimationData();
+        const move = gameState.getCurrentMove();
+        if (!move) {
+            throw new Error("No current move available for animation");
+        }
 
         if (animationData && !animationState) {
             // Start new animation
-            const { player, fromPosition, toPosition, waypoints, flipWaypointIndex } = animationData;
+            const { waypoints, flipWaypointIndex } = animationData;
+            const player = gameState.getCurrentPlayer();
+            const fromPosition = move.fromPosition;
+            const toPosition = move.toPosition;
 
             let startPos: { x: number; y: number } | null = null;
             let endPos: { x: number; y: number } | null = null;
@@ -180,7 +187,11 @@ const PieceAnimator: React.FC<PieceAnimatorProps> = ({
         return null;
     }
 
-    const { player, stackSize } = animationData;
+    const move = gameState.getCurrentMove();
+    if (!move) return null;
+
+    const player = gameState.getCurrentPlayer();
+    const stackSize = move.movingPieces.length;
 
     // Calculate current position along the waypoint path
     const { startPosition, endPosition, waypoints, totalDistance, progress } = animationState;
@@ -241,7 +252,7 @@ const PieceAnimator: React.FC<PieceAnimatorProps> = ({
         // During animation, determine if piece should show spots based on flip state
         // If piece has flipped during animation, it should show spots
         // Otherwise, determine from original position using GameState logic
-        const shouldShowSpots = animationState?.hasFlipped || gameState.shouldPieceShowSpots(animationData.fromPosition, player);
+        const shouldShowSpots = animationState?.hasFlipped || gameState.shouldPieceShowSpots(move.fromPosition, player);
 
         if (player === 'white') {
             return shouldShowSpots ? whiteSpots : whiteBlank;
@@ -259,7 +270,7 @@ const PieceAnimator: React.FC<PieceAnimatorProps> = ({
                 width: PIECE_SIZE,
                 height: PIECE_SIZE,
                 pointerEvents: 'none',
-                zIndex: 1000, // High z-index to appear above everything
+                zIndex: PIECE_ANIMATION_Z_INDEX, // Use UI constant to stay below overlays
                 transition: 'none' // Disable any CSS transitions
             }}
         >

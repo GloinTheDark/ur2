@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { GameState } from './GameState';
 import whiteBlank from './assets/WhiteBlank.svg';
 import blackBlank from './assets/BlackBlank.svg';
-import { PIECE_SIZE, STACK_OFFSET } from './UIConstants';
+import { PIECE_SIZE, STACK_OFFSET, PIECE_ANIMATION_Z_INDEX } from './UIConstants';
 
 interface CapturedPieceAnimatorProps {
     gameState: GameState;
@@ -27,14 +27,14 @@ const CapturedPieceAnimator: React.FC<CapturedPieceAnimatorProps> = ({
     const animationFrameRef = useRef<number | undefined>(undefined);
 
     useEffect(() => {
-        const capturedAnimationData = gameState.getCapturedPieceAnimationData();
+        const move = gameState.getCurrentMove();
 
-        if (capturedAnimationData && !animationState) {
+        if (move && !animationState) {
             // Start new captured piece animation
-            const { player, fromPosition } = capturedAnimationData;
+            const player = gameState.getCurrentOpponent(); // Get the player from the move
+            const boardSquare = move.destinationSquare; // Get the board square from the move
 
             // Get start position (board square where piece was captured)
-            const boardSquare = gameState.getSquareFromPathIndex(player, fromPosition);
             const startPos = getSquarePosition(boardSquare);
 
             // Get end position (home area)
@@ -52,7 +52,7 @@ const CapturedPieceAnimator: React.FC<CapturedPieceAnimatorProps> = ({
                 setAnimationState(newAnimationState);
                 startAnimation(newAnimationState);
             }
-        } else if (!capturedAnimationData && animationState) {
+        } else if (!move && animationState) {
             // Animation should be cleaned up
             setAnimationState(null);
         }
@@ -92,12 +92,10 @@ const CapturedPieceAnimator: React.FC<CapturedPieceAnimatorProps> = ({
         return null;
     }
 
-    const capturedAnimationData = gameState.getCapturedPieceAnimationData();
-    if (!capturedAnimationData) {
-        return null;
-    }
-
-    const { player, stackSize } = capturedAnimationData;
+    const player = gameState.getCurrentOpponent();
+    const move = gameState.getCurrentMove();
+    if (!move) return null;
+    const stackSize = move.capturedPieces.length;
 
     // Calculate current position
     const { startPosition, endPosition, progress } = animationState;
@@ -141,7 +139,7 @@ const CapturedPieceAnimator: React.FC<CapturedPieceAnimatorProps> = ({
                 width: PIECE_SIZE,
                 height: PIECE_SIZE,
                 pointerEvents: 'none',
-                zIndex: 999, // Slightly lower than regular piece animation
+                zIndex: PIECE_ANIMATION_Z_INDEX, // Use UI constant to stay below overlays
                 transition: 'none', // Disable any CSS transitions
                 opacity: 0.8 // Slightly transparent to distinguish from regular pieces
             }}

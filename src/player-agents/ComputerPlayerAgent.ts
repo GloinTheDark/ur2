@@ -4,7 +4,7 @@ import type { PlayerAgent, PlayerType } from './PlayerAgent';
 import { AI_DELAYS } from './PlayerAgent';
 
 interface MoveEvaluation {
-    move: Move;
+    move: Move
     score: number;
     reasons: string[];
 }
@@ -18,6 +18,9 @@ const AI_SCORES = {
     ADVANCE_PIECE: 5,
     SAFE_SQUARE: 8,
     DANGER_PENALTY: -10,
+    PASS_TURN_BASE: 2, // Base score for passing (conservative play)
+    PASS_AVOID_DANGER: 8, // Bonus for passing to avoid putting pieces in danger
+    PASS_PRESERVE_POSITION: 5, // Bonus for passing to maintain good board position
     INVALID_MOVE: -1000
 } as const;
 
@@ -75,28 +78,17 @@ export class ComputerPlayerAgent implements PlayerAgent {
 
         AppLog.ai(`AI onMoveRequired: Thinking with heuristic analysis...`);
 
-        const legalMoves = gameState.getLegalMoves();
-        AppLog.ai(`AI onMoveRequired: Found ${legalMoves.length} legal moves: [${legalMoves.map(move => move.toString()).join(', ')}]`);
-
-        if (legalMoves.length === 0) {
-            // No moves available, pass turn
-            AppLog.playerAgent(`AI onMoveRequired: No legal moves, checking if should pass turn`);
-            if (gameState.playerMustPass()) {
-                AppLog.playerAgent(`AI onMoveRequired: Passing turn`);
-                // Add a short delay to make it feel more natural
-                await this.delay(AI_DELAYS.MIN_THINK);
-                gameState.passTurn();
-            } else {
-                AppLog.playerAgent(`AI onMoveRequired: Pass button not available, not passing`);
-            }
-            return;
-        }
-
         // Select a piece based on heuristic strategy with timing
         AppLog.ai(`AI onMoveRequired: Selecting best move with heuristic analysis`);
         const thinkStartTime = performance.now();
         const bestMove = await this.selectBestMove(gameState);
         const actualThinkTime = performance.now() - thinkStartTime;
+        if (!bestMove) {
+            AppLog.playerAgent(`AI onMoveRequired: Best option is to pass turn`);
+            await this.delay(AI_DELAYS.MIN_THINK);
+            gameState.passTurn();
+            return;
+        }
         AppLog.ai(`AI onMoveRequired: Selected move ${bestMove.movingPieceIndex} to ${bestMove.destinationSquare} in ${actualThinkTime.toFixed(0)}ms`);
 
         // Delay to ensure minimum thinking time
@@ -133,31 +125,39 @@ export class ComputerPlayerAgent implements PlayerAgent {
         }
 
         // Choose the best move (highest score)
-        return rankedMoves[0].move;
+        const bestEvaluation = rankedMoves[0];
+
+        return bestEvaluation.move;
     }
 
     // Public method for debug purposes - allows external access to AI decision making
     public async evaluateAndSelectPiece(gameState: GameState): Promise<number> {
-        return (await this.selectBestMove(gameState)).movingPieceIndex;
+        const bestMove = await this.selectBestMove(gameState);
+        return bestMove.movingPieceIndex;
     }
 
     private rankMoves(gameState: GameState): MoveEvaluation[] {
-        AppLog.ai(`AI: Ranking ${gameState.getLegalMoves().length} eligible pieces for ${this.color} player`);
+        const moves = gameState.getAllMoveOptions();
+        AppLog.ai(`AI: Ranking ${moves.length} eligible pieces for ${this.color} player`);
 
-        const moves: MoveEvaluation[] = [];
+        const evaluatedMoves: MoveEvaluation[] = [];
 
-        for (const move of gameState.getLegalMoves()) {
+        for (const move of moves) {
             const evaluation = this.evaluateMove(gameState, move);
-            moves.push(evaluation);
+            evaluatedMoves.push(evaluation);
         }
 
         // Sort by score (highest first)
-        const rankedMoves = moves.sort((a, b) => b.score - a.score);
+        const rankedMoves = evaluatedMoves.sort((a, b) => b.score - a.score);
 
         // Log the ranking results
         AppLog.ai(`AI: Move rankings for ${this.color}:`);
         rankedMoves.forEach((move, index) => {
-            AppLog.ai(`  ${index + 1}. Piece ${move.move.movingPieceIndex}: ${move.score} points (${move.reasons.join(', ')})`);
+            if (move.move === null) {
+                AppLog.ai(`  ${index + 1}. Pass Turn: ${move.score} points (${move.reasons.join(', ')})`);
+            } else {
+                AppLog.ai(`  ${index + 1}. Piece ${move.move.movingPieceIndex}: ${move.score} points (${move.reasons.join(', ')})`);
+            }
         });
 
         return rankedMoves;
@@ -166,15 +166,6 @@ export class ComputerPlayerAgent implements PlayerAgent {
     private evaluateMove(gameState: GameState, move: Move): MoveEvaluation {
         let score = 0;
         const reasons: string[] = [];
-
-        // Find the legal move for this piece
-        if (!move) {
-            return {
-                move: move,
-                score: AI_SCORES.INVALID_MOVE,
-                reasons: ['No legal move found for piece']
-            };
-        }
 
         // Get current position
         const currentPosition = move.fromPosition;
@@ -188,6 +179,9 @@ export class ComputerPlayerAgent implements PlayerAgent {
             // Getting piece into play from start
             score += AI_SCORES.ENTER_PLAY;
             reasons.push('Getting piece into play');
+        } else if (move.backwards) {
+            score -= AI_SCORES.ADVANCE_PIECE;
+            reasons.push('Moving piece backwards');
         } else {
             // Advancing piece on board
             score += AI_SCORES.ADVANCE_PIECE;
@@ -243,6 +237,7 @@ export class ComputerPlayerAgent implements PlayerAgent {
             reasons
         };
     }
+
 
     private isPositionDangerous(
         destinationSquare: number,

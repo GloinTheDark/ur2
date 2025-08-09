@@ -83,23 +83,6 @@ export class MCTSPlayerAgent implements PlayerAgent {
 
         AppLog.ai(`MCTS onMoveRequired: Thinking with Monte Carlo Tree Search...`);
 
-        const legalMoves = gameState.getLegalMoves();
-        AppLog.ai(`MCTS onMoveRequired: Found ${legalMoves.length} legal moves: [${legalMoves.map(move => move.toString()).join(', ')}]`);
-
-        if (legalMoves.length === 0) {
-            // No moves available, pass turn
-            AppLog.playerAgent(`MCTS onMoveRequired: No legal moves, checking if should pass turn`);
-            if (gameState.playerMustPass()) {
-                AppLog.playerAgent(`MCTS onMoveRequired: Passing turn`);
-                // Add a short delay to make it feel more natural
-                await this.delay(AI_DELAYS.MIN_THINK);
-                gameState.passTurn();
-            } else {
-                AppLog.playerAgent(`MCTS onMoveRequired: Pass button not available, not passing`);
-            }
-            return;
-        }
-
         // Select a piece using Monte Carlo Tree Search with timing
         AppLog.ai(`MCTS onMoveRequired: Running MCTS analysis`);
         const thinkStartTime = performance.now();
@@ -135,7 +118,7 @@ export class MCTSPlayerAgent implements PlayerAgent {
     private async selectMCTSMove(gameState: GameState): Promise<Move> {
         const startTime = performance.now();
 
-        const legalMoves = gameState.getLegalMoves();
+        const legalMoves = gameState.getAllMoveOptions();
 
         if (legalMoves.length === 1) {
             return legalMoves[0];
@@ -270,12 +253,7 @@ export class MCTSPlayerAgent implements PlayerAgent {
             gameState.rollDice();
         }
 
-        const legalMoves = gameState.getLegalMoves();
-
-        if (legalMoves.length === 0) {
-            gameState.passTurn();
-            return this.runSimulation(gameState, depth - 1);
-        }
+        const legalMoves = gameState.getAllMoveOptions();
 
         // Try a random subset of moves to keep simulation fast
         const movesToTry = Math.min(legalMoves.length, 3);
