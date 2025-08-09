@@ -20,8 +20,6 @@ interface AnimationState {
     progress: number;
     duration: number;
     startTime: number;
-    flipWaypointIndex: number | null;
-    hasFlipped: boolean;
 }
 
 const PieceAnimator: React.FC<PieceAnimatorProps> = ({
@@ -41,7 +39,7 @@ const PieceAnimator: React.FC<PieceAnimatorProps> = ({
 
         if (animationData && !animationState) {
             // Start new animation
-            const { waypoints, flipWaypointIndex } = animationData;
+            const { waypoints } = animationData;
             const player = gameState.getCurrentPlayer();
             const fromPosition = move.fromPosition;
             const toPosition = move.toPosition;
@@ -100,9 +98,7 @@ const PieceAnimator: React.FC<PieceAnimatorProps> = ({
                     totalDistance,
                     progress: 0,
                     duration: Math.max(800, waypoints.length * 300), // Longer duration for more waypoints
-                    startTime: performance.now(),
-                    flipWaypointIndex,
-                    hasFlipped: false
+                    startTime: performance.now()
                 };
 
                 setAnimationState(newAnimationState);
@@ -122,40 +118,9 @@ const PieceAnimator: React.FC<PieceAnimatorProps> = ({
             // Easing function (ease-out cubic)
             const easedProgress = 1 - Math.pow(1 - progress, 3);
 
-            // Check if we should flip the piece based on reaching the flip waypoint
-            let shouldFlip = state.hasFlipped;
-            if (!shouldFlip && state.flipWaypointIndex !== null) {
-                // Calculate which waypoint we've reached based on progress
-                const { waypoints, totalDistance } = state;
-                const targetDistance = easedProgress * totalDistance;
-                let currentDistance = 0;
-                let reachedWaypointIndex = -1;
-
-                // Calculate distances to each waypoint
-                const fullPath = [state.startPosition, ...waypoints, state.endPosition];
-                for (let i = 0; i < fullPath.length - 1; i++) {
-                    const dx = fullPath[i + 1].x - fullPath[i].x;
-                    const dy = fullPath[i + 1].y - fullPath[i].y;
-                    const segmentDistance = Math.sqrt(dx * dx + dy * dy);
-
-                    if (currentDistance + segmentDistance >= targetDistance) {
-                        reachedWaypointIndex = i - 1; // -1 because fullPath includes start position
-                        break;
-                    }
-                    currentDistance += segmentDistance;
-                    reachedWaypointIndex = i - 1;
-                }
-
-                // If we've reached or passed the flip waypoint, flip the piece
-                if (reachedWaypointIndex >= state.flipWaypointIndex) {
-                    shouldFlip = true;
-                }
-            }
-
             setAnimationState(prev => prev ? {
                 ...prev,
-                progress: easedProgress,
-                hasFlipped: shouldFlip
+                progress: easedProgress
             } : null);
 
             if (progress < 1) {
@@ -249,10 +214,14 @@ const PieceAnimator: React.FC<PieceAnimatorProps> = ({
 
     // Get the appropriate piece image
     const getPieceImage = () => {
-        // During animation, determine if piece should show spots based on flip state
-        // If piece has flipped during animation, it should show spots
-        // Otherwise, determine from original position using GameState logic
-        const shouldShowSpots = animationState?.hasFlipped || gameState.shouldPieceShowSpots(move.fromPosition);
+        // Calculate current position in the animation path
+        // The animation goes from fromPosition to toPosition
+        const fromPosition = move.fromPosition;
+        const toPosition = move.toPosition;
+        const currentPathPosition = fromPosition + (toPosition - fromPosition) * animationState.progress;
+
+        // Use GameState logic to determine if piece should show spots at current position
+        const shouldShowSpots = gameState.shouldPieceShowSpots(currentPathPosition);
 
         if (player === 'white') {
             return shouldShowSpots ? whiteSpots : whiteBlank;
