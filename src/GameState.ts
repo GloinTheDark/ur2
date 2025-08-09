@@ -260,7 +260,7 @@ export class GameState {
         return pathIndex === IS_MOVING;
     }
 
-    shouldPieceShowSpots(pathIndex: number, _player: 'white' | 'black'): boolean {
+    shouldPieceShowSpots(pathIndex: number): boolean {
         if (pathIndex === IS_MOVING) return false; // Moving pieces don't show
         const pathType = this.getCurrentRuleSet().pathType;
         const gamePath = getPath(pathType);

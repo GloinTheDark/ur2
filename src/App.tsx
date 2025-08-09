@@ -824,7 +824,7 @@ function App() {
                                 />
                               )}
                               <img
-                                src={gameState.shouldPieceShowSpots(positions[pieceIndex], player) ? spotsImage : blankImage}
+                                src={gameState.shouldPieceShowSpots(positions[pieceIndex]) ? spotsImage : blankImage}
                                 alt={`${player.charAt(0).toUpperCase() + player.slice(1)} piece ${pieceIndex + 1}`}
                                 style={{
                                   width: `${PIECE_SIZE}px`,

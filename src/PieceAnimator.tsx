@@ -252,7 +252,7 @@ const PieceAnimator: React.FC<PieceAnimatorProps> = ({
         // During animation, determine if piece should show spots based on flip state
         // If piece has flipped during animation, it should show spots
         // Otherwise, determine from original position using GameState logic
-        const shouldShowSpots = animationState?.hasFlipped || gameState.shouldPieceShowSpots(move.fromPosition, player);
+        const shouldShowSpots = animationState?.hasFlipped || gameState.shouldPieceShowSpots(move.fromPosition);
 
         if (player === 'white') {
             return shouldShowSpots ? whiteSpots : whiteBlank;
