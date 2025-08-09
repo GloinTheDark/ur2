@@ -268,21 +268,15 @@ export class GameState {
     }
 
     // Get animation waypoints between two positions
-    getAnimationWaypoints(player: 'white' | 'black', fromPosition: number, toPosition: number): { waypoints: number[], flipWaypointIndex: number | null } {
+    getAnimationWaypoints(player: 'white' | 'black', fromPosition: number, toPosition: number): { waypoints: number[] } {
         const path = player === 'white' ? this.whitePath : this.blackPath;
         const waypoints: number[] = [];
-        let flipWaypointIndex: number | null = null;
-
-        // Get the flip index from the current game path
-        const gamePath = this.getCurrentGamePath();
-        const flipIndex = gamePath.flipIndex;
 
         // Determine if this is a backwards move
         const isBackwards = toPosition < fromPosition;
 
         if (isBackwards) {
             // For backwards moves, go from fromPosition down to toPosition
-            // Ignore flipWaypointIndex for backwards moves as requested
             for (let i = fromPosition - 1; i >= toPosition; i--) {
                 waypoints.push(path[i]);
             }
@@ -290,14 +284,10 @@ export class GameState {
             // For forward moves, add all squares between fromPosition and toPosition (exclusive of from, inclusive of to)
             for (let i = fromPosition + 1; i <= toPosition; i++) {
                 waypoints.push(path[i]);
-                // Check if this is the flip square
-                if (flipWaypointIndex === null && i === flipIndex) {
-                    flipWaypointIndex = waypoints.length - 1; // Index in waypoints array
-                }
             }
         }
 
-        return { waypoints, flipWaypointIndex };
+        return { waypoints };
     }
 
     // Get pieces on a specific board square for a specific player
@@ -949,7 +939,7 @@ export class GameState {
     // Get current animation data
     getAnimationData(): {
         waypoints: number[],
-        flipWaypointIndex: number | null,
+
     } | null {
         if (!this.data.isPieceAnimating || !this.data.currentMove) {
             return null;
@@ -960,7 +950,6 @@ export class GameState {
         const waypointData = this.getAnimationWaypoints(player, fromPosition, toPosition);
         return {
             waypoints: waypointData.waypoints,
-            flipWaypointIndex: waypointData.flipWaypointIndex
         };
     }
 
