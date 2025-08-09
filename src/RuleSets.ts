@@ -4,7 +4,7 @@ export { FinkelRuleSet } from './rulesets/FinkelRuleSet';
 export { BurglersOfUrRuleSet } from './rulesets/BurglersOfUrRuleSet';
 export { BlitzRuleSet } from './rulesets/BlitzRuleSet';
 export { MastersRuleSet } from './rulesets/MastersRuleSet';
-export { RaceEngineRuleSet } from './rulesets/RaceEngineRuleSet';
+export { TournamentEngineRuleSet } from './rulesets/TournamentEngineRuleSet';
 
 // Import for internal use
 import { RuleSet } from './RuleSet';
@@ -12,7 +12,7 @@ import { FinkelRuleSet } from './rulesets/FinkelRuleSet';
 import { BurglersOfUrRuleSet } from './rulesets/BurglersOfUrRuleSet';
 import { BlitzRuleSet } from './rulesets/BlitzRuleSet';
 import { MastersRuleSet } from './rulesets/MastersRuleSet';
-import { RaceEngineRuleSet } from './rulesets/RaceEngineRuleSet';
+import { TournamentEngineRuleSet } from './rulesets/TournamentEngineRuleSet';
 
 // Rule set registry for easy access
 export const AVAILABLE_RULE_SETS = {
@@ -20,7 +20,7 @@ export const AVAILABLE_RULE_SETS = {
     finkel: new FinkelRuleSet(),
     blitz: new BlitzRuleSet(),
     masters: new MastersRuleSet(),
-    raceengine: new RaceEngineRuleSet()
+    tournamentengine: new TournamentEngineRuleSet()
 } as const;
 
 // Get all rule sets as an array
