@@ -7,7 +7,7 @@ import { PIECE_SIZE, STACK_OFFSET, PIECE_ANIMATION_Z_INDEX } from './UIConstants
 interface CapturedPieceAnimatorProps {
     gameState: GameState;
     getSquarePosition: (square: number) => { x: number; y: number } | null;
-    getHomePosition: (player: 'white' | 'black') => { x: number; y: number } | null;
+    getHomePosition: (player: 'white' | 'black', isMovingToFinish: boolean) => { x: number; y: number } | null;
 }
 
 interface CapturedAnimationState {
@@ -37,8 +37,8 @@ const CapturedPieceAnimator: React.FC<CapturedPieceAnimatorProps> = ({
             // Get start position (board square where piece was captured)
             const startPos = getSquarePosition(boardSquare);
 
-            // Get end position (home area)
-            const endPos = getHomePosition(player);
+            // Get end position (home area) - captured pieces go back to start, not to finish
+            const endPos = getHomePosition(player, false);
 
             if (startPos && endPos) {
                 const newAnimationState: CapturedAnimationState = {

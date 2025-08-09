@@ -9,7 +9,7 @@ import { PIECE_SIZE, STACK_OFFSET, PIECE_ANIMATION_Z_INDEX } from './UIConstants
 interface PieceAnimatorProps {
     gameState: GameState;
     getSquarePosition: (square: number) => { x: number; y: number } | null;
-    getHomePosition: (player: 'white' | 'black') => { x: number; y: number } | null;
+    getHomePosition: (player: 'white' | 'black', isMovingToFinish: boolean) => { x: number; y: number } | null;
 }
 
 interface AnimationState {
@@ -49,7 +49,7 @@ const PieceAnimator: React.FC<PieceAnimatorProps> = ({
 
             // Get start position
             if (fromPosition === 0) {
-                startPos = getHomePosition(player);
+                startPos = getHomePosition(player, false); // Moving from start, not to finish
             } else {
                 // Convert path index to board square using GameState helper
                 const boardSquare = gameState.getSquareFromPathIndex(player, fromPosition);
@@ -58,7 +58,7 @@ const PieceAnimator: React.FC<PieceAnimatorProps> = ({
 
             // Get end position - check if completing circuit
             if (toPosition === gameState.getEndOfPath()) {
-                endPos = getHomePosition(player);
+                endPos = getHomePosition(player, true); // Moving to finish
             } else {
                 // Convert path index to board square using GameState helper
                 const boardSquare = gameState.getSquareFromPathIndex(player, toPosition);

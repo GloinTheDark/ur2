@@ -54,7 +54,7 @@ const GameLayout: React.FC<GameLayoutProps> = ({
 
     // Calculate position of a piece in a player's home area
     // This is used for animating pieces to and from home
-    const getHomePosition = useCallback((player: 'white' | 'black'): { x: number; y: number } | null => {
+    const getHomePosition = useCallback((player: 'white' | 'black', isMovingToFinish: boolean): { x: number; y: number } | null => {
         const homeRef = player === 'white' ? whiteHomeRef : blackHomeRef;
 
         if (!homeRef.current || !containerRef.current) {
@@ -76,25 +76,12 @@ const GameLayout: React.FC<GameLayoutProps> = ({
         const state = gameState.state;
         const positions = player === 'white' ? state.whitePiecePositions : state.blackPiecePositions;
 
-
-        // For animations, we need to handle pieces that are 'moving' from start or to start
-        // Check if this piece is currently animating from start position
-        const isPieceAnimating = state.isPieceAnimating;
-        const currentMove = state.currentMove;
-
-        if (!currentMove) {
-            return null; // No current move to evaluate
-        }
-
-        // Get completion index
-        const completionIndex = gameState.getEndOfPath();
-
-        const isAnimatingToHome = isPieceAnimating && currentMove.destinationSquare === 25;
-
         // Determine target slot based on piece type
         let targetSlot = 0;
 
-        if (isAnimatingToHome) {
+        if (isMovingToFinish) {
+            // Get completion index
+            const completionIndex = gameState.getEndOfPath();
             const existingCompletedCount = positions.filter((pos) => {
                 return pos === completionIndex;
             }).length;

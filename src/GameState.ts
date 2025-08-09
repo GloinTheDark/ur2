@@ -200,12 +200,6 @@ export class GameState {
         return getRuleSetByName(this.settings.currentRuleSet);
     }
 
-    // Get current path objects (with flipIndex)
-    private getCurrentGamePath(): import('./GamePaths').GamePath {
-        const ruleSet = this.getCurrentRuleSet();
-        return getPath(ruleSet.pathType);
-    }
-
     // Get current paths
     getWhitePath(): number[] {
         return [...this.whitePath];
