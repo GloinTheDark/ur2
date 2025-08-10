@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import type { PlayerType } from './player-agents';
 
 export interface GameSetupProps {
-    onStartGame: (whitePlayer: PlayerType, blackPlayer: PlayerType, whiteAgentType: 'computer' | 'mcts' | 'random' | null, blackAgentType: 'computer' | 'mcts' | 'random' | null) => void;
+    onStartGame: (whitePlayer: PlayerType, blackPlayer: PlayerType, whiteAgentType: 'computer' | 'mcts' | 'random' | 'exhaustive' | null, blackAgentType: 'computer' | 'mcts' | 'random' | 'exhaustive' | null) => void;
 }
 
-type PlayerOption = 'human' | 'computer' | 'mcts' | 'random';
+type PlayerOption = 'human' | 'computer' | 'mcts' | 'random' | 'exhaustive';
 
 interface GameSetupState {
     whitePlayerOption: PlayerOption;
@@ -57,7 +57,7 @@ const GameSetup: React.FC<GameSetupProps> = ({ onStartGame }) => {
         onStartGame(whiteType, blackType, whiteAgentType, blackAgentType);
     };
 
-    const parsePlayerOption = (option: PlayerOption): { type: PlayerType; agentType: 'computer' | 'mcts' | 'random' | null } => {
+    const parsePlayerOption = (option: PlayerOption): { type: PlayerType; agentType: 'computer' | 'mcts' | 'random' | 'exhaustive' | null } => {
         switch (option) {
             case 'human':
                 return { type: 'human', agentType: null };
@@ -67,6 +67,8 @@ const GameSetup: React.FC<GameSetupProps> = ({ onStartGame }) => {
                 return { type: 'computer', agentType: 'mcts' };
             case 'random':
                 return { type: 'computer', agentType: 'random' };
+            case 'exhaustive':
+                return { type: 'computer', agentType: 'exhaustive' };
             default:
                 return { type: 'human', agentType: null };
         }
@@ -79,14 +81,22 @@ const GameSetup: React.FC<GameSetupProps> = ({ onStartGame }) => {
         if (whiteType === 'human' && blackType === 'human') {
             return 'Two players taking turns on the same device';
         } else if (whiteType === 'human' && blackType === 'computer') {
-            const computerType = blackAgentType === 'computer' ? 'Computer' : blackAgentType === 'mcts' ? 'Computer (MCTS)' : 'Random Computer';
+            const computerType = blackAgentType === 'computer' ? 'Computer' :
+                blackAgentType === 'mcts' ? 'Computer (MCTS)' :
+                    blackAgentType === 'exhaustive' ? 'Computer (Exhaustive)' : 'Random Computer';
             return `You play as White against ${computerType}`;
         } else if (whiteType === 'computer' && blackType === 'human') {
-            const computerType = whiteAgentType === 'computer' ? 'Computer' : whiteAgentType === 'mcts' ? 'Computer (MCTS)' : 'Random Computer';
+            const computerType = whiteAgentType === 'computer' ? 'Computer' :
+                whiteAgentType === 'mcts' ? 'Computer (MCTS)' :
+                    whiteAgentType === 'exhaustive' ? 'Computer (Exhaustive)' : 'Random Computer';
             return `You play as Black against ${computerType}`;
         } else {
-            const whiteComputerType = whiteAgentType === 'computer' ? 'Computer' : whiteAgentType === 'mcts' ? 'Computer (MCTS)' : 'Random Computer';
-            const blackComputerType = blackAgentType === 'computer' ? 'Computer' : blackAgentType === 'mcts' ? 'Computer (MCTS)' : 'Random Computer';
+            const whiteComputerType = whiteAgentType === 'computer' ? 'Computer' :
+                whiteAgentType === 'mcts' ? 'Computer (MCTS)' :
+                    whiteAgentType === 'exhaustive' ? 'Computer (Exhaustive)' : 'Random Computer';
+            const blackComputerType = blackAgentType === 'computer' ? 'Computer' :
+                blackAgentType === 'mcts' ? 'Computer (MCTS)' :
+                    blackAgentType === 'exhaustive' ? 'Computer (Exhaustive)' : 'Random Computer';
             return `Watch ${whiteComputerType} (White) vs ${blackComputerType} (Black)`;
         }
     };
@@ -134,6 +144,7 @@ const GameSetup: React.FC<GameSetupProps> = ({ onStartGame }) => {
                     <option value="human">Human</option>
                     <option value="computer">Computer</option>
                     <option value="mcts">Computer (MCTS)</option>
+                    <option value="exhaustive">Computer (Exhaustive)</option>
                     <option value="random">Random Computer</option>
                 </select>
             </div>
@@ -148,6 +159,7 @@ const GameSetup: React.FC<GameSetupProps> = ({ onStartGame }) => {
                     <option value="human">Human</option>
                     <option value="computer">Computer</option>
                     <option value="mcts">Computer (MCTS)</option>
+                    <option value="exhaustive">Computer (Exhaustive)</option>
                     <option value="random">Random Computer</option>
                 </select>
             </div>

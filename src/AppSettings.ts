@@ -8,6 +8,7 @@ export interface AppSettings {
         playerAgent: boolean;
         dice: boolean;
         animations: boolean;
+        aiTiming: boolean;
     };
 }
 
@@ -76,7 +77,8 @@ export class AppSettingsManager {
                         gameState: parsed.logging?.gameState ?? false,
                         playerAgent: parsed.logging?.playerAgent ?? false,
                         dice: parsed.logging?.dice ?? false,
-                        animations: parsed.logging?.animations ?? false
+                        animations: parsed.logging?.animations ?? false,
+                        aiTiming: parsed.logging?.aiTiming ?? false
                     }
                 };
             } catch {
@@ -99,7 +101,8 @@ export class AppSettingsManager {
                 gameState: false,
                 playerAgent: false,
                 dice: false,
-                animations: false
+                animations: false,
+                aiTiming: false
             }
         };
     }
@@ -135,6 +138,11 @@ export const AppLog = {
     animations: (message: string, ...args: any[]) => {
         if (AppSettingsManager.getInstance().getSettings().logging.animations) {
             console.log(`[Animations] ${message}`, ...args);
+        }
+    },
+    aiTiming: (message: string, ...args: any[]) => {
+        if (AppSettingsManager.getInstance().getSettings().logging.aiTiming) {
+            console.log(`[AI-Timing] ${message}`, ...args);
         }
     }
 };

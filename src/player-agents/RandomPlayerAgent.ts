@@ -60,11 +60,14 @@ export class RandomPlayerAgent implements PlayerAgent {
 
         // Add some thinking time to make it feel more natural
         AppLog.ai(`Random onMoveRequired: Thinking randomly...`);
+        const thinkStartTime = performance.now();
         await this.delay(AI_DELAYS.MIN_THINK * 0.25 + Math.random() * AI_DELAYS.MIN_THINK * 0.75); // Random delay between 25%-100% of MIN_THINK
 
         // Pick a random legal move
         const randomIndex = Math.floor(Math.random() * legalMoves.length);
         const selectedMove = legalMoves[randomIndex];
+        const actualThinkTime = performance.now() - thinkStartTime;
+        AppLog.aiTiming(`RandomAI (${this.color}): Analysis completed in ${actualThinkTime.toFixed(2)}ms`);
 
         AppLog.ai(`Random onMoveRequired: Randomly selected move for piece ${selectedMove.movingPieceIndex} to ${selectedMove.destinationSquare} from ${legalMoves.length} options`);
 

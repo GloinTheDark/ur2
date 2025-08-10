@@ -34,7 +34,8 @@ const LoggingControl: React.FC<LoggingControlProps> = ({ isOpen, onClose }) => {
                 gameState: enabled,
                 playerAgent: enabled,
                 dice: enabled,
-                animations: enabled
+                animations: enabled,
+                aiTiming: enabled
             }
         });
     };
@@ -157,7 +158,8 @@ const LoggingControl: React.FC<LoggingControlProps> = ({ isOpen, onClose }) => {
                         { key: 'gameState' as const, label: 'Game State Changes', description: 'Turn management and state updates' },
                         { key: 'playerAgent' as const, label: 'Player Agent Actions', description: 'Human and computer player events' },
                         { key: 'dice' as const, label: 'Dice Rolling', description: 'Dice roll results and modifiers' },
-                        { key: 'animations' as const, label: 'Animation System', description: 'Piece movement and visual effects' }
+                        { key: 'animations' as const, label: 'Animation System', description: 'Piece movement and visual effects' },
+                        { key: 'aiTiming' as const, label: 'AI Timing', description: 'Time taken for AI agent evaluations' }
                     ].map(({ key, label, description }) => (
                         <div key={key} style={{
                             display: 'flex',

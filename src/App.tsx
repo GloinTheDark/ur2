@@ -60,7 +60,7 @@ function App() {
   const winner = gameState.checkWinCondition();
 
   // Handle game setup completion
-  const handleGameSetup = async (whitePlayer: PlayerType, blackPlayer: PlayerType, whiteAgentType: 'computer' | 'mcts' | 'random' | null, blackAgentType: 'computer' | 'mcts' | 'random' | null) => {
+  const handleGameSetup = async (whitePlayer: PlayerType, blackPlayer: PlayerType, whiteAgentType: 'computer' | 'mcts' | 'random' | 'exhaustive' | null, blackAgentType: 'computer' | 'mcts' | 'random' | 'exhaustive' | null) => {
     setShowGameSetup(false); // Close the setup modal
 
     // Start the game directly - no intermediate welcome screen

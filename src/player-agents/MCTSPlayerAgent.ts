@@ -90,6 +90,7 @@ export class MCTSPlayerAgent implements PlayerAgent {
         const thinkStartTime = performance.now();
         const move = await this.selectMCTSMove(gameState);
         const actualThinkTime = performance.now() - thinkStartTime;
+        AppLog.aiTiming(`MCTS (${this.color}): Analysis completed in ${actualThinkTime.toFixed(2)}ms`);
         AppLog.ai(`MCTS onMoveRequired: Selected piece ${move}`);
 
         // Delay to ensure minimum thinking time

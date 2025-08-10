@@ -83,6 +83,7 @@ export class ComputerPlayerAgent implements PlayerAgent {
         const thinkStartTime = performance.now();
         const bestMove = await this.selectBestMove(gameState);
         const actualThinkTime = performance.now() - thinkStartTime;
+        AppLog.aiTiming(`ComputerAI (${this.color}): Analysis completed in ${actualThinkTime.toFixed(2)}ms`);
         if (!bestMove) {
             AppLog.playerAgent(`AI onMoveRequired: Best option is to pass turn`);
             await this.delay(AI_DELAYS.MIN_THINK);

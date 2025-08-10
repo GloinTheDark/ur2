@@ -7,7 +7,7 @@ import {
 import { getPathPair, getPath } from './GamePaths';
 import { getRuleSetByName, DEFAULT_RULE_SET } from './RuleSets';
 import type { RuleSet } from './RuleSet';
-import { HumanPlayerAgent, ComputerPlayerAgent, MCTSPlayerAgent, RandomPlayerAgent } from './player-agents';
+import { HumanPlayerAgent, ComputerPlayerAgent, MCTSPlayerAgent, RandomPlayerAgent, ExhaustiveSearchPlayerAgent } from './player-agents';
 import type { PlayerAgent, PlayerType } from './player-agents';
 import { AppLog } from './AppSettings';
 
@@ -40,8 +40,8 @@ export interface Move {
 export interface PlayerConfiguration {
     white: PlayerType;
     black: PlayerType;
-    whiteAgentType?: 'computer' | 'mcts' | 'random';
-    blackAgentType?: 'computer' | 'mcts' | 'random';
+    whiteAgentType?: 'computer' | 'mcts' | 'random' | 'exhaustive';
+    blackAgentType?: 'computer' | 'mcts' | 'random' | 'exhaustive';
 }
 
 export interface GameSettings {
@@ -56,7 +56,7 @@ export interface GameStateData {
     blackPiecePositions: number[]; // numbers represent indices into the current rule set's black path (0 = start, IS_MOVING = moving)
     selectedPiece: number | null; // Index of the selected piece (always belongs to currentPlayer)
     gameStarted: boolean;
-    gamePhase: 'initial-roll' | 'playing';
+    gamePhase: 'initial-roll' | 'playing' | 'game-over';
     initialRollResult: number | null;
     turnCount: number; // Track number of turns played
     isExtraTurn: boolean; // Track if current turn is an extra turn
@@ -231,8 +231,13 @@ export class GameState {
     getCurrentPlayer(): 'white' | 'black' {
         return this.data.currentPlayer;
     }
+
     getCurrentOpponent(): 'white' | 'black' {
         return this.getOpponent(this.data.currentPlayer);
+    }
+
+    getGamePhase(): 'initial-roll' | 'playing' | 'game-over' {
+        return this.data.gamePhase;
     }
 
     // Helper methods for position conversion
@@ -428,7 +433,7 @@ export class GameState {
         this.handleGameStateChange();
     }
 
-    private createPlayerAgent(color: 'white' | 'black', type: PlayerType, agentType?: 'computer' | 'mcts' | 'random'): PlayerAgent {
+    private createPlayerAgent(color: 'white' | 'black', type: PlayerType, agentType?: 'computer' | 'mcts' | 'random' | 'exhaustive'): PlayerAgent {
         switch (type) {
             case 'human':
                 return new HumanPlayerAgent(color);
@@ -438,6 +443,8 @@ export class GameState {
                         return new RandomPlayerAgent(color);
                     case 'mcts':
                         return new MCTSPlayerAgent(color);
+                    case 'exhaustive':
+                        return new ExhaustiveSearchPlayerAgent(color, this);
                     case 'computer':
                     default:
                         return new ComputerPlayerAgent(color);
@@ -575,7 +582,9 @@ export class GameState {
             // Check for game end
             const winner = this.checkWinCondition();
             if (winner) {
+                this.data.gamePhase = 'game-over';
                 this.playerManagerActive = false;
+                this.notify();
                 return;
             }
 
@@ -790,6 +799,11 @@ export class GameState {
 
     // Piece selection
     selectPiece(pieceIndex: number): void {
+        // Don't allow piece selection if the game is over
+        if (this.data.gamePhase === 'game-over') {
+            return;
+        }
+
         if (pieceIndex < 0 || pieceIndex >= this.getPiecesPerPlayer()) {
             this.data.selectedPiece = null; // Invalid piece index, deselect
             this.notify();
@@ -810,6 +824,11 @@ export class GameState {
 
     // Piece movement
     movePiece(pieceIndex: number, destinationSquare: number): boolean {
+        // Don't allow piece movement if the game is over
+        if (this.data.gamePhase === 'game-over') {
+            return false;
+        }
+
         if (this.data.selectedPiece !== pieceIndex || this.data.diceTotal === 0) {
             return false;
         }
@@ -1405,13 +1424,24 @@ export class GameState {
         return null;
     }
 
+    // Check if the game is over
+    isGameOver(): boolean {
+        return this.data.gamePhase === 'game-over';
+    }
+
     // Turn management
     playerMustPass(): boolean {
+        // Only allow passing during the playing phase
+        if (this.data.gamePhase !== 'playing') return false;
+
         // Show pass button when dice have been rolled but no pieces can move
         return this.data.diceRolls.length > 0 && this.data.eligiblePieces.length === 0;
     }
 
     playerMayPass(): boolean {
+        // Only allow passing during the playing phase
+        if (this.data.gamePhase !== 'playing') return false;
+
         // Show optional pass button when all legal moves are optional
         return this.data.legalMoves.length > 0 &&
             this.data.legalMoves.every(move => move.optional) && !this.playerMustPass();
@@ -1429,6 +1459,11 @@ export class GameState {
     }
 
     passTurn(): void {
+        // Don't allow passing turn if the game is over
+        if (this.data.gamePhase === 'game-over') {
+            return;
+        }
+
         // Reset turn state and switch player (no extra turn when passing)
         this.resetTurn(false);
 
