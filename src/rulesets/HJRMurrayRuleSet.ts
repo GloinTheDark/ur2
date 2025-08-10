@@ -4,6 +4,7 @@ import { RuleSet } from '../RuleSet';
 export class HJRMurrayRuleSet extends RuleSet {
     readonly name = "HJR Murray";
     readonly description = "Rule set based on H.J.R. Murray's (A History Of Chess 1913) reconstruction using 3 dice and the HJR Murray path";
+    readonly moreInfoUrl = "https://en.wikipedia.org/wiki/A_History_of_Chess";
 
     // HJR Murray game setup
     readonly piecesPerPlayer = 7;
