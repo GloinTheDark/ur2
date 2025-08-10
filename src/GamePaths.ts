@@ -56,11 +56,21 @@ export const MASTERS_PATH: GamePath = {
     overlayImage: "/src/assets/JMastersPath.svg"
 };
 
+// HJR Murray path - based on H.J.R. Murray's reconstruction (initially copied from Burglers)
+export const HJR_MURRAY_PATH: GamePath = {
+    name: "HJR Murray Path",
+    description: "Path based on H.J.R. Murray's reconstruction of the Royal Game of Ur",
+    whitePath: [0, 4, 3, 2, 1, 9, 10, 11, 12, 13, 14, 15, 7, 24, 16, 8, 23, 15, 14, 13, 12, 11, 10, 9, 1, 2, 3, 4, 25],
+    flipIndex: 13, // Pieces flip when passing square 24 (path index 13 contains square 24)
+    overlayImage: "/src/assets/HJRMurrayPath.svg"
+};
+
 // Registry of all available paths
 export const ALL_PATHS = {
     finkel: BELL_PATH,
     burglers: BURGLERS_PATH,
-    masters: MASTERS_PATH
+    masters: MASTERS_PATH,
+    hjrmurray: HJR_MURRAY_PATH
 } as const;
 
 export type PathType = keyof typeof ALL_PATHS;

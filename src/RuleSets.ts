@@ -5,6 +5,7 @@ export { BurglersOfUrRuleSet } from './rulesets/BurglersOfUrRuleSet';
 export { BlitzRuleSet } from './rulesets/BlitzRuleSet';
 export { MastersRuleSet } from './rulesets/MastersRuleSet';
 export { TournamentEngineRuleSet } from './rulesets/TournamentEngineRuleSet';
+export { HJRMurrayRuleSet } from './rulesets/HJRMurrayRuleSet';
 export { DebugRuleSet } from './rulesets/DebugRuleSet';
 
 // Import for internal use
@@ -14,6 +15,7 @@ import { BurglersOfUrRuleSet } from './rulesets/BurglersOfUrRuleSet';
 import { BlitzRuleSet } from './rulesets/BlitzRuleSet';
 import { MastersRuleSet } from './rulesets/MastersRuleSet';
 import { TournamentEngineRuleSet } from './rulesets/TournamentEngineRuleSet';
+import { HJRMurrayRuleSet } from './rulesets/HJRMurrayRuleSet';
 import { DebugRuleSet } from './rulesets/DebugRuleSet';
 import { AppSettingsManager } from './AppSettings';
 
@@ -23,7 +25,8 @@ export const AVAILABLE_RULE_SETS = {
     finkel: new FinkelRuleSet(),
     blitz: new BlitzRuleSet(),
     masters: new MastersRuleSet(),
-    tournamentengine: new TournamentEngineRuleSet()
+    tournamentengine: new TournamentEngineRuleSet(),
+    hjrmurray: new HJRMurrayRuleSet()
 } as const;
 
 // Get all rule sets as an array (includes debug rule set when debug mode is active)
