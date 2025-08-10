@@ -4,14 +4,14 @@ import type { GameState } from '../GameState';
 // Debug rule set - only available in debug mode for testing purposes
 export class DebugRuleSet extends RuleSet {
     readonly name = "Debug";
-    readonly description = "Debug rule set with 3 pieces, 3 dice, Burglers path, stacking and backwards moves";
+    readonly description = "Debug rule set with 3 pieces, 3 dice, Skiryuk path, stacking and backwards moves";
 
     // Debug game setup
     readonly piecesPerPlayer = 3;
     readonly diceCount = 3;
 
-    // Use the Burglers path configuration
-    readonly pathType = "burglers" as const;
+    // Use the Skiryuk path configuration
+    readonly pathType = "skiryuk" as const;
 
     // Default game mechanics (mostly inherited from base RuleSet)
 

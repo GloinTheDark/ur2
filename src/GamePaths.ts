@@ -38,13 +38,13 @@ export const BELL_PATH: GamePath = {
 // Alias for backwards compatibility
 export const FINKEL_PATH = BELL_PATH;
 
-// Extended Burglers path - longer circuit for strategic play
-export const BURGLERS_PATH: GamePath = {
-    name: "Burglers Path",
+// Extended Skiryuk path - longer circuit for strategic play
+export const SKIRYUK_PATH: GamePath = {
+    name: "Skiryuk Path",
     description: "Extended path with additional strategic squares",
     whitePath: [0, 4, 3, 2, 1, 9, 10, 11, 12, 13, 14, 15, 7, 8, 16, 24, 23, 15, 14, 13, 12, 11, 10, 9, 25],
     flipIndex: 13, // Pieces flip when passing square 8 (path index 13 contains square 8)
-    overlayImage: "/src/assets/SJLucePath.svg"
+    overlayImage: "/src/assets/SkiryukPath.svg"
 };
 
 // Masters/Blitz path - balanced for competitive play
@@ -60,7 +60,7 @@ export const MASTERS_PATH: GamePath = {
 export const HJR_MURRAY_PATH: GamePath = {
     name: "HJR Murray Path",
     description: "Path based on H.J.R. Murray's reconstruction of the Royal Game of Ur",
-    whitePath: [0, 4, 3, 2, 1, 9, 10, 11, 12, 13, 14, 15, 7, 24, 16, 8, 23, 15, 14, 13, 12, 11, 10, 9, 1, 2, 3, 4, 25],
+    whitePath: [0, 4, 3, 2, 1, 9, 10, 11, 12, 13, 14, 15, 23, 24, 16, 8, 7, 15, 14, 13, 12, 11, 10, 9, 1, 2, 3, 4, 25],
     flipIndex: 13, // Pieces flip when passing square 24 (path index 13 contains square 24)
     overlayImage: "/src/assets/HJRMurrayPath.svg"
 };
@@ -68,7 +68,7 @@ export const HJR_MURRAY_PATH: GamePath = {
 // Registry of all available paths
 export const ALL_PATHS = {
     finkel: BELL_PATH,
-    burglers: BURGLERS_PATH,
+    skiryuk: SKIRYUK_PATH,
     masters: MASTERS_PATH,
     hjrmurray: HJR_MURRAY_PATH
 } as const;

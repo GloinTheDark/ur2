@@ -12,7 +12,7 @@ export class BurglersOfUrRuleSet extends RuleSet {
     readonly diceCount = 4; // Four dice for more consistent movement
 
     // Use the extended Burglers path
-    readonly pathType = "burglers" as const;
+    readonly pathType = "skiryuk" as const;
 
     // Aggressive game mechanics
     getExtraTurnOnRosette(): boolean {
