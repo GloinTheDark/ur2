@@ -244,10 +244,6 @@ export class MCTSPlayerAgent implements PlayerAgent {
         if (winner === this.color) return 1000;
         if (winner && winner !== this.color) return -1000;
 
-        // If it's our turn, try to maximize; if opponent's turn, they'll try to minimize
-        const isOurTurn = gameState.state.currentPlayer === this.color;
-        let bestScore = isOurTurn ? -Infinity : Infinity;
-
         // Only roll dice if no dice have been rolled yet for this turn
         if (gameState.state.diceRolls.length === 0) {
             gameState.rollDice();
@@ -255,28 +251,23 @@ export class MCTSPlayerAgent implements PlayerAgent {
 
         const legalMoves = gameState.getAllMoveOptions();
 
-        // Try a random subset of moves to keep simulation fast
-        const movesToTry = Math.min(legalMoves.length, 3);
-        const shuffledMoves = [...legalMoves].sort(() => Math.random() - 0.5).slice(0, movesToTry);
-
-        for (const move of shuffledMoves) {
-            const clonedState = this.cloneGameState(gameState);
-
-            // Make the move
-            clonedState.selectPiece(move.movingPieceIndex);
-            clonedState.startLegalMove(move);
-
-            // Continue simulation - extra turns will be valued naturally through position evaluation
-            const score = this.runSimulation(clonedState, depth - 1);
-
-            if (isOurTurn) {
-                bestScore = Math.max(bestScore, score);
-            } else {
-                bestScore = Math.min(bestScore, score);
-            }
+        if (legalMoves.length === 0) {
+            // No legal moves available, evaluate current position
+            return this.evaluateGameState(gameState);
         }
 
-        return bestScore;
+        // For MCTS, we want to sample the space randomly, not find the best move
+        // Pick a random move instead of trying to find the optimal one
+        const randomMove = legalMoves[Math.floor(Math.random() * legalMoves.length)];
+
+        const clonedState = this.cloneGameState(gameState);
+
+        // Make the random move
+        clonedState.selectPiece(randomMove.movingPieceIndex);
+        clonedState.startLegalMove(randomMove);
+
+        // Continue simulation with random play
+        return this.runSimulation(clonedState, depth - 1);
     }
 
     private evaluateGameState(gameState: GameState): number {
