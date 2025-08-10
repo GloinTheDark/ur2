@@ -1,10 +1,12 @@
 import { RuleSet } from '../RuleSet';
 import type { GameState } from '../GameState';
+import { TEMPLE_SQUARES, MARKET_SQUARES } from '../BoardLayout';
 
 // Skiryuk rule set - using the extended Skiryuk path
 export class SkiryukRuleSet extends RuleSet {
     readonly name = "Skiryuk";
-    readonly description = "Extended rule set using 3 dice and the Skiryuk path for strategic gameplay";
+    readonly description = "Extended rule set using 3 dice and the Skiryuk path for strategic gameplay WIP";
+    readonly moreInfoUrl = "https://skyruk-livejournal-com.translate.goog/231444.html?_x_tr_sl=ru&_x_tr_tl=en&_x_tr_hl=en&_x_tr_pto=wapp&_x_tr_hist=true";
 
     // Skiryuk game setup
     readonly piecesPerPlayer = 7;
@@ -43,11 +45,21 @@ export class SkiryukRuleSet extends RuleSet {
         };
     }
 
+    // Skiryuk allows piece stacking
+    getAllowPieceStacking(): boolean {
+        return true;
+    }
+
+    // Safe squares in Skiryuk are temple squares and market squares
+    getSafeSquares(): number[] {
+        return [...TEMPLE_SQUARES, ...MARKET_SQUARES]; // Temple squares and Market squares
+    }
+
     // Default game mechanics (inherited from base RuleSet)
     // - Extra turn on rosette: true
     // - Extra turn on capture: false
     // - Gate keeper: false
-    // - Safe squares: none (except rosettes)
-    // - Piece stacking: false
+    // - Safe squares: temple squares (2, 4, 15, 18, 20) and market squares (11, 14)
+    // - Piece stacking: true (overridden above)
     // - Backwards movement: false
 }
