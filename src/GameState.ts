@@ -515,17 +515,8 @@ export class GameState {
                 this.data.selectedPiece = null;
             }
 
-            // Clear current dice state
-            this.data.diceRolls = [];
-            this.data.diceTotal = 0;
-            this.data.houseBonusApplied = false;
-            this.data.templeBlessingApplied = false;
-            this.data.eligiblePieces = [];
-            this.data.legalMoves = [];
-            this.data.illegalMoves = [];
-
-            // Roll new dice with animation if enabled
-            this.startDiceRoll();
+            // Increment to next dice value instead of rolling randomly
+            this.incrementDiceRoll();
         }
     }
 
@@ -690,6 +681,11 @@ export class GameState {
         // Generate raw dice rolls (each die can roll a 0 or a 1)
         const newRolls = Array.from({ length: diceCount }, () => Math.floor(Math.random() * 2));
 
+        this.setDice(newRolls, ruleSet);
+    }
+
+    // Set dice rolls and update game state
+    private setDice(newRolls: number[], ruleSet: RuleSet): void {
         // Use rule set to calculate the final total and apply any modifiers
         const rollResult = ruleSet.calculateDiceRoll(newRolls, this);
         if (!this.isSimulation) {
@@ -704,6 +700,39 @@ export class GameState {
         this.data.selectedPiece = null; // Reset selection on new roll
         this.calculateEligiblePieces();
         this.notify();
+    }
+
+    // Set a specific dice roll with x ones and (diceCount - x) zeros
+    setSpecificDiceRoll(x: number): void {
+        const ruleSet = this.getCurrentRuleSet();
+        const diceCount = ruleSet.diceCount;
+
+        // Validate input
+        if (x < 0 || x > diceCount) {
+            throw new Error(`Invalid dice roll: x must be between 0 and ${diceCount}, got ${x}`);
+        }
+
+        // Create dice array with x ones followed by (diceCount - x) zeros
+        const newRolls = Array(diceCount).fill(0);
+        for (let i = 0; i < x; i++) {
+            newRolls[i] = 1;
+        }
+
+        this.setDice(newRolls, ruleSet);
+    }
+
+    // Increment the current dice roll to the next higher value, wrapping around to 0
+    incrementDiceRoll(): void {
+        const ruleSet = this.getCurrentRuleSet();
+        const diceCount = ruleSet.diceCount;
+
+        // Count current ones in the dice roll
+        const currentOnes = this.data.diceRolls.reduce((sum, die) => sum + die, 0);
+
+        // Calculate next value, wrapping around to 0 after maximum
+        const nextOnes = (currentOnes + 1) % (diceCount + 1);
+
+        this.setSpecificDiceRoll(nextOnes);
     }
 
     // Centralized dice rolling that handles both animation and direct rolling

@@ -2,6 +2,7 @@ import { GameState, type Move } from '../GameState';
 import { AppLog } from '../AppSettings';
 import type { PlayerAgent, PlayerType } from './PlayerAgent';
 import { AI_DELAYS } from './PlayerAgent';
+import { PlayerAgentUtils } from './PlayerAgentUtils';
 
 interface MoveEvaluation {
     move: Move;
@@ -23,10 +24,11 @@ const AI_SCORES = {
 
 // Monte Carlo simulation constants
 const MCTS_CONFIG = {
-    SIMULATIONS: 300,
+    SIMULATIONS: 600,
     MAX_DEPTH: 5,
     ADVANCEMENT_GAMMA: 1.5, // Gamma curve for piece advancement scoring (1.0 = linear, >1.0 = progressive)
-    HEURISTIC_WEIGHT: 0.0 // Weight for heuristic vs simulation (0.0 = pure simulation, 1.0 = pure heuristic)
+    HEURISTIC_WEIGHT: 0.0, // Weight for heuristic vs simulation (0.0 = pure simulation, 1.0 = pure heuristic)
+    END_GAME_BONUS: 200
 } as const;
 
 export class MCTSPlayerAgent implements PlayerAgent {
@@ -236,13 +238,13 @@ export class MCTSPlayerAgent implements PlayerAgent {
 
     private runSimulation(gameState: GameState, depth: number): number {
         if (depth <= 0) {
-            return this.evaluateGameState(gameState);
+            return PlayerAgentUtils.evaluateGameState(gameState, this.color);
         }
 
         // Check for win condition
         const winner = gameState.checkWinCondition();
-        if (winner === this.color) return 1000;
-        if (winner && winner !== this.color) return -1000;
+        if (winner === this.color) return MCTS_CONFIG.END_GAME_BONUS;
+        if (winner && winner !== this.color) return -MCTS_CONFIG.END_GAME_BONUS;
 
         // Only roll dice if no dice have been rolled yet for this turn
         if (gameState.state.diceRolls.length === 0) {
@@ -253,7 +255,7 @@ export class MCTSPlayerAgent implements PlayerAgent {
 
         if (legalMoves.length === 0) {
             // No legal moves available, evaluate current position
-            return this.evaluateGameState(gameState);
+            return PlayerAgentUtils.evaluateGameState(gameState, this.color);
         }
 
         // For MCTS, we want to sample the space randomly, not find the best move
@@ -268,64 +270,6 @@ export class MCTSPlayerAgent implements PlayerAgent {
 
         // Continue simulation with random play
         return this.runSimulation(clonedState, depth - 1);
-    }
-
-    private evaluateGameState(gameState: GameState): number {
-        // Use a simplified position evaluation
-        const myPositions = this.color === 'white' ? gameState.state.whitePiecePositions : gameState.state.blackPiecePositions;
-        const opponentPositions = this.color === 'white' ? gameState.state.blackPiecePositions : gameState.state.whitePiecePositions;
-
-        let score = 0;
-
-        // Get path length for scoring completed pieces
-        const myPath = gameState.getPlayerPath(this.color);
-        const pathLength = myPath.length;
-        const completedPieceValue = pathLength * 2; // 2x path length
-
-        // Count completed pieces (pieces at position 0 that show spots)
-        const myCompleted = myPositions.filter((pos) => pos === gameState.getEndOfPath()).length;
-        const opponentCompleted = opponentPositions.filter((pos) => pos === gameState.getEndOfPath()).length;
-
-        score += myCompleted * completedPieceValue;
-        score -= opponentCompleted * completedPieceValue;
-
-        // Evaluate piece advancement using gamma curve
-        myPositions.forEach(pos => {
-            if (pos !== 0 && pos !== -1) { // Not at start, not captured/moving
-                const advancementScore = this.calculateAdvancementScore(pos, pathLength);
-                score += advancementScore;
-            }
-        });
-
-        opponentPositions.forEach(pos => {
-            if (pos !== 0 && pos !== -1) { // Not at start, not captured/moving
-                const advancementScore = this.calculateAdvancementScore(pos, pathLength);
-                score -= advancementScore; // Opponent advancement hurts us
-            }
-        });
-
-        return score;
-    }
-
-    /**
-     * Calculate advancement score using a gamma curve
-     * @param position Current position on the path (0-based index)
-     * @param pathLength Total length of the path
-     * @returns Progressive score based on position
-     */
-    private calculateAdvancementScore(position: number, pathLength: number): number {
-        // Normalize position to 0-1 range
-        const normalizedPosition = position / (pathLength - 1);
-
-        // Apply gamma curve: score = (normalizedPosition ^ gamma) * maxScore
-        // Gamma > 1.0 creates a progressive curve (low early values, high late values)
-        // Gamma < 1.0 creates a regressive curve (high early values, low late values)
-        // Gamma = 1.0 is linear
-        const gamma = MCTS_CONFIG.ADVANCEMENT_GAMMA;
-        const curvedValue = Math.pow(normalizedPosition, gamma);
-
-        // Scale to a reasonable score range (0 to pathLength)
-        return curvedValue * pathLength;
     }
 
     private cloneGameState(gameState: GameState): GameState {

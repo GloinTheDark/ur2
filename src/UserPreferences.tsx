@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef } from 'react';
 
 export interface UserPreferencesData {
     diceAnimations: boolean;
@@ -18,7 +18,57 @@ const UserPreferences: React.FC<UserPreferencesProps> = ({
     preferences,
     onPreferencesChange
 }) => {
+    const [isDragging, setIsDragging] = useState(false);
+    const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+    const [position, setPosition] = useState({ x: 0, y: 0 });
+    const [isInitialized, setIsInitialized] = useState(false);
+    const modalRef = useRef<HTMLDivElement>(null);
+
+    // Center the modal when it first opens
+    React.useEffect(() => {
+        if (isOpen && !isInitialized && modalRef.current) {
+            const modal = modalRef.current;
+            const centerX = (window.innerWidth - modal.offsetWidth) / 2;
+            const centerY = (window.innerHeight - modal.offsetHeight) / 2;
+            setPosition({ x: centerX, y: centerY });
+            setIsInitialized(true);
+        } else if (!isOpen) {
+            setIsInitialized(false);
+        }
+    }, [isOpen, isInitialized]);
+
     if (!isOpen) return null;
+
+    const handleMouseDown = (e: React.MouseEvent) => {
+        if (modalRef.current) {
+            const rect = modalRef.current.getBoundingClientRect();
+            setDragOffset({
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top
+            });
+            setIsDragging(true);
+        }
+    };
+
+    const handleMouseMove = (e: React.MouseEvent) => {
+        if (isDragging) {
+            const newX = e.clientX - dragOffset.x;
+            const newY = e.clientY - dragOffset.y;
+
+            // Keep modal within viewport bounds
+            const maxX = window.innerWidth - (modalRef.current?.offsetWidth || 400);
+            const maxY = window.innerHeight - (modalRef.current?.offsetHeight || 600);
+
+            setPosition({
+                x: Math.max(0, Math.min(newX, maxX)),
+                y: Math.max(0, Math.min(newY, maxY))
+            });
+        }
+    };
+
+    const handleMouseUp = () => {
+        setIsDragging(false);
+    };
 
     return (
         <div style={{
@@ -32,19 +82,28 @@ const UserPreferences: React.FC<UserPreferencesProps> = ({
             alignItems: 'center',
             justifyContent: 'center',
             zIndex: 1000
-        }}>
-            <div style={{
-                backgroundColor: 'var(--modal-bg, #fff)',
-                borderRadius: '12px',
-                border: '2px solid var(--border-color, #ddd)',
-                padding: '0',
-                maxWidth: '400px',
-                width: '90%',
-                maxHeight: '90vh',
-                overflow: 'auto',
-                position: 'relative',
-                boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3)'
-            }}>
+        }}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+        >
+            <div
+                ref={modalRef}
+                style={{
+                    backgroundColor: 'var(--modal-bg, #fff)',
+                    borderRadius: '12px',
+                    border: '2px solid var(--border-color, #ddd)',
+                    padding: '0',
+                    maxWidth: '400px',
+                    width: '90%',
+                    maxHeight: '90vh',
+                    overflow: 'auto',
+                    position: 'absolute',
+                    left: `${position.x}px`,
+                    top: `${position.y}px`,
+                    boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3)',
+                    cursor: isDragging ? 'grabbing' : 'default'
+                }}>
                 {/* Close Button */}
                 <button
                     onClick={onClose}
@@ -77,16 +136,22 @@ const UserPreferences: React.FC<UserPreferencesProps> = ({
                 </button>
 
                 {/* Header */}
-                <div style={{
-                    padding: '24px',
-                    borderBottom: '2px solid var(--border-color, #ddd)',
-                    textAlign: 'center'
-                }}>
+                <div
+                    style={{
+                        padding: '24px',
+                        borderBottom: '2px solid var(--border-color, #ddd)',
+                        textAlign: 'center',
+                        cursor: 'grab',
+                        userSelect: 'none'
+                    }}
+                    onMouseDown={handleMouseDown}
+                >
                     <h2 style={{
                         margin: 0,
                         fontSize: '1.5rem',
                         color: 'var(--text-color, #333)',
-                        fontWeight: 'bold'
+                        fontWeight: 'bold',
+                        pointerEvents: 'none'
                     }}>
                         ⚙️ User Preferences
                     </h2>

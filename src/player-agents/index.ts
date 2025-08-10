@@ -5,3 +5,4 @@ export { HumanPlayerAgent } from './HumanPlayerAgent';
 export { ComputerPlayerAgent } from './ComputerPlayerAgent';
 export { MCTSPlayerAgent } from './MCTSPlayerAgent';
 export { RandomPlayerAgent } from './RandomPlayerAgent';
+export { PlayerAgentUtils } from './PlayerAgentUtils';
