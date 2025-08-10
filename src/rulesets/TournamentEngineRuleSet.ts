@@ -9,7 +9,7 @@ export class TournamentEngineRuleSet extends RuleSet {
     readonly moreInfoUrl = "https://playur.org";
 
     // Tournament Engine game setup
-    readonly piecesPerPlayer = 5;
+    readonly piecesPerPlayer = 7;
     readonly diceCount = 4;
 
     // Use the Masters path configuration
@@ -55,7 +55,7 @@ export class TournamentEngineRuleSet extends RuleSet {
 
     // Victory condition: 5 pieces must complete the circuit
     getPiecesToWin(): number {
-        return 5;
+        return 7; // All 7 pieces must complete the circuit
     }
 
     // Special Tournament Engine rule: pieces of the same color can stack on the same square
