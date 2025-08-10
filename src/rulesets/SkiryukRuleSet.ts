@@ -7,6 +7,7 @@ export class SkiryukRuleSet extends RuleSet {
     readonly name = "Skiryuk";
     readonly description = "Extended rule set using 3 dice and the Skiryuk path for strategic gameplay WIP";
     readonly moreInfoUrl = "https://skyruk-livejournal-com.translate.goog/231444.html?_x_tr_sl=ru&_x_tr_tl=en&_x_tr_hl=en&_x_tr_pto=wapp&_x_tr_hist=true";
+    readonly prerelease = true; // Skiryuk rule set is prerelease
 
     // Skiryuk game setup
     readonly piecesPerPlayer = 7;

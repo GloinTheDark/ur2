@@ -5,6 +5,7 @@ import type { GameState } from '../GameState';
 export class DebugRuleSet extends RuleSet {
     readonly name = "Debug";
     readonly description = "Debug rule set with 3 pieces, 3 dice, Skiryuk path, stacking and backwards moves";
+    readonly prerelease = true; // Debug rule set is prerelease
 
     // Debug game setup
     readonly piecesPerPlayer = 3;

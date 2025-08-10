@@ -9,6 +9,9 @@ export abstract class RuleSet {
     // Optional URL for more information about the rule set
     readonly moreInfoUrl?: string;
 
+    // Prerelease flag - indicates rule set should only be shown in debug mode
+    readonly prerelease: boolean = false;
+
     // Game setup
     abstract readonly piecesPerPlayer: number;
     abstract readonly diceCount: number;

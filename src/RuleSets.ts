@@ -29,38 +29,29 @@ export const AVAILABLE_RULE_SETS = {
     masters: new MastersRuleSet(),
     tournamentengine: new TournamentEngineRuleSet(),
     hjrmurray: new HJRMurrayRuleSet(),
-    skiryuk: new SkiryukRuleSet()
+    skiryuk: new SkiryukRuleSet(),
+    debug: new DebugRuleSet()
 } as const;
 
-// Get all rule sets as an array (includes debug rule set when debug mode is active)
+// Get all rule sets as an array (includes prerelease rule sets when debug mode is active)
 export function getAllRuleSets(): RuleSet[] {
-    const ruleSets: RuleSet[] = Object.values(AVAILABLE_RULE_SETS);
-
-    // Add debug rule set if debug mode is active
-    if (AppSettingsManager.getInstance().isDebugMode()) {
-        ruleSets.push(new DebugRuleSet());
-    }
-
-    return ruleSets;
+    const isDebugMode = AppSettingsManager.getInstance().isDebugMode();
+    return Object.values(AVAILABLE_RULE_SETS).filter(ruleSet =>
+        !ruleSet.prerelease || isDebugMode
+    );
 }
 
 // Get rule set by name
 export function getRuleSetByName(name: string): RuleSet {
-    // Check standard rule sets first
-    const standardRuleSet = Object.values(AVAILABLE_RULE_SETS).find(ruleSet =>
-        ruleSet.name.toLowerCase() === name.toLowerCase()
+    const isDebugMode = AppSettingsManager.getInstance().isDebugMode();
+
+    // Check all rule sets
+    const ruleSet = Object.values(AVAILABLE_RULE_SETS).find(ruleSet =>
+        ruleSet.name.toLowerCase() === name.toLowerCase() &&
+        (!ruleSet.prerelease || isDebugMode)
     );
 
-    if (standardRuleSet) {
-        return standardRuleSet;
-    }
-
-    // Check debug rule set if debug mode is active
-    if (AppSettingsManager.getInstance().isDebugMode() && name.toLowerCase() === 'debug') {
-        return new DebugRuleSet();
-    }
-
-    return DEFAULT_RULE_SET;
+    return ruleSet || DEFAULT_RULE_SET;
 }
 
 // Default rule set

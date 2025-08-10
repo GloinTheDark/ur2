@@ -1,5 +1,5 @@
 import { RuleSet } from './RuleSet';
-import { AVAILABLE_RULE_SETS, DEFAULT_RULE_SET } from './RuleSets';
+import { getAllRuleSets, DEFAULT_RULE_SET } from './RuleSets';
 import { getPathPair } from './GamePaths';
 
 // Utility functions for integrating rule sets with the game
@@ -27,7 +27,7 @@ export function getDefaultGameSettings(): RuleSetGameSettings {
 
 // Get game settings for a specific rule set by name
 export function getGameSettingsForRuleSet(ruleSetName: string): RuleSetGameSettings {
-    const ruleSet = Object.values(AVAILABLE_RULE_SETS).find(rs =>
+    const ruleSet = getAllRuleSets().find(rs =>
         rs.name.toLowerCase() === ruleSetName.toLowerCase()
     );
 
