@@ -5,6 +5,7 @@ import { ROSETTE_SQUARES } from '../BoardLayout';
 export class FinkelRuleSet extends RuleSet {
     readonly name = "Finkel";
     readonly description = "Traditional rules using R. C. Bell's path, as popularized by Irving Finkel's reconstruction";
+    readonly moreInfoUrl = "https://www.youtube.com/watch?v=WZskjLq040I";
 
     // Game setup - traditional configuration
     readonly piecesPerPlayer = 7;

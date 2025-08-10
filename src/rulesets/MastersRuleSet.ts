@@ -5,6 +5,7 @@ import type { GameState } from '../GameState';
 export class MastersRuleSet extends RuleSet {
     readonly name = "Masters";
     readonly description = "Rule set by James Masters using the Masters path configuration";
+    readonly moreInfoUrl = "https://www.mastersofgames.com/rules/royal-ur-rules.htm";
 
     // Masters game setup
     readonly piecesPerPlayer = 7;
