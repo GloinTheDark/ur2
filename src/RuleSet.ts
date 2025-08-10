@@ -6,6 +6,9 @@ export abstract class RuleSet {
     abstract readonly name: string;
     abstract readonly description: string;
 
+    // Optional URL for more information about the rule set
+    readonly moreInfoUrl?: string;
+
     // Game setup
     abstract readonly piecesPerPlayer: number;
     abstract readonly diceCount: number;

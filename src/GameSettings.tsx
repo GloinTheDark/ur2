@@ -193,6 +193,31 @@ const GameSettings: React.FC<GameSettingsProps> = ({
                         }}>
                             {ruleSet.description}
                         </p>
+                        {ruleSet.moreInfoUrl && (
+                            <div style={{ marginTop: '8px' }}>
+                                <a
+                                    href={ruleSet.moreInfoUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    onClick={(e) => e.stopPropagation()}
+                                    style={{
+                                        color: '#646cff',
+                                        textDecoration: 'none',
+                                        fontSize: '0.85rem',
+                                        fontWeight: '500',
+                                        cursor: 'pointer'
+                                    }}
+                                    onMouseOver={(e) => {
+                                        e.currentTarget.style.textDecoration = 'underline';
+                                    }}
+                                    onMouseOut={(e) => {
+                                        e.currentTarget.style.textDecoration = 'none';
+                                    }}
+                                >
+                                    More Info ↗
+                                </a>
+                            </div>
+                        )}
                     </div>
                 ))}
             </div>

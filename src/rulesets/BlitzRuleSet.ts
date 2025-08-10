@@ -4,6 +4,7 @@ import { RuleSet } from '../RuleSet';
 export class BlitzRuleSet extends RuleSet {
     readonly name = "Blitz";
     readonly description = "Lightning-fast variant with fewer pieces and extra turn on capture for quick games. Developed by RoyalUr.net";
+    readonly moreInfoUrl = "https://royalur.net/";
 
     // Fewer pieces for faster games
     readonly piecesPerPlayer = 5;
