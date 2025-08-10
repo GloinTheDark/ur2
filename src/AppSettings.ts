@@ -1,5 +1,6 @@
 // Global app settings for debugging and logging control
 export interface AppSettings {
+    debug: boolean;
     logging: {
         mcts: boolean;
         ai: boolean;
@@ -17,6 +18,12 @@ export class AppSettingsManager {
 
     private constructor() {
         this.settings = this.loadSettings();
+        // Check URL for debug parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        const debugParam = urlParams.get('debug');
+        if (debugParam === '1') {
+            this.settings.debug = true;
+        }
     }
 
     public static getInstance(): AppSettingsManager {
@@ -43,6 +50,10 @@ export class AppSettingsManager {
         this.notifyListeners();
     }
 
+    public isDebugMode(): boolean {
+        return this.settings.debug;
+    }
+
     public subscribe(listener: () => void): () => void {
         this.listeners.add(listener);
         return () => this.listeners.delete(listener);
@@ -58,6 +69,7 @@ export class AppSettingsManager {
             try {
                 const parsed = JSON.parse(saved);
                 return {
+                    debug: parsed.debug ?? false,
                     logging: {
                         mcts: parsed.logging?.mcts ?? false,
                         ai: parsed.logging?.ai ?? false,
@@ -80,6 +92,7 @@ export class AppSettingsManager {
 
     private getDefaultSettings(): AppSettings {
         return {
+            debug: false,
             logging: {
                 mcts: false,
                 ai: false,

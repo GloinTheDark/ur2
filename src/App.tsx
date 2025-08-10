@@ -16,6 +16,7 @@ import type { GameSettings as GameSettingsType } from './GameState'
 import { BoardUtils, BOARD_COLUMNS, BOARD_ROWS, TOTAL_SQUARES } from './BoardLayout'
 import { getRuleSetByName } from './RuleSets'
 import { getPath } from './GamePaths'
+import { AppSettingsManager } from './AppSettings'
 import { PIECE_SIZE, HIGHLIGHT_CIRCLE_SIZE, SQUARE_SIZE, BOARD_GAP } from './UIConstants'
 import rosetteSquare from './assets/RosetteSquare.svg'
 import gateSquare from './assets/GateSquare.svg'
@@ -42,10 +43,9 @@ function App() {
   const [showLoggingControl, setShowLoggingControl] = useState<boolean>(false);
   const dualDiceRollerRef = useRef<DualDiceRollerRef>(null);
 
-  // Debug mode - check URL parameter
+  // Debug mode - use centralized AppSettings
   const [isDebugMode] = useState(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    return urlParams.get('debug') === '1';
+    return AppSettingsManager.getInstance().isDebugMode();
   });
 
   const [isPaused, setIsPaused] = useState(false);

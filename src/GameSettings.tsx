@@ -7,7 +7,7 @@ import whiteBlank from './assets/WhiteBlank.svg';
 import whiteSpots from './assets/WhiteSpots.svg';
 import blackBlank from './assets/BlackBlank.svg';
 import blackSpots from './assets/BlackSpots.svg';
-import { AVAILABLE_RULE_SETS } from './RuleSets';
+import { getAllRuleSets } from './RuleSets';
 
 interface GameSettingsProps {
     isOpen: boolean;
@@ -30,8 +30,8 @@ const GameSettings: React.FC<GameSettingsProps> = ({
 
     if (!isOpen) return null;
 
-    // Get rule sets for the tab
-    const ruleSets = Object.values(AVAILABLE_RULE_SETS);
+    // Get rule sets for the tab (includes debug rule set when debug mode is active)
+    const ruleSets = getAllRuleSets();
 
     const tabStyle = (isActive: boolean) => ({
         padding: '8px 16px',
