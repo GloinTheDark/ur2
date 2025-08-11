@@ -148,7 +148,7 @@ export class MCTSPlayerAgent implements PlayerAgent {
             }
 
             // Yield time to UI between move evaluations
-            await this.yieldToUI();
+            await PlayerAgentUtils.yieldToUI();
         }
 
         const elapsedTime = performance.now() - startTime;
@@ -214,7 +214,7 @@ export class MCTSPlayerAgent implements PlayerAgent {
 
             // Yield time to UI periodically
             if (i > 0 && i % yieldInterval === 0) {
-                await this.yieldToUI();
+                await PlayerAgentUtils.yieldToUI();
             }
         }
 
@@ -390,10 +390,5 @@ export class MCTSPlayerAgent implements PlayerAgent {
 
     private delay(ms: number): Promise<void> {
         return new Promise(resolve => setTimeout(resolve, ms));
-    }
-
-    // Yield time to the UI to keep it responsive during long computations
-    private yieldToUI(): Promise<void> {
-        return new Promise(resolve => setTimeout(resolve, 0));
     }
 }

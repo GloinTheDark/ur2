@@ -15,6 +15,14 @@ export class PlayerAgentUtils {
     }
 
     /**
+     * Yields time to the UI to keep it responsive during long computations
+     * @returns A promise that resolves immediately, allowing other tasks to run
+     */
+    static yieldToUI(): Promise<void> {
+        return new Promise(resolve => setTimeout(resolve, 0));
+    }
+
+    /**
      * Validates that it's the correct player's turn before taking action
      * @param gameState The current game state
      * @param expectedColor The color of the player that should be taking action

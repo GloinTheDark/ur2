@@ -18,7 +18,7 @@ interface DiceOutcome {
 
 // Exhaustive search configuration
 const EXHAUSTIVE_CONFIG = {
-    MAX_DEPTH: 3, // Smaller depth than MCTS for performance
+    MAX_DEPTH: 4, // Increased depth for more thorough search
     ADVANCEMENT_GAMMA: 1.5,
     END_GAME_BONUS: 200
 } as const;
@@ -27,6 +27,7 @@ export class ExhaustiveSearchPlayerAgent implements PlayerAgent {
     readonly playerType: PlayerType = 'computer';
     readonly color: 'white' | 'black';
     private readonly diceOutcomes: DiceOutcome[];
+    private lastYieldTime: number = 0;
 
     constructor(color: 'white' | 'black', gameState: GameState) {
         this.color = color;
@@ -77,7 +78,7 @@ export class ExhaustiveSearchPlayerAgent implements PlayerAgent {
         }
 
         // Find the best move using exhaustive search
-        const bestMove = this.findBestMove(gameState, legalMoves);
+        const bestMove = await this.findBestMove(gameState, legalMoves);
 
         if (bestMove) {
             await PlayerAgentUtils.executeMove(gameState, bestMove.move, 'ExhaustiveSearch', AI_DELAYS.MOVE_PIECE);
@@ -93,23 +94,25 @@ export class ExhaustiveSearchPlayerAgent implements PlayerAgent {
     /**
      * Find the best move using exhaustive search with minimax algorithm
      */
-    private findBestMove(gameState: GameState, legalMoves: Move[]): MoveEvaluation | null {
+    private async findBestMove(gameState: GameState, legalMoves: Move[]): Promise<MoveEvaluation | null> {
         if (legalMoves.length === 0) return null;
 
         const startTime = performance.now();
+        this.lastYieldTime = startTime;
         AppLog.ai(`ExhaustiveSearch: Evaluating ${legalMoves.length} moves with exhaustive search (depth ${EXHAUSTIVE_CONFIG.MAX_DEPTH})`);
 
         let bestMove: MoveEvaluation | null = null;
         let bestScore = -Infinity;
 
-        for (const move of legalMoves) {
+        for (let i = 0; i < legalMoves.length; i++) {
+            const move = legalMoves[i];
             const clonedState = this.cloneGameState(gameState);
 
             // Make the move
             clonedState.startLegalMove(move);
 
             // Evaluate this move using minimax
-            const score = this.minimax(clonedState, EXHAUSTIVE_CONFIG.MAX_DEPTH - 1, false, -Infinity, Infinity);
+            const score = await this.minimax(clonedState, EXHAUSTIVE_CONFIG.MAX_DEPTH - 1, false, -Infinity, Infinity);
 
             AppLog.ai(`ExhaustiveSearch: Move piece ${move.movingPieceIndex} to ${move.destinationSquare} scored ${score.toFixed(2)}`);
 
@@ -121,6 +124,9 @@ export class ExhaustiveSearchPlayerAgent implements PlayerAgent {
                     reasons: [`Exhaustive search score: ${score.toFixed(2)}`]
                 };
             }
+
+            // Yield to UI if 200ms have passed
+            await this.periodicallyYield();
         }
 
         const endTime = performance.now();
@@ -143,7 +149,7 @@ export class ExhaustiveSearchPlayerAgent implements PlayerAgent {
      * @param beta Beta value for pruning
      * @returns Expected value of this position
      */
-    private minimax(gameState: GameState, depth: number, isMaximizingPlayer: boolean, alpha: number, beta: number): number {
+    private async minimax(gameState: GameState, depth: number, isMaximizingPlayer: boolean, alpha: number, beta: number): Promise<number> {
         // Base case: reached max depth or game over
         if (depth <= 0) {
             return PlayerAgentUtils.evaluateGameState(gameState, this.color, EXHAUSTIVE_CONFIG.ADVANCEMENT_GAMMA);
@@ -159,7 +165,7 @@ export class ExhaustiveSearchPlayerAgent implements PlayerAgent {
 
         // If no dice have been rolled yet, we need to consider all possible dice outcomes
         if (gameState.state.diceRolls.length === 0) {
-            return this.evaluateAllDiceOutcomes(gameState, depth, isMaximizingPlayer, alpha, beta);
+            return await this.evaluateAllDiceOutcomes(gameState, depth, isMaximizingPlayer, alpha, beta);
         }
 
         // Dice have been rolled, evaluate all possible moves
@@ -169,17 +175,21 @@ export class ExhaustiveSearchPlayerAgent implements PlayerAgent {
             // Maximizing player (us when it's our turn, opponent when it's their turn and we're minimizing)
             let maxEval = -Infinity;
 
-            for (const move of legalMoves) {
+            for (let i = 0; i < legalMoves.length; i++) {
+                const move = legalMoves[i];
                 const clonedState = this.cloneGameState(gameState);
                 clonedState.startLegalMove(move);
 
-                const evaluation = this.minimax(clonedState, depth - 1, !isMaximizingPlayer, alpha, beta);
+                const evaluation = await this.minimax(clonedState, depth - 1, !isMaximizingPlayer, alpha, beta);
                 maxEval = Math.max(maxEval, evaluation);
                 alpha = Math.max(alpha, evaluation);
 
                 if (beta <= alpha) {
                     break; // Beta cutoff
                 }
+
+                // Yield to UI if 200ms have passed
+                await this.periodicallyYield();
             }
 
             return maxEval;
@@ -187,17 +197,21 @@ export class ExhaustiveSearchPlayerAgent implements PlayerAgent {
             // Minimizing player
             let minEval = Infinity;
 
-            for (const move of legalMoves) {
+            for (let i = 0; i < legalMoves.length; i++) {
+                const move = legalMoves[i];
                 const clonedState = this.cloneGameState(gameState);
                 clonedState.startLegalMove(move);
 
-                const evaluation = this.minimax(clonedState, depth - 1, !isMaximizingPlayer, alpha, beta);
+                const evaluation = await this.minimax(clonedState, depth - 1, !isMaximizingPlayer, alpha, beta);
                 minEval = Math.min(minEval, evaluation);
                 beta = Math.min(beta, evaluation);
 
                 if (beta <= alpha) {
                     break; // Alpha cutoff
                 }
+
+                // Yield to UI if 200ms have passed
+                await this.periodicallyYield();
             }
 
             return minEval;
@@ -207,20 +221,24 @@ export class ExhaustiveSearchPlayerAgent implements PlayerAgent {
     /**
      * Evaluate all possible dice outcomes weighted by their probability
      */
-    private evaluateAllDiceOutcomes(gameState: GameState, depth: number, isMaximizingPlayer: boolean, alpha: number, beta: number): number {
+    private async evaluateAllDiceOutcomes(gameState: GameState, depth: number, isMaximizingPlayer: boolean, alpha: number, beta: number): Promise<number> {
         let expectedValue = 0;
 
-        for (const outcome of this.diceOutcomes) {
+        for (let i = 0; i < this.diceOutcomes.length; i++) {
+            const outcome = this.diceOutcomes[i];
             const clonedState = this.cloneGameState(gameState);
 
             // Simulate this dice roll by setting the number of ones
             clonedState.setSpecificDiceRoll(outcome.total);
 
             // Recursively evaluate this outcome
-            const outcomeValue = this.minimax(clonedState, depth, isMaximizingPlayer, alpha, beta);
+            const outcomeValue = await this.minimax(clonedState, depth, isMaximizingPlayer, alpha, beta);
 
             // Weight by probability
             expectedValue += outcomeValue * outcome.probability;
+
+            // Yield to UI if 200ms have passed
+            await this.periodicallyYield();
         }
 
         return expectedValue;
@@ -264,5 +282,16 @@ export class ExhaustiveSearchPlayerAgent implements PlayerAgent {
     private cloneGameState(gameState: GameState): GameState {
         // Use the proper clone method from GameState
         return gameState.clone();
+    }
+
+    /**
+     * Yields to UI if 100ms have passed since the last yield
+     */
+    private async periodicallyYield(): Promise<void> {
+        const currentTime = performance.now();
+        if (currentTime - this.lastYieldTime >= 100) {
+            await PlayerAgentUtils.yieldToUI();
+            this.lastYieldTime = currentTime;
+        }
     }
 }

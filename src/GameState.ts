@@ -126,12 +126,12 @@ export class GameState {
         // Mark as simulation to prevent logging
         cloned.markAsSimulation();
 
-        // Deep copy all data
+        // Deep copy all data (optimized for simulation - skip UI-only fields)
         cloned.data = {
             currentPlayer: this.data.currentPlayer,
             whitePiecePositions: [...this.data.whitePiecePositions],
             blackPiecePositions: [...this.data.blackPiecePositions],
-            selectedPiece: this.data.selectedPiece, // Simple number copy
+            selectedPiece: null, // Not needed for simulation
             gameStarted: this.data.gameStarted,
             gamePhase: this.data.gamePhase,
             initialRollResult: this.data.initialRollResult,
@@ -139,22 +139,22 @@ export class GameState {
             isExtraTurn: this.data.isExtraTurn,
             diceRolls: [...this.data.diceRolls],
             diceTotal: this.data.diceTotal,
-            diceAnimating: this.data.diceAnimating,
+            diceAnimating: false, // Animations disabled in simulation
             houseBonusApplied: this.data.houseBonusApplied,
             templeBlessingApplied: this.data.templeBlessingApplied,
-            whitePreviousDiceRolls: [...this.data.whitePreviousDiceRolls],
-            blackPreviousDiceRolls: [...this.data.blackPreviousDiceRolls],
+            whitePreviousDiceRolls: [], // Not needed for simulation
+            blackPreviousDiceRolls: [], // Not needed for simulation
             eligiblePieces: [...this.data.eligiblePieces],
             legalMoves: this.data.legalMoves.map(move => ({ ...move })),
             illegalMoves: this.data.illegalMoves.map(move => ({ ...move })),
-            isPieceAnimating: this.data.isPieceAnimating,
-            isCapturedPieceAnimating: this.data.isCapturedPieceAnimating,
-            currentMove: this.data.currentMove ? { ...this.data.currentMove } : null
+            isPieceAnimating: false, // Animation state not needed in simulation
+            isCapturedPieceAnimating: false, // Animation state not needed in simulation
+            currentMove: null // Not needed for simulation
         };
 
-        // Copy paths
-        cloned.whitePath = [...this.whitePath];
-        cloned.blackPath = [...this.blackPath];
+        // Copy paths (share arrays since they don't change during simulation)
+        cloned.whitePath = this.whitePath; // Share reference - paths are immutable during simulation
+        cloned.blackPath = this.blackPath; // Share reference - paths are immutable during simulation
         cloned.endOfPath = this.endOfPath;
 
         return cloned;
