@@ -112,7 +112,7 @@ export class ExhaustiveSearchPlayerAgent implements PlayerAgent {
             clonedState.startLegalMove(move);
 
             // Evaluate this move using minimax
-            const score = await this.minimax(clonedState, EXHAUSTIVE_CONFIG.MAX_DEPTH - 1, false, -Infinity, Infinity);
+            const score = await this.minimax(clonedState, EXHAUSTIVE_CONFIG.MAX_DEPTH - 1, -Infinity, Infinity);
 
             AppLog.ai(`ExhaustiveSearch: Move piece ${move.movingPieceIndex} to ${move.destinationSquare} scored ${score.toFixed(2)}`);
 
@@ -144,12 +144,11 @@ export class ExhaustiveSearchPlayerAgent implements PlayerAgent {
      * Minimax algorithm with alpha-beta pruning
      * @param gameState Current game state
      * @param depth Remaining depth to search
-     * @param isMaximizingPlayer True if this is the maximizing player's turn
      * @param alpha Alpha value for pruning
      * @param beta Beta value for pruning
      * @returns Expected value of this position
      */
-    private async minimax(gameState: GameState, depth: number, isMaximizingPlayer: boolean, alpha: number, beta: number): Promise<number> {
+    private async minimax(gameState: GameState, depth: number, alpha: number, beta: number): Promise<number> {
         // Base case: reached max depth or game over
         if (depth <= 0) {
             return PlayerAgentUtils.evaluateGameState(gameState, this.color, EXHAUSTIVE_CONFIG.ADVANCEMENT_GAMMA);
@@ -165,14 +164,14 @@ export class ExhaustiveSearchPlayerAgent implements PlayerAgent {
 
         // If no dice have been rolled yet, we need to consider all possible dice outcomes
         if (gameState.state.diceRolls.length === 0) {
-            return await this.evaluateAllDiceOutcomes(gameState, depth, isMaximizingPlayer, alpha, beta);
+            return await this.evaluateAllDiceOutcomes(gameState, depth, alpha, beta);
         }
 
         // Dice have been rolled, evaluate all possible moves
         const legalMoves = gameState.getAllMoveOptions();
 
-        if (isMaximizingPlayer === isOurTurn) {
-            // Maximizing player (us when it's our turn, opponent when it's their turn and we're minimizing)
+        if (isOurTurn) {
+            // Our turn: maximize our position
             let maxEval = -Infinity;
 
             for (let i = 0; i < legalMoves.length; i++) {
@@ -180,7 +179,7 @@ export class ExhaustiveSearchPlayerAgent implements PlayerAgent {
                 const clonedState = this.cloneGameState(gameState);
                 clonedState.startLegalMove(move);
 
-                const evaluation = await this.minimax(clonedState, depth - 1, !isMaximizingPlayer, alpha, beta);
+                const evaluation = await this.minimax(clonedState, depth - 1, alpha, beta);
                 maxEval = Math.max(maxEval, evaluation);
                 alpha = Math.max(alpha, evaluation);
 
@@ -194,7 +193,7 @@ export class ExhaustiveSearchPlayerAgent implements PlayerAgent {
 
             return maxEval;
         } else {
-            // Minimizing player
+            // Opponent's turn: minimize our position
             let minEval = Infinity;
 
             for (let i = 0; i < legalMoves.length; i++) {
@@ -202,7 +201,7 @@ export class ExhaustiveSearchPlayerAgent implements PlayerAgent {
                 const clonedState = this.cloneGameState(gameState);
                 clonedState.startLegalMove(move);
 
-                const evaluation = await this.minimax(clonedState, depth - 1, !isMaximizingPlayer, alpha, beta);
+                const evaluation = await this.minimax(clonedState, depth - 1, alpha, beta);
                 minEval = Math.min(minEval, evaluation);
                 beta = Math.min(beta, evaluation);
 
@@ -221,7 +220,7 @@ export class ExhaustiveSearchPlayerAgent implements PlayerAgent {
     /**
      * Evaluate all possible dice outcomes weighted by their probability
      */
-    private async evaluateAllDiceOutcomes(gameState: GameState, depth: number, isMaximizingPlayer: boolean, alpha: number, beta: number): Promise<number> {
+    private async evaluateAllDiceOutcomes(gameState: GameState, depth: number, alpha: number, beta: number): Promise<number> {
         let expectedValue = 0;
 
         for (let i = 0; i < this.diceOutcomes.length; i++) {
@@ -232,7 +231,7 @@ export class ExhaustiveSearchPlayerAgent implements PlayerAgent {
             clonedState.setSpecificDiceRoll(outcome.total);
 
             // Recursively evaluate this outcome
-            const outcomeValue = await this.minimax(clonedState, depth, isMaximizingPlayer, alpha, beta);
+            const outcomeValue = await this.minimax(clonedState, depth, alpha, beta);
 
             // Weight by probability
             expectedValue += outcomeValue * outcome.probability;
