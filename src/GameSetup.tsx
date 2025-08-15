@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import type { PlayerType } from './player-agents';
 
 export interface GameSetupProps {
-    onStartGame: (whitePlayer: PlayerType, blackPlayer: PlayerType, whiteAgentType: 'computer' | 'mcts' | 'random' | 'exhaustive' | null, blackAgentType: 'computer' | 'mcts' | 'random' | 'exhaustive' | null) => void;
+    onStartGame: (whitePlayer: PlayerType, blackPlayer: PlayerType, whiteAgentType: 'computer' | 'mcts' | 'random' | 'exhaustive' | 'neural' | null, blackAgentType: 'computer' | 'mcts' | 'random' | 'exhaustive' | 'neural' | null) => void;
+    currentRuleSet?: string; // Optional prop to check for model availability
 }
 
-type PlayerOption = 'human' | 'computer' | 'mcts' | 'random' | 'exhaustive';
+type PlayerOption = 'human' | 'computer' | 'mcts' | 'random' | 'exhaustive' | 'neural';
 
 interface GameSetupState {
     whitePlayerOption: PlayerOption;
@@ -14,10 +15,62 @@ interface GameSetupState {
 
 const STORAGE_KEY = 'ur-game-setup';
 
-const GameSetup: React.FC<GameSetupProps> = ({ onStartGame }) => {
+// Function to check if neural network model is available for a ruleset
+const isNeuralModelAvailable = async (ruleSetName: string): Promise<boolean> => {
+    // List of known model files to check
+    const modelFiles = [
+        'finkel_validated.json',
+        'blitz_validated.json',
+        'burglers_validated.json',
+        'masters_validated.json',
+        'tournamentengine_validated.json',
+        'hjrmurray_validated.json',
+        'skiryuk_validated.json'
+    ];
+
+    for (const modelFile of modelFiles) {
+        try {
+            const response = await fetch(`/models/${modelFile}`);
+            if (response.ok) {
+                const model = await response.json();
+                if (model.ruleset && model.ruleset.toLowerCase() === ruleSetName.toLowerCase()) {
+                    return true;
+                }
+            }
+        } catch (error) {
+            // Model file doesn't exist or failed to load, continue checking
+            continue;
+        }
+    }
+
+    return false;
+};
+
+// Cache for model availability to avoid repeated network requests
+const modelAvailabilityCache = new Map<string, boolean>();
+
+const checkModelAvailability = async (ruleSetName: string): Promise<boolean> => {
+    const cacheKey = ruleSetName.toLowerCase();
+
+    if (modelAvailabilityCache.has(cacheKey)) {
+        return modelAvailabilityCache.get(cacheKey)!;
+    }
+
+    const isAvailable = await isNeuralModelAvailable(ruleSetName);
+    modelAvailabilityCache.set(cacheKey, isAvailable);
+    return isAvailable;
+};
+
+const GameSetup: React.FC<GameSetupProps> = ({ onStartGame, currentRuleSet = 'Burglers' }) => {
     const [whitePlayerOption, setWhitePlayerOption] = useState<PlayerOption>('human');
     const [blackPlayerOption, setBlackPlayerOption] = useState<PlayerOption>('human');
     const [isLoaded, setIsLoaded] = useState(false);
+    const [isNeuralAvailable, setIsNeuralAvailable] = useState(false);
+
+    // Check if neural model is available for current ruleset
+    useEffect(() => {
+        checkModelAvailability(currentRuleSet).then(setIsNeuralAvailable);
+    }, [currentRuleSet]);
 
     // Load settings from localStorage on component mount
     useEffect(() => {
@@ -25,15 +78,26 @@ const GameSetup: React.FC<GameSetupProps> = ({ onStartGame }) => {
             const savedSetup = localStorage.getItem(STORAGE_KEY);
             if (savedSetup) {
                 const parsedSetup: GameSetupState = JSON.parse(savedSetup);
-                setWhitePlayerOption(parsedSetup.whitePlayerOption || 'human');
-                setBlackPlayerOption(parsedSetup.blackPlayerOption || 'human');
+                let whiteOption = parsedSetup.whitePlayerOption || 'human';
+                let blackOption = parsedSetup.blackPlayerOption || 'human';
+
+                // Reset to human if neural is selected but no model is available
+                if (whiteOption === 'neural' && !isNeuralAvailable) {
+                    whiteOption = 'human';
+                }
+                if (blackOption === 'neural' && !isNeuralAvailable) {
+                    blackOption = 'human';
+                }
+
+                setWhitePlayerOption(whiteOption);
+                setBlackPlayerOption(blackOption);
             }
             setIsLoaded(true);
         } catch (error) {
             console.warn('Failed to load game setup from localStorage:', error);
             setIsLoaded(true);
         }
-    }, []);
+    }, [currentRuleSet, isNeuralAvailable]);
 
     // Save settings to localStorage whenever they change (but only after initial load)
     useEffect(() => {
@@ -57,7 +121,7 @@ const GameSetup: React.FC<GameSetupProps> = ({ onStartGame }) => {
         onStartGame(whiteType, blackType, whiteAgentType, blackAgentType);
     };
 
-    const parsePlayerOption = (option: PlayerOption): { type: PlayerType; agentType: 'computer' | 'mcts' | 'random' | 'exhaustive' | null } => {
+    const parsePlayerOption = (option: PlayerOption): { type: PlayerType; agentType: 'computer' | 'mcts' | 'random' | 'exhaustive' | 'neural' | null } => {
         switch (option) {
             case 'human':
                 return { type: 'human', agentType: null };
@@ -69,6 +133,8 @@ const GameSetup: React.FC<GameSetupProps> = ({ onStartGame }) => {
                 return { type: 'computer', agentType: 'random' };
             case 'exhaustive':
                 return { type: 'computer', agentType: 'exhaustive' };
+            case 'neural':
+                return { type: 'computer', agentType: 'neural' };
             default:
                 return { type: 'human', agentType: null };
         }
@@ -93,10 +159,12 @@ const GameSetup: React.FC<GameSetupProps> = ({ onStartGame }) => {
         } else {
             const whiteComputerType = whiteAgentType === 'computer' ? 'Computer' :
                 whiteAgentType === 'mcts' ? 'Computer (MCTS)' :
-                    whiteAgentType === 'exhaustive' ? 'Computer (Exhaustive)' : 'Random Computer';
+                    whiteAgentType === 'exhaustive' ? 'Computer (Exhaustive)' :
+                        whiteAgentType === 'neural' ? 'Computer (Neural)' : 'Random Computer';
             const blackComputerType = blackAgentType === 'computer' ? 'Computer' :
                 blackAgentType === 'mcts' ? 'Computer (MCTS)' :
-                    blackAgentType === 'exhaustive' ? 'Computer (Exhaustive)' : 'Random Computer';
+                    blackAgentType === 'exhaustive' ? 'Computer (Exhaustive)' :
+                        blackAgentType === 'neural' ? 'Computer (Neural)' : 'Random Computer';
             return `Watch ${whiteComputerType} (White) vs ${blackComputerType} (Black)`;
         }
     };
@@ -145,6 +213,9 @@ const GameSetup: React.FC<GameSetupProps> = ({ onStartGame }) => {
                     <option value="computer">Computer</option>
                     <option value="mcts">Computer (MCTS)</option>
                     <option value="exhaustive">Computer (Exhaustive)</option>
+                    {isNeuralAvailable && (
+                        <option value="neural">Computer (Neural)</option>
+                    )}
                     <option value="random">Random Computer</option>
                 </select>
             </div>
@@ -160,6 +231,9 @@ const GameSetup: React.FC<GameSetupProps> = ({ onStartGame }) => {
                     <option value="computer">Computer</option>
                     <option value="mcts">Computer (MCTS)</option>
                     <option value="exhaustive">Computer (Exhaustive)</option>
+                    {isNeuralAvailable && (
+                        <option value="neural">Computer (Neural)</option>
+                    )}
                     <option value="random">Random Computer</option>
                 </select>
             </div>

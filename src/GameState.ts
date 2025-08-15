@@ -7,7 +7,7 @@ import {
 import { getPathPair, getPath } from './GamePaths';
 import { getRuleSetByName, DEFAULT_RULE_SET } from './RuleSets';
 import type { RuleSet } from './RuleSet';
-import { HumanPlayerAgent, ComputerPlayerAgent, MCTSPlayerAgent, RandomPlayerAgent, ExhaustiveSearchPlayerAgent } from './player-agents';
+import { HumanPlayerAgent, ComputerPlayerAgent, MCTSPlayerAgent, RandomPlayerAgent, ExhaustiveSearchPlayerAgent, NeuralNetworkPlayerAgent } from './player-agents';
 import type { PlayerAgent, PlayerType } from './player-agents';
 import { AppLog } from './AppSettings';
 
@@ -40,8 +40,8 @@ export interface Move {
 export interface PlayerConfiguration {
     white: PlayerType;
     black: PlayerType;
-    whiteAgentType?: 'computer' | 'mcts' | 'random' | 'exhaustive';
-    blackAgentType?: 'computer' | 'mcts' | 'random' | 'exhaustive';
+    whiteAgentType?: 'computer' | 'mcts' | 'random' | 'exhaustive' | 'neural';
+    blackAgentType?: 'computer' | 'mcts' | 'random' | 'exhaustive' | 'neural';
 }
 
 export interface GameSettings {
@@ -433,7 +433,7 @@ export class GameState {
         this.handleGameStateChange();
     }
 
-    private createPlayerAgent(color: 'white' | 'black', type: PlayerType, agentType?: 'computer' | 'mcts' | 'random' | 'exhaustive'): PlayerAgent {
+    private createPlayerAgent(color: 'white' | 'black', type: PlayerType, agentType?: 'computer' | 'mcts' | 'random' | 'exhaustive' | 'neural'): PlayerAgent {
         switch (type) {
             case 'human':
                 return new HumanPlayerAgent(color);
@@ -445,6 +445,10 @@ export class GameState {
                         return new MCTSPlayerAgent(color);
                     case 'exhaustive':
                         return new ExhaustiveSearchPlayerAgent(color, this);
+                    case 'neural':
+                        // Find the appropriate model for the current ruleset
+                        const modelPath = this.findNeuralModelForCurrentRuleset();
+                        return new NeuralNetworkPlayerAgent(color, modelPath);
                     case 'computer':
                     default:
                         return new ComputerPlayerAgent(color);
@@ -466,6 +470,24 @@ export class GameState {
             this.blackPlayer.cleanup();
             this.blackPlayer = null;
         }
+    }
+
+    /**
+     * Find the appropriate neural network model for the current ruleset
+     */
+    private findNeuralModelForCurrentRuleset(): string {
+        const currentRulesetName = this.settings.currentRuleSet.toLowerCase();
+
+        // Map of potential model files to check
+        const modelCandidates = [
+            `${currentRulesetName}_validated.json`,
+            `${currentRulesetName}.json`,
+            'finkel_validated.json' // fallback
+        ];
+
+        // For now, return the first candidate (this could be made async in the future)
+        // The actual validation happens in the NeuralNetworkPlayerAgent when it loads
+        return `/models/${modelCandidates[0]}`;
     }
 
     getCurrentPlayerAgent(): PlayerAgent | null {
