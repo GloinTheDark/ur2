@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { PlayerType } from './player-agents';
+import { isNeuralModelAvailableForRuleset } from './player-agents';
 
 export interface GameSetupProps {
     onStartGame: (whitePlayer: PlayerType, blackPlayer: PlayerType, whiteAgentType: 'computer' | 'mcts' | 'random' | 'exhaustive' | 'neural' | null, blackAgentType: 'computer' | 'mcts' | 'random' | 'exhaustive' | 'neural' | null) => void;
@@ -15,37 +16,6 @@ interface GameSetupState {
 
 const STORAGE_KEY = 'ur-game-setup';
 
-// Function to check if neural network model is available for a ruleset
-const isNeuralModelAvailable = async (ruleSetName: string): Promise<boolean> => {
-    // List of known model files to check
-    const modelFiles = [
-        'finkel_validated.json',
-        'blitz_validated.json',
-        'burglers_validated.json',
-        'masters_validated.json',
-        'tournamentengine_validated.json',
-        'hjrmurray_validated.json',
-        'skiryuk_validated.json'
-    ];
-
-    for (const modelFile of modelFiles) {
-        try {
-            const response = await fetch(`/models/${modelFile}`);
-            if (response.ok) {
-                const model = await response.json();
-                if (model.ruleset && model.ruleset.toLowerCase() === ruleSetName.toLowerCase()) {
-                    return true;
-                }
-            }
-        } catch (error) {
-            // Model file doesn't exist or failed to load, continue checking
-            continue;
-        }
-    }
-
-    return false;
-};
-
 // Cache for model availability to avoid repeated network requests
 const modelAvailabilityCache = new Map<string, boolean>();
 
@@ -56,7 +26,7 @@ const checkModelAvailability = async (ruleSetName: string): Promise<boolean> => 
         return modelAvailabilityCache.get(cacheKey)!;
     }
 
-    const isAvailable = await isNeuralModelAvailable(ruleSetName);
+    const isAvailable = await isNeuralModelAvailableForRuleset(ruleSetName);
     modelAvailabilityCache.set(cacheKey, isAvailable);
     return isAvailable;
 };

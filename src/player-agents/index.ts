@@ -6,5 +6,5 @@ export { ComputerPlayerAgent } from './ComputerPlayerAgent';
 export { MCTSPlayerAgent } from './MCTSPlayerAgent';
 export { RandomPlayerAgent } from './RandomPlayerAgent';
 export { ExhaustiveSearchPlayerAgent } from './ExhaustiveSearchPlayerAgent';
-export { NeuralNetworkPlayerAgent } from './NeuralNetworkPlayerAgent';
+export { NeuralNetworkPlayerAgent, getModelPathForRuleset, isNeuralModelAvailableForRuleset } from './NeuralNetworkPlayerAgent';
 export { PlayerAgentUtils } from './PlayerAgentUtils';

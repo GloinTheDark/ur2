@@ -13,18 +13,128 @@ interface MoveEvaluation {
 interface NeuralNetworkModel {
     format: string;
     version: string;
+    model_name: string;
     ruleset: string;
-    inputSize: number;
-    architecture: number[];
-    layers: {
-        neurons: number;
-        inputs: number;
-        weights: number[][];
-        biases: number[];
-    }[];
+    input_size: number;
+    num_layers: number;
+    layer_sizes: number[];
+    activations: string[];
+    weights: number[][];
+    biases: number[][];
+    // New validation fields
+    finish_position?: number;
+    game_threshold?: number;
+    pieces_per_player?: number;
+    epochs?: number;
+    learning_rate?: number;
 }
 
-export class NeuralNetworkPlayerAgent implements PlayerAgent {
+interface BestModelEntry {
+    model_file: string;
+    date: string;
+    time: string;
+}
+
+interface BestModelsConfig {
+    [rulesetName: string]: BestModelEntry;
+}
+
+/**
+ * Cache for the best models configuration
+ */
+let bestModelsConfig: BestModelsConfig | null = null;
+
+/**
+ * Load the best models configuration from the JSON file
+ */
+async function loadBestModelsConfig(): Promise<BestModelsConfig> {
+    if (bestModelsConfig) {
+        return bestModelsConfig;
+    }
+
+    try {
+        const response = await fetch('/models/best_models.json');
+        if (!response.ok) {
+            throw new Error(`Failed to load best models config: ${response.status}`);
+        }
+        bestModelsConfig = await response.json();
+        return bestModelsConfig!;
+    } catch (error) {
+        AppLog.playerAgent(`Failed to load best models configuration: ${error}`);
+        throw error;
+    }
+}
+
+/**
+ * Get the model file path for a given ruleset
+ */
+export async function getModelPathForRuleset(rulesetName: string): Promise<string> {
+    try {
+        const config = await loadBestModelsConfig();
+        const rulesetKey = Object.keys(config).find(key => 
+            key.toLowerCase() === rulesetName.toLowerCase()
+        );
+
+        if (rulesetKey && config[rulesetKey]) {
+            const modelEntry = config[rulesetKey];
+            return `/models/${rulesetKey}/${modelEntry.model_file}`;
+        }
+
+        // No model available for this ruleset
+        throw new Error(`No neural network model available for ruleset: ${rulesetName}`);
+    } catch (error) {
+        throw new Error(`Failed to get model path for ruleset ${rulesetName}: ${error}`);
+    }
+}
+
+/**
+ * Check if a neural network model is available for a given ruleset
+ */
+export async function isNeuralModelAvailableForRuleset(rulesetName: string): Promise<boolean> {
+    try {
+        const config = await loadBestModelsConfig();
+        const rulesetKey = Object.keys(config).find(key => 
+            key.toLowerCase() === rulesetName.toLowerCase()
+        );
+
+        if (!rulesetKey || !config[rulesetKey]) {
+            return false; // No model available for this ruleset
+        }
+
+        const modelEntry = config[rulesetKey];
+        const modelPath = `/models/${rulesetKey}/${modelEntry.model_file}`;
+
+        const response = await fetch(modelPath);
+        if (response.ok) {
+            const model = await response.json();
+            // Check for new format and matching ruleset
+            if (model.format && ['ursim-robust-net', 'ursim-simple-net'].includes(model.format) &&
+                model.ruleset && model.ruleset.toLowerCase() === rulesetName.toLowerCase()) {
+
+                // Additional validation: log model configuration details
+                console.log(`Neural model found for ${rulesetName}:`, {
+                    model_name: model.model_name,
+                    finish_position: model.finish_position,
+                    pieces_per_player: model.pieces_per_player,
+                    input_size: model.input_size,
+                    architecture: model.layer_sizes?.join('→'),
+                    activations: model.activations?.join(', '),
+                    model_file: modelEntry.model_file,
+                    date: modelEntry.date,
+                    time: modelEntry.time
+                });
+
+                return true;
+            }
+        }
+    } catch (error) {
+        // Model file doesn't exist or failed to load
+        AppLog.playerAgent(`Error checking model availability for ${rulesetName}: ${error}`);
+        return false;
+    }
+
+    return false;
+} export class NeuralNetworkPlayerAgent implements PlayerAgent {
     readonly playerType: PlayerType = 'computer';
     readonly color: 'white' | 'black';
     private model: NeuralNetworkModel | null = null;
@@ -46,26 +156,85 @@ export class NeuralNetworkPlayerAgent implements PlayerAgent {
             }
             this.model = await response.json();
 
-            // Validate model format
-            if (!this.model || this.model.format !== 'ursim-neural-net') {
-                throw new Error('Invalid neural network model format');
+            // Validate new JSON model format only
+            if (!this.model || !['ursim-robust-net', 'ursim-simple-net'].includes(this.model.format)) {
+                throw new Error(`Unsupported model format: ${this.model?.format || 'unknown'}. Expected 'ursim-robust-net' or 'ursim-simple-net'.`);
             }
 
-            // Validate ruleset compatibility
-            if (this.model.ruleset !== 'finkel') {
-                AppLog.playerAgent(`NeuralNetwork: Warning - Model trained for ${this.model.ruleset} ruleset, may not work correctly with other rulesets`);
+            if (this.model.version !== '1.0') {
+                AppLog.playerAgent(`NeuralNetwork: Warning - Model version ${this.model.version} may be incompatible`);
+            }
+
+            // Validate required fields
+            if (!this.model.model_name || !this.model.ruleset || !this.model.layer_sizes || !this.model.activations) {
+                throw new Error('Invalid model: missing required fields');
             }
 
             this.modelLoaded = true;
-            AppLog.playerAgent(`NeuralNetwork: Model loaded successfully - ${this.model.architecture.join('→')} architecture for ${this.model.ruleset} ruleset`);
+            AppLog.playerAgent(`NeuralNetwork: Model loaded successfully - ${this.model.model_name} (${this.model.layer_sizes.join('→')}) for ${this.model.ruleset} ruleset`);
+            AppLog.playerAgent(`NeuralNetwork: Activations: ${this.model.activations.join(', ')}`);
+
+            // Log validation fields if available
+            if (this.model.finish_position !== undefined) {
+                AppLog.playerAgent(`NeuralNetwork: Expected finish position: ${this.model.finish_position}`);
+            }
+            if (this.model.pieces_per_player !== undefined) {
+                AppLog.playerAgent(`NeuralNetwork: Expected pieces per player: ${this.model.pieces_per_player}`);
+            }
+            if (this.model.game_threshold !== undefined) {
+                AppLog.playerAgent(`NeuralNetwork: Game threshold: ${this.model.game_threshold}`);
+            }
         } catch (error) {
             AppLog.playerAgent(`NeuralNetwork: Failed to load model - ${error}`);
             this.modelLoaded = false;
         }
     }
 
+    /**
+     * Validate that the model is compatible with the current game configuration
+     */
+    private validateModelForGameState(gameState: GameState): boolean {
+        if (!this.model) return false;
+
+        // Check if model ruleset matches game ruleset (case-insensitive)
+        const currentRuleset = gameState.getCurrentRuleSet().name.toLowerCase();
+        const modelRuleset = this.model.ruleset.toLowerCase();
+        if (modelRuleset !== currentRuleset) {
+            AppLog.playerAgent(`NeuralNetwork: Warning - Model ruleset '${this.model.ruleset}' doesn't match current ruleset '${gameState.getCurrentRuleSet().name}'`);
+            // Allow this for now, but log warning
+        }
+
+        // Validate finish position if provided
+        if (this.model.finish_position !== undefined) {
+            const expectedFinishPosition = gameState.getEndOfPath();
+            if (this.model.finish_position !== expectedFinishPosition) {
+                AppLog.playerAgent(`NeuralNetwork: Warning - Model expects finish position ${this.model.finish_position}, but game has ${expectedFinishPosition}`);
+                return false;
+            }
+        }
+
+        // Validate pieces per player if provided
+        if (this.model.pieces_per_player !== undefined) {
+            const expectedPiecesPerPlayer = gameState.getPiecesPerPlayer();
+            if (this.model.pieces_per_player !== expectedPiecesPerPlayer) {
+                AppLog.playerAgent(`NeuralNetwork: Warning - Model expects ${this.model.pieces_per_player} pieces per player, but game has ${expectedPiecesPerPlayer}`);
+                return false;
+            }
+        }
+
+        // Validate input size matches expected feature count
+        const expectedInputSize = gameState.getPiecesPerPlayer() * 2;
+        if (this.model.input_size !== expectedInputSize) {
+            AppLog.playerAgent(`NeuralNetwork: Warning - Model expects input size ${this.model.input_size}, but game configuration requires ${expectedInputSize}`);
+            return false;
+        }
+
+        AppLog.playerAgent(`NeuralNetwork: Model validation passed for current game configuration`);
+        return true;
+    }
+
     getPlayerName(): string {
-        const modelName = this.model?.ruleset || 'unknown';
+        const modelName = this.model?.model_name || this.model?.ruleset || 'unknown';
         return `Neural Network AI (${this.color}) - ${modelName}`;
     }
 
@@ -137,6 +306,12 @@ export class NeuralNetworkPlayerAgent implements PlayerAgent {
     private async findBestMove(gameState: GameState, legalMoves: Move[]): Promise<MoveEvaluation | null> {
         if (legalMoves.length === 0 || !this.model) return null;
 
+        // Validate model compatibility with current game state
+        if (!this.validateModelForGameState(gameState)) {
+            AppLog.playerAgent('NeuralNetwork: Model validation failed, falling back to random move selection');
+            return null; // This will trigger the fallback to random move
+        }
+
         const startTime = performance.now();
         AppLog.ai(`NeuralNetwork: Evaluating ${legalMoves.length} moves with neural network`);
 
@@ -186,11 +361,9 @@ export class NeuralNetworkPlayerAgent implements PlayerAgent {
         const piecesPerPlayer = gameState.getPiecesPerPlayer();
         const expectedInputSize = piecesPerPlayer * 2;
 
-        if (!this.model || this.model.inputSize !== expectedInputSize) {
-            throw new Error(`Model input size mismatch - expected ${expectedInputSize} features (${piecesPerPlayer} pieces per player * 2), but model expects ${this.model?.inputSize || 'unknown'}`);
-        }
-
-        const features: number[] = [];
+        if (!this.model || this.model.input_size !== expectedInputSize) {
+            throw new Error(`Model input size mismatch - expected ${expectedInputSize} features (${piecesPerPlayer} pieces per player * 2), but model expects ${this.model?.input_size || 'unknown'}`);
+        } const features: number[] = [];
         const state = gameState.state;
 
         // Get the actual end of path index for normalization (e.g., 15 for Finkel path)
@@ -277,37 +450,66 @@ export class NeuralNetworkPlayerAgent implements PlayerAgent {
     }
 
     /**
-     * Perform forward pass through the neural network
+     * Perform forward pass through the neural network using the new JSON format
      */
     private forwardPass(inputs: number[]): number {
         if (!this.model) return 0;
 
-        let activations = [...inputs];
+        let currentOutput = [...inputs]; // Copy input
 
-        for (let layerIndex = 0; layerIndex < this.model.layers.length; layerIndex++) {
-            const layer = this.model.layers[layerIndex];
-            const newActivations: number[] = [];
+        // Validate input size
+        if (currentOutput.length !== this.model.input_size) {
+            throw new Error(`Input size mismatch: expected ${this.model.input_size}, got ${currentOutput.length}`);
+        }
 
-            for (let neuronIndex = 0; neuronIndex < layer.neurons; neuronIndex++) {
-                let sum = layer.biases[neuronIndex];
+        // Process each layer
+        for (let layerIndex = 0; layerIndex < this.model.num_layers; layerIndex++) {
+            const layerWeights = this.model.weights[layerIndex];
+            const layerBiases = this.model.biases[layerIndex];
+            const activation = this.model.activations[layerIndex];
+            const outputSize = this.model.layer_sizes[layerIndex];
+            const inputSize = currentOutput.length;
 
-                for (let inputIndex = 0; inputIndex < activations.length; inputIndex++) {
-                    sum += activations[inputIndex] * layer.weights[neuronIndex][inputIndex];
+            const newOutput: number[] = [];
+
+            // Compute each neuron in the layer
+            for (let outputIndex = 0; outputIndex < outputSize; outputIndex++) {
+                let sum = layerBiases[outputIndex];
+
+                // Compute weighted sum of inputs
+                for (let inputIndex = 0; inputIndex < inputSize; inputIndex++) {
+                    const weightIndex = outputIndex * inputSize + inputIndex;
+                    sum += currentOutput[inputIndex] * layerWeights[weightIndex];
                 }
 
                 // Apply activation function
-                if (layerIndex < this.model.layers.length - 1) {
-                    // Hidden layers use ReLU
-                    newActivations.push(Math.max(0, sum));
-                } else {
-                    // Output layer uses sigmoid for probability output
-                    newActivations.push(1.0 / (1.0 + Math.exp(-sum)));
-                }
+                const activatedValue = this.applyActivation(sum, activation);
+                newOutput.push(activatedValue);
             }
 
-            activations = newActivations;
+            currentOutput = newOutput;
         }
 
-        return activations[0]; // Single output value (win probability)
+        // Return the output (should be single value for regression)
+        return currentOutput[0];
+    }
+
+    /**
+     * Apply activation function based on type
+     */
+    private applyActivation(x: number, activationType: string): number {
+        switch (activationType) {
+            case 'linear':
+                return x;
+            case 'sigmoid':
+                return 1.0 / (1.0 + Math.exp(-x));
+            case 'relu':
+                return Math.max(0.0, x);
+            case 'tanh':
+                return Math.tanh(x);
+            default:
+                AppLog.playerAgent(`NeuralNetwork: Unknown activation: ${activationType}, using sigmoid`);
+                return 1.0 / (1.0 + Math.exp(-x));
+        }
     }
 }
