@@ -13,5 +13,10 @@
     "model_file": "model_8945a4a5_128x64_lr8e-04_ep24_mg33.json",
     "date": "2025-08-17",
     "time": "21:57:45"
+  },
+  "Burglers": {
+    "model_file": "model_35fc8043_128_lr9e-03_ep12_mg25.json",
+    "date": "2025-08-19",
+    "time": "15:23:45"
   }
 }
