@@ -1,5 +1,6 @@
 import React from 'react';
 import type { GameState } from './GameState';
+import { BurglersOfUrRuleSet } from './rulesets/BurglersOfUrRuleSet';
 import { HOME_SQUARE_SIZE, PIECE_SIZE, HIGHLIGHT_CIRCLE_SIZE } from './UIConstants';
 import whiteBlank from './assets/WhiteBlank.svg';
 import whiteSpots from './assets/WhiteSpots.svg';
@@ -64,7 +65,7 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
         'var(--text-color, #333)';
 
     // Get control status for Burglers ruleset
-    const isBurglers = gameState.getCurrentRuleSet().name === 'Burglers of Ur';
+    const isBurglers = gameState.getCurrentRuleSet() instanceof BurglersOfUrRuleSet;
     const templeControl = isBurglers ? gameState.getTempleBlessings(player) : null;
     const houseControl = isBurglers ? gameState.calculateHouseControl() : null;
 

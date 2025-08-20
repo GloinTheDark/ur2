@@ -4,7 +4,7 @@ import type { GameState } from '../GameState';
 
 // Action-packed variant with more aggressive gameplay
 export class BurglersOfUrRuleSet extends RuleSet {
-    readonly name = "Burglers of Ur";
+    readonly name = "Burglers";
     readonly description = "Strategic variant with aggressive rules and special squares for dynamic gameplay";
 
     // More pieces for longer, more strategic games

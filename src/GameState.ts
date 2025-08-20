@@ -7,6 +7,7 @@ import {
 import { getPathPair, getPath } from './GamePaths';
 import { getRuleSetByName, DEFAULT_RULE_SET } from './RuleSets';
 import type { RuleSet } from './RuleSet';
+import { BurglersOfUrRuleSet } from './rulesets/BurglersOfUrRuleSet';
 import { HumanPlayerAgent, ComputerPlayerAgent, MCTSPlayerAgent, RandomPlayerAgent, ExhaustiveSearchPlayerAgent, NeuralNetworkPlayerAgent, getModelPathForRuleset } from './player-agents';
 import type { PlayerAgent, PlayerType } from './player-agents';
 import { AppLog } from './AppSettings';
@@ -1399,7 +1400,7 @@ export class GameState {
     getHouseBonus(player: 'white' | 'black'): number {
         // House bonus is only available in Burglers rule set
         const ruleSet = this.getCurrentRuleSet();
-        if (ruleSet.name !== 'Burglers of Ur') return 0;
+        if (!(ruleSet instanceof BurglersOfUrRuleSet)) return 0;
 
         const { whiteHouses, blackHouses } = this.calculateHouseControl();
 
@@ -1411,7 +1412,7 @@ export class GameState {
     getTempleBlessings(player: 'white' | 'black'): { hasControl: boolean, templeCount: { white: number, black: number } } {
         // Temple blessings are only available in Burglers rule set
         const ruleSet = this.getCurrentRuleSet();
-        if (ruleSet.name !== 'Burglers of Ur') return { hasControl: false, templeCount: { white: 0, black: 0 } };
+        if (!(ruleSet instanceof BurglersOfUrRuleSet)) return { hasControl: false, templeCount: { white: 0, black: 0 } };
 
         const { whiteTemples, blackTemples } = this.calculateTempleControl();
         const hasControl = (player === 'white' && whiteTemples > blackTemples) ||
