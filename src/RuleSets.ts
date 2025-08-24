@@ -46,5 +46,18 @@ export function getRuleSetByName(name: string): RuleSet {
     return ruleSet || DEFAULT_RULE_SET;
 }
 
+// Get rule set by ID
+export function getRuleSetById(id: string): RuleSet {
+    const isDebugMode = AppSettingsManager.getInstance().isDebugMode();
+
+    // Check all rule sets
+    const ruleSet = Object.values(AVAILABLE_RULE_SETS).find(ruleSet =>
+        ruleSet.id.toLowerCase() === id.toLowerCase() &&
+        (!ruleSet.prerelease || isDebugMode)
+    );
+
+    return ruleSet || DEFAULT_RULE_SET;
+}
+
 // Default rule set
 export const DEFAULT_RULE_SET = AVAILABLE_RULE_SETS.burglers;

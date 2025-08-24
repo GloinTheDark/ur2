@@ -3,6 +3,7 @@ import { RuleSet } from '../RuleSet';
 // Fast-paced variant for quick games
 export class BlitzRuleSet extends RuleSet {
     readonly name = "Blitz";
+    readonly id = "Blitz";
     readonly description = "Lightning-fast variant with fewer pieces and extra turn on capture for quick games. Developed by RoyalUr.net";
     readonly moreInfoUrl = "https://royalur.net/";
 

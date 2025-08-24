@@ -5,6 +5,7 @@ import { ROSETTE_SQUARES } from '../BoardLayout';
 // Tournament Engine rule set - fast-paced variant with Masters path
 export class TournamentEngineRuleSet extends RuleSet {
     readonly name = "Tournament Engine";
+    readonly id = "TournamentEngine";
     readonly description = "Allows piece stacking on rosettes and backwards movement. Developed by Société Internationale d'UR (playur.org)";
     readonly moreInfoUrl = "https://playur.org";
 

@@ -4,6 +4,7 @@ import type { GameState } from './GameState';
 
 export abstract class RuleSet {
     abstract readonly name: string;
+    abstract readonly id: string;
     abstract readonly description: string;
 
     // Optional URL for more information about the rule set

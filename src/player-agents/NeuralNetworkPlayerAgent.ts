@@ -3,6 +3,7 @@ import { AppLog } from '../AppSettings';
 import type { PlayerAgent, PlayerType } from './PlayerAgent';
 import { AI_DELAYS } from './PlayerAgent';
 import { PlayerAgentUtils } from './PlayerAgentUtils';
+import { getRuleSetByName } from '../RuleSets';
 
 interface MoveEvaluation {
     move: Move;
@@ -70,9 +71,13 @@ async function loadBestModelsConfig(): Promise<BestModelsConfig> {
  */
 export async function getModelPathForRuleset(rulesetName: string): Promise<string> {
     try {
+        // Look up the ruleset by name to get its ID
+        const ruleSet = getRuleSetByName(rulesetName);
+        const rulesetId = ruleSet.id;
+
         const config = await loadBestModelsConfig();
-        const rulesetKey = Object.keys(config).find(key => 
-            key.toLowerCase() === rulesetName.toLowerCase()
+        const rulesetKey = Object.keys(config).find(key =>
+            key.toLowerCase() === rulesetId.toLowerCase()
         );
 
         if (rulesetKey && config[rulesetKey]) {
@@ -81,7 +86,7 @@ export async function getModelPathForRuleset(rulesetName: string): Promise<strin
         }
 
         // No model available for this ruleset
-        throw new Error(`No neural network model available for ruleset: ${rulesetName}`);
+        throw new Error(`No neural network model available for ruleset: ${rulesetName} (ID: ${rulesetId})`);
     } catch (error) {
         throw new Error(`Failed to get model path for ruleset ${rulesetName}: ${error}`);
     }
@@ -92,9 +97,13 @@ export async function getModelPathForRuleset(rulesetName: string): Promise<strin
  */
 export async function isNeuralModelAvailableForRuleset(rulesetName: string): Promise<boolean> {
     try {
+        // Look up the ruleset by name to get its ID
+        const ruleSet = getRuleSetByName(rulesetName);
+        const rulesetId = ruleSet.id;
+
         const config = await loadBestModelsConfig();
-        const rulesetKey = Object.keys(config).find(key => 
-            key.toLowerCase() === rulesetName.toLowerCase()
+        const rulesetKey = Object.keys(config).find(key =>
+            key.toLowerCase() === rulesetId.toLowerCase()
         );
 
         if (!rulesetKey || !config[rulesetKey]) {
@@ -107,12 +116,12 @@ export async function isNeuralModelAvailableForRuleset(rulesetName: string): Pro
         const response = await fetch(modelPath);
         if (response.ok) {
             const model = await response.json();
-            // Check for new format and matching ruleset
+            // Check for new format and matching ruleset (using ID)
             if (model.format && ['ursim-robust-net', 'ursim-simple-net'].includes(model.format) &&
-                model.ruleset && model.ruleset.toLowerCase() === rulesetName.toLowerCase()) {
+                model.ruleset && model.ruleset.toLowerCase() === rulesetId.toLowerCase()) {
 
                 // Additional validation: log model configuration details
-                console.log(`Neural model found for ${rulesetName}:`, {
+                console.log(`Neural model found for ${rulesetName} (ID: ${rulesetId}):`, {
                     model_name: model.model_name,
                     finish_position: model.finish_position,
                     pieces_per_player: model.pieces_per_player,

@@ -4,6 +4,7 @@ import { ROSETTE_SQUARES } from '../BoardLayout';
 // Traditional rule set based on R. C. Bell's path and Irving Finkel's rules
 export class FinkelRuleSet extends RuleSet {
     readonly name = "Finkel";
+    readonly id = "Finkel";
     readonly description = "Traditional rules using R. C. Bell's path, as popularized by Irving Finkel's reconstruction";
     readonly moreInfoUrl = "https://www.youtube.com/watch?v=WZskjLq040I";
 

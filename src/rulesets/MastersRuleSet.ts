@@ -4,6 +4,7 @@ import type { GameState } from '../GameState';
 // Masters rule set by James Masters
 export class MastersRuleSet extends RuleSet {
     readonly name = "Masters";
+    readonly id = "Masters";
     readonly description = "Rule set by James Masters using the Masters path configuration";
     readonly moreInfoUrl = "https://www.mastersofgames.com/rules/royal-ur-rules.htm";
 

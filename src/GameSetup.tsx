@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { PlayerType } from './player-agents';
 import { isNeuralModelAvailableForRuleset } from './player-agents';
+import { DEFAULT_RULE_SET, getRuleSetByName } from './RuleSets';
 
 export interface GameSetupProps {
     onStartGame: (whitePlayer: PlayerType, blackPlayer: PlayerType, whiteAgentType: 'computer' | 'mcts' | 'random' | 'exhaustive' | 'neural' | null, blackAgentType: 'computer' | 'mcts' | 'random' | 'exhaustive' | 'neural' | null) => void;
@@ -20,7 +21,9 @@ const STORAGE_KEY = 'ur-game-setup';
 const modelAvailabilityCache = new Map<string, boolean>();
 
 const checkModelAvailability = async (ruleSetName: string): Promise<boolean> => {
-    const cacheKey = ruleSetName.toLowerCase();
+    // Get the ruleset ID for cache key
+    const ruleSet = getRuleSetByName(ruleSetName);
+    const cacheKey = ruleSet.id.toLowerCase();
 
     if (modelAvailabilityCache.has(cacheKey)) {
         return modelAvailabilityCache.get(cacheKey)!;
@@ -31,7 +34,8 @@ const checkModelAvailability = async (ruleSetName: string): Promise<boolean> => 
     return isAvailable;
 };
 
-const GameSetup: React.FC<GameSetupProps> = ({ onStartGame, currentRuleSet = 'Burglers' }) => {
+
+const GameSetup: React.FC<GameSetupProps> = ({ onStartGame, currentRuleSet = DEFAULT_RULE_SET.name }) => {
     const [whitePlayerOption, setWhitePlayerOption] = useState<PlayerOption>('human');
     const [blackPlayerOption, setBlackPlayerOption] = useState<PlayerOption>('human');
     const [isLoaded, setIsLoaded] = useState(false);
