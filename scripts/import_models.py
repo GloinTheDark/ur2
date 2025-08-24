@@ -16,6 +16,7 @@ Features:
 Usage examples:
   python scripts/import_models.py                    # Sync latest from ../ursim/models
   python scripts/import_models.py --all              # Sync all models, not just best
+  python scripts/import_models.py --cleanup          # Sync best + delete old models
   python scripts/import_models.py --dry-run -v       # Preview what would be synced
   python scripts/import_models.py --src ../other     # Use different source
 """
@@ -172,6 +173,59 @@ def sync_all_models(src_models_dir: Path, dest_models_dir: Path, overwrite: bool
     return synced_models
 
 
+def cleanup_old_models(dest_models_dir: Path, dry_run: bool, verbose: bool) -> None:
+    """Delete models that are not listed as best in best_models.json."""
+    dest_best_json = dest_models_dir / BEST_MODELS_FILENAME
+    
+    if not dest_best_json.exists():
+        if verbose:
+            print("No best_models.json found, skipping cleanup")
+        return
+    
+    try:
+        dest_best = read_json(dest_best_json)
+    except Exception as e:
+        eprint(f"! Failed to read best_models.json for cleanup: {e}")
+        return
+    
+    # Get set of best model files
+    best_model_files = set()
+    for ruleset, entry in dest_best.items():
+        if isinstance(entry, dict) and "model_file" in entry:
+            best_model_files.add((ruleset, entry["model_file"]))
+    
+    if verbose:
+        print(f"Found {len(best_model_files)} best model(s) to preserve")
+    
+    # Scan each ruleset directory for models to delete
+    deleted_count = 0
+    for ruleset_dir in dest_models_dir.iterdir():
+        if not ruleset_dir.is_dir() or ruleset_dir.name.startswith('.'):
+            continue
+            
+        ruleset = ruleset_dir.name
+        model_files = list(ruleset_dir.glob("model_*.json"))
+        
+        for model_file in model_files:
+            # Skip if this is a best model
+            if (ruleset, model_file.name) in best_model_files:
+                if verbose:
+                    print(f"= Preserving best model: {ruleset}/{model_file.name}")
+                continue
+            
+            # Delete non-best model
+            if dry_run:
+                print(f"DRY-RUN: would delete {model_file}")
+            else:
+                if verbose:
+                    print(f"- Deleting old model: {ruleset}/{model_file.name}")
+                model_file.unlink()
+                deleted_count += 1
+    
+    if not dry_run and deleted_count > 0:
+        print(f"Deleted {deleted_count} old model(s)")
+
+
 def update_dest_best_models(dest_models_dir: Path, synced_models: Dict[str, str], dry_run: bool, verbose: bool) -> None:
     """Update ur2's best_models.json with the synced models."""
     if not synced_models:
@@ -214,6 +268,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
 Examples:
   %(prog)s                    # Sync latest models from ../ursim/models
   %(prog)s --all              # Sync all models, not just best
+  %(prog)s --cleanup          # Sync best models + delete old ones
   %(prog)s --dry-run -v       # Preview what would be synced
   %(prog)s --src ../other     # Use different source directory
         """.strip()
@@ -225,6 +280,8 @@ Examples:
                        help="Destination models directory (default: public/models)")
     parser.add_argument("--all", action="store_true",
                        help="Sync all models, not just those in best_models.json")
+    parser.add_argument("--cleanup", action="store_true",
+                       help="Delete models that are not listed as best")
     parser.add_argument("--overwrite", action="store_true",
                        help="Overwrite existing files even if different")
     parser.add_argument("--dry-run", action="store_true",
@@ -262,14 +319,17 @@ def main(argv: list[str]) -> int:
     else:
         synced_models = sync_best_models(src_models_dir, dest_models_dir, args.overwrite, args.dry_run, args.verbose)
 
-    if not synced_models:
+    # Update ur2's best_models.json if models were synced
+    if synced_models:
+        update_dest_best_models(dest_models_dir, synced_models, args.dry_run, args.verbose)
+    elif not synced_models:
         print("No models were synced.")
-        return 0
 
-    # Update ur2's best_models.json
-    update_dest_best_models(dest_models_dir, synced_models, args.dry_run, args.verbose)
+    # Cleanup old models if requested (run regardless of sync status)
+    if args.cleanup:
+        cleanup_old_models(dest_models_dir, args.dry_run, args.verbose)
 
-    if args.verbose:
+    if args.verbose and synced_models:
         print(f"Successfully synced {len(synced_models)} model(s).")
 
     return 0
