@@ -1,22 +1,32 @@
 {
   "Blitz": {
-    "model_file": "model_b218dc88_128x64x32_lr1e-04_ep27_mg38.json",
-    "date": "2025-08-17",
-    "time": "23:24:11"
+    "model_file": "07e048b4.json",
+    "date": "2025-08-23",
+    "time": "23:33:44"
   },
   "Masters": {
-    "model_file": "model_d3ba201c_64x32_lr1e-03_ep17_mg46.json",
-    "date": "2025-08-17",
-    "time": "23:42:41"
+    "model_file": "83e0150d.json",
+    "date": "2025-08-23",
+    "time": "23:33:44"
   },
   "Finkel": {
-    "model_file": "model_8945a4a5_128x64_lr8e-04_ep24_mg33.json",
-    "date": "2025-08-17",
-    "time": "21:57:45"
+    "model_file": "model_400256b9_128x64x32_lr1e-04_ep18_mg38.json",
+    "date": "2025-08-22",
+    "time": "00:25:58"
   },
   "Burglers": {
-    "model_file": "model_35fc8043_128_lr9e-03_ep12_mg25.json",
-    "date": "2025-08-19",
-    "time": "15:23:45"
+    "model_file": "7667341a.json",
+    "date": "2025-08-22",
+    "time": "00:25:58"
+  },
+  "HJRMurray": {
+    "model_file": "e8b8702e.json",
+    "date": "2025-08-23",
+    "time": "23:33:44"
+  },
+  "TournamentEngine": {
+    "model_file": "c6b9a4f1.json",
+    "date": "2025-08-23",
+    "time": "23:35:00"
   }
 }
