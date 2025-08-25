@@ -1,9 +1,10 @@
 import React from 'react';
-import { HOME_SQUARE_SIZE, PIECE_SIZE, STACK_OFFSET } from '../UIConstants';
+import { HOME_SQUARE_SIZE, PIECE_SIZE, STACK_OFFSET, HIGHLIGHT_CIRCLE_SIZE } from '../UIConstants';
 import whiteBlank from '../assets/WhiteBlank.svg';
 import whiteSpots from '../assets/WhiteSpots.svg';
 import blackBlank from '../assets/BlackBlank.svg';
 import blackSpots from '../assets/BlackSpots.svg';
+import PieceHighlight from './PieceHighlight';
 
 interface StackPiece {
     type: 'blank' | 'spots';
@@ -46,68 +47,68 @@ const PieceStack: React.FC<PieceStackProps> = ({
                 position: 'relative',
                 width: HOME_SQUARE_SIZE,
                 height: stackHeight,
-                backgroundColor: isWhite ? '#f8f9fa' : '#343a40',
+                backgroundColor: isWhite ? '#ccc' : '#999',
                 borderRadius: '8px',
-                border: `2px solid ${isWhite ? '#dee2e6' : '#495057'}`,
+                border: `2px solid ${isWhite ? '#999' : '#777'}`,
                 display: 'flex',
                 alignItems: 'flex-end',
                 justifyContent: 'center',
                 padding: '2px'
             }}>
-                {pieces.length === 0 ? (
-                    /* Empty stack indicator */
-                    <div style={{
-                        position: 'absolute',
-                        bottom: '50%',
-                        left: '50%',
-                        transform: 'translate(-50%, 50%)',
-                        fontSize: '24px',
-                        color: '#adb5bd',
-                        opacity: 0.5
-                    }}>
-                        ∅
-                    </div>
-                ) : (
-                    /* Render stacked pieces */
-                    pieces.map((piece, index) => {
-                        const icon = piece.type === 'blank' ? blankIcon : spotsIcon;
+                {/* Render stacked pieces */}
+                {pieces.map((piece, index) => {
+                    const icon = piece.type === 'blank' ? blankIcon : spotsIcon;
 
-                        return (
+                    return (
+                        <div
+                            key={index}
+                            style={{
+                                position: 'absolute',
+                                bottom: `${index * STACK_OFFSET}px`,
+                                left: '50%',
+                                transform: 'translateX(-50%)',
+                                cursor: piece.onClick ? 'pointer' : 'default',
+                                width: HIGHLIGHT_CIRCLE_SIZE,
+                                height: HIGHLIGHT_CIRCLE_SIZE
+                            }}
+                            onClick={piece.onClick}
+                        >
+                            <PieceHighlight
+                                isEligible={piece.isEligible || false}
+                                isSelected={piece.isSelected || false}
+                                size={HIGHLIGHT_CIRCLE_SIZE}
+                                top="50%"
+                                left="50%"
+                                transform="translate(-50%, -50%)"
+                                zIndex={index + 1}
+                            />
                             <img
-                                key={index}
                                 src={icon}
                                 alt={`${player} ${piece.type} piece ${index + 1}`}
                                 style={{
-                                    position: 'absolute',
-                                    bottom: `${2 + index * STACK_OFFSET}px`,
-                                    left: '50%',
-                                    transform: 'translateX(-50%)',
                                     width: PIECE_SIZE,
                                     height: PIECE_SIZE,
-                                    cursor: piece.onClick ? 'pointer' : 'default',
-                                    zIndex: index + 1,
-                                    // Highlight eligible pieces
-                                    filter: piece.isEligible ? 'brightness(1.2) drop-shadow(0 0 4px rgba(255, 193, 7, 0.8))' : 'none',
-                                    // Highlight selected pieces
-                                    outline: piece.isSelected ? '3px solid #007bff' : 'none',
-                                    outlineOffset: '2px',
-                                    borderRadius: '50%'
+                                    display: 'block',
+                                    position: 'absolute',
+                                    top: '50%',
+                                    left: '50%',
+                                    transform: 'translate(-50%, -50%)',
+                                    zIndex: index + 1
                                 }}
-                                onClick={piece.onClick}
                                 onMouseEnter={(e) => {
                                     if (piece.onClick) {
-                                        e.currentTarget.style.transform = 'translateX(-50%) scale(1.05)';
+                                        e.currentTarget.style.transform = 'translate(-50%, -50%) scale(1.05)';
                                     }
                                 }}
                                 onMouseLeave={(e) => {
                                     if (piece.onClick) {
-                                        e.currentTarget.style.transform = 'translateX(-50%) scale(1)';
+                                        e.currentTarget.style.transform = 'translate(-50%, -50%) scale(1)';
                                     }
                                 }}
                             />
-                        );
-                    })
-                )}
+                        </div>
+                    );
+                })}
             </div>
 
             {/* Label */}

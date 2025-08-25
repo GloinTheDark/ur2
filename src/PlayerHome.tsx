@@ -209,7 +209,7 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
                 <PieceStack
                     pieces={startingStackPieces}
                     player={player}
-                    label="Starting"
+                    label="Start"
                     fixedCapacity={ruleset.piecesPerPlayer}
                 />
 
@@ -218,7 +218,7 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
                     <PieceStack
                         pieces={finishedStackPieces}
                         player={player}
-                        label="Finished"
+                        label="Finish"
                         fixedCapacity={ruleset.getPiecesToWin()}
                     />
 

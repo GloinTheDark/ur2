@@ -18,6 +18,7 @@ import { getRuleSetByName } from './RuleSets'
 import { getPath } from './GamePaths'
 import { AppSettingsManager } from './AppSettings'
 import { PIECE_SIZE, HIGHLIGHT_CIRCLE_SIZE, SQUARE_SIZE, BOARD_GAP } from './UIConstants'
+import PieceHighlight from './components/PieceHighlight'
 import rosetteSquare from './assets/RosetteSquare.svg'
 import gateSquare from './assets/GateSquare.svg'
 import marketSquare from './assets/MarketSquare.svg'
@@ -793,36 +794,15 @@ function App() {
                                 }
                               }}
                             >
-                              {isEligible && !isSelected && (
-                                <div
-                                  className="highlight-circle"
-                                  style={{
-                                    position: 'absolute',
-                                    width: `${HIGHLIGHT_CIRCLE_SIZE}px`,
-                                    height: `${HIGHLIGHT_CIRCLE_SIZE}px`,
-                                    borderRadius: '50%',
-                                    top: `calc(50% - ${stackOffset}px)`,
-                                    left: '50%',
-                                    transform: 'translate(-50%, -50%)',
-                                    zIndex: stackZIndex - 1
-                                  }}
-                                />
-                              )}
-                              {isSelected && (
-                                <div
-                                  className="selected-circle"
-                                  style={{
-                                    position: 'absolute',
-                                    width: `${HIGHLIGHT_CIRCLE_SIZE}px`,
-                                    height: `${HIGHLIGHT_CIRCLE_SIZE}px`,
-                                    borderRadius: '50%',
-                                    top: `calc(50% - ${stackOffset}px)`,
-                                    left: '50%',
-                                    transform: 'translate(-50%, -50%)',
-                                    zIndex: stackZIndex - 1
-                                  }}
-                                />
-                              )}
+                              <PieceHighlight
+                                isEligible={isEligible}
+                                isSelected={isSelected}
+                                size={HIGHLIGHT_CIRCLE_SIZE}
+                                top={`calc(50% - ${stackOffset}px)`}
+                                left="50%"
+                                transform="translate(-50%, -50%)"
+                                zIndex={stackZIndex}
+                              />
                               <img
                                 src={gameState.shouldPieceShowSpots(positions[pieceIndex]) ? spotsImage : blankImage}
                                 alt={`${player.charAt(0).toUpperCase() + player.slice(1)} piece ${pieceIndex + 1}`}
