@@ -2,6 +2,7 @@ import React, { useRef, useCallback } from 'react';
 import { GameState } from './GameState';
 import PieceAnimator from './PieceAnimator';
 import CapturedPieceAnimator from './CapturedPieceAnimator';
+import AnimatedWaypointVisualizer from './AnimatedWaypointVisualizer';
 import { SQUARE_SIZE, BOARD_GAP, HOME_SQUARE_SIZE, STACK_OFFSET, BOARD_SQUARE_BORDER } from './UIConstants';
 import { BOARD_COLUMNS, BOARD_ROWS } from './BoardLayout';
 
@@ -290,6 +291,13 @@ const GameLayout: React.FC<GameLayoutProps> = ({
                     getHomePosition={getHomePosition}
                 />
             )}
+
+            {/* Animated Waypoint Visualizer - shows moving circles along legal move paths */}
+            <AnimatedWaypointVisualizer
+                gameState={gameState}
+                getSquarePosition={getSquarePosition}
+                getHomePosition={getHomePosition}
+            />
         </div>
     );
 };
