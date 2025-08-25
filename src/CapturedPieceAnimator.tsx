@@ -107,7 +107,7 @@ const CapturedPieceAnimator: React.FC<CapturedPieceAnimatorProps> = ({
     // Captured pieces should respect flipIndex - when going back to start (position 0)
     const getPieceImage = () => {
         const shouldShowSpots = gameState.shouldPieceShowSpots(0); // Position 0 (start/home)
-        
+
         if (player === 'white') {
             return shouldShowSpots ? whiteSpots : whiteBlank;
         } else {
