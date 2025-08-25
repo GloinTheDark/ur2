@@ -142,8 +142,7 @@ export class BurglersOfUrRuleSet extends RuleSet {
                     rules: [
                         "If you land on a square occupied by an opponent's piece, that piece is captured",
                         "Captured pieces return to the opponent's starting area",
-                        "You cannot capture pieces on markets or rosettes (they are safe)",
-                        "Capturing pieces on temples or houses affects control bonuses",
+                        "You cannot capture pieces on market squares",
                         "Capturing does not grant an extra turn"
                     ]
                 },
