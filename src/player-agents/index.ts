@@ -8,3 +8,4 @@ export { RandomPlayerAgent } from './RandomPlayerAgent';
 export { ExhaustiveSearchPlayerAgent } from './ExhaustiveSearchPlayerAgent';
 export { NeuralNetworkPlayerAgent, getModelPathForRuleset, isNeuralModelAvailableForRuleset } from './NeuralNetworkPlayerAgent';
 export { PlayerAgentUtils } from './PlayerAgentUtils';
+export { PlayerAgentRegistry, type AgentType, type PlayerAgentInfo } from './PlayerAgentRegistry';

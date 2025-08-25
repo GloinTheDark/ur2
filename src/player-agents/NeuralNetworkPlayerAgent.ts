@@ -119,20 +119,6 @@ export async function isNeuralModelAvailableForRuleset(rulesetName: string): Pro
             // Check for new format and matching ruleset (using ID)
             if (model.format && ['ursim-robust-net', 'ursim-simple-net'].includes(model.format) &&
                 model.ruleset && model.ruleset.toLowerCase() === rulesetId.toLowerCase()) {
-
-                // Additional validation: log model configuration details
-                console.log(`Neural model found for ${rulesetName} (ID: ${rulesetId}):`, {
-                    model_name: model.model_name,
-                    finish_position: model.finish_position,
-                    pieces_per_player: model.pieces_per_player,
-                    input_size: model.input_size,
-                    architecture: model.layer_sizes?.join('→'),
-                    activations: model.activations?.join(', '),
-                    model_file: modelEntry.model_file,
-                    date: modelEntry.date,
-                    time: modelEntry.time
-                });
-
                 return true;
             }
         }
@@ -143,7 +129,9 @@ export async function isNeuralModelAvailableForRuleset(rulesetName: string): Pro
     }
 
     return false;
-} export class NeuralNetworkPlayerAgent implements PlayerAgent {
+}
+
+export class NeuralNetworkPlayerAgent implements PlayerAgent {
     readonly playerType: PlayerType = 'computer';
     readonly color: 'white' | 'black';
     private model: NeuralNetworkModel | null = null;

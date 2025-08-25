@@ -1,18 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import type { PlayerType } from './player-agents';
-import { isNeuralModelAvailableForRuleset } from './player-agents';
+import { PlayerAgentRegistry, type AgentType, isNeuralModelAvailableForRuleset } from './player-agents';
 import { DEFAULT_RULE_SET, getRuleSetByName } from './RuleSets';
 
 export interface GameSetupProps {
-    onStartGame: (whitePlayer: PlayerType, blackPlayer: PlayerType, whiteAgentType: 'computer' | 'mcts' | 'random' | 'exhaustive' | 'neural' | null, blackAgentType: 'computer' | 'mcts' | 'random' | 'exhaustive' | 'neural' | null) => void;
+    onStartGame: (whitePlayer: PlayerType, blackPlayer: PlayerType, whiteAgentType: AgentType | null, blackAgentType: AgentType | null) => void;
     currentRuleSet?: string; // Optional prop to check for model availability
 }
 
-type PlayerOption = 'human' | 'computer' | 'mcts' | 'random' | 'exhaustive' | 'neural';
-
 interface GameSetupState {
-    whitePlayerOption: PlayerOption;
-    blackPlayerOption: PlayerOption;
+    whitePlayerOption: AgentType;
+    blackPlayerOption: AgentType;
 }
 
 const STORAGE_KEY = 'ur-game-setup';
@@ -29,15 +27,29 @@ const checkModelAvailability = async (ruleSetName: string): Promise<boolean> => 
         return modelAvailabilityCache.get(cacheKey)!;
     }
 
-    const isAvailable = await isNeuralModelAvailableForRuleset(ruleSetName);
-    modelAvailabilityCache.set(cacheKey, isAvailable);
-    return isAvailable;
+    try {
+        const isAvailable = await isNeuralModelAvailableForRuleset(ruleSetName);
+        modelAvailabilityCache.set(cacheKey, isAvailable);
+        return isAvailable;
+    } catch (error) {
+        console.error('Error checking model availability:', error);
+        modelAvailabilityCache.set(cacheKey, false);
+        return false;
+    }
 };
+
+// Export for debugging
+// (window as any).testNeuralAvailability = async () => {
+//     console.log('Testing neural availability...');
+//     const result = await isNeuralModelAvailableForRuleset('Burglers of Ur');
+//     console.log('Result:', result);
+//     return result;
+// };
 
 
 const GameSetup: React.FC<GameSetupProps> = ({ onStartGame, currentRuleSet = DEFAULT_RULE_SET.name }) => {
-    const [whitePlayerOption, setWhitePlayerOption] = useState<PlayerOption>('human');
-    const [blackPlayerOption, setBlackPlayerOption] = useState<PlayerOption>('human');
+    const [whitePlayerOption, setWhitePlayerOption] = useState<AgentType>('human');
+    const [blackPlayerOption, setBlackPlayerOption] = useState<AgentType>('human');
     const [isLoaded, setIsLoaded] = useState(false);
     const [isNeuralAvailable, setIsNeuralAvailable] = useState(false);
 
@@ -89,58 +101,14 @@ const GameSetup: React.FC<GameSetupProps> = ({ onStartGame, currentRuleSet = DEF
     }, [whitePlayerOption, blackPlayerOption, isLoaded]);
 
     const handleStartGame = () => {
-        const { type: whiteType, agentType: whiteAgentType } = parsePlayerOption(whitePlayerOption);
-        const { type: blackType, agentType: blackAgentType } = parsePlayerOption(blackPlayerOption);
+        const { type: whiteType, agentType: whiteAgentType } = PlayerAgentRegistry.parsePlayerOption(whitePlayerOption);
+        const { type: blackType, agentType: blackAgentType } = PlayerAgentRegistry.parsePlayerOption(blackPlayerOption);
 
         onStartGame(whiteType, blackType, whiteAgentType, blackAgentType);
     };
 
-    const parsePlayerOption = (option: PlayerOption): { type: PlayerType; agentType: 'computer' | 'mcts' | 'random' | 'exhaustive' | 'neural' | null } => {
-        switch (option) {
-            case 'human':
-                return { type: 'human', agentType: null };
-            case 'computer':
-                return { type: 'computer', agentType: 'computer' };
-            case 'mcts':
-                return { type: 'computer', agentType: 'mcts' };
-            case 'random':
-                return { type: 'computer', agentType: 'random' };
-            case 'exhaustive':
-                return { type: 'computer', agentType: 'exhaustive' };
-            case 'neural':
-                return { type: 'computer', agentType: 'neural' };
-            default:
-                return { type: 'human', agentType: null };
-        }
-    };
-
     const getGameModeDescription = (): string => {
-        const { type: whiteType, agentType: whiteAgentType } = parsePlayerOption(whitePlayerOption);
-        const { type: blackType, agentType: blackAgentType } = parsePlayerOption(blackPlayerOption);
-
-        if (whiteType === 'human' && blackType === 'human') {
-            return 'Two players taking turns on the same device';
-        } else if (whiteType === 'human' && blackType === 'computer') {
-            const computerType = blackAgentType === 'computer' ? 'Computer' :
-                blackAgentType === 'mcts' ? 'Computer (MCTS)' :
-                    blackAgentType === 'exhaustive' ? 'Computer (Exhaustive)' : 'Random Computer';
-            return `You play as White against ${computerType}`;
-        } else if (whiteType === 'computer' && blackType === 'human') {
-            const computerType = whiteAgentType === 'computer' ? 'Computer' :
-                whiteAgentType === 'mcts' ? 'Computer (MCTS)' :
-                    whiteAgentType === 'exhaustive' ? 'Computer (Exhaustive)' : 'Random Computer';
-            return `You play as Black against ${computerType}`;
-        } else {
-            const whiteComputerType = whiteAgentType === 'computer' ? 'Computer' :
-                whiteAgentType === 'mcts' ? 'Computer (MCTS)' :
-                    whiteAgentType === 'exhaustive' ? 'Computer (Exhaustive)' :
-                        whiteAgentType === 'neural' ? 'Computer (Neural)' : 'Random Computer';
-            const blackComputerType = blackAgentType === 'computer' ? 'Computer' :
-                blackAgentType === 'mcts' ? 'Computer (MCTS)' :
-                    blackAgentType === 'exhaustive' ? 'Computer (Exhaustive)' :
-                        blackAgentType === 'neural' ? 'Computer (Neural)' : 'Random Computer';
-            return `Watch ${whiteComputerType} (White) vs ${blackComputerType} (Black)`;
-        }
+        return PlayerAgentRegistry.getMatchupDescription(whitePlayerOption, blackPlayerOption);
     };
 
     const selectStyle = {
@@ -180,17 +148,19 @@ const GameSetup: React.FC<GameSetupProps> = ({ onStartGame, currentRuleSet = DEF
                 <h3 style={{ marginBottom: '10px', color: 'var(--text-color, #333)' }}>White Player</h3>
                 <select
                     value={whitePlayerOption}
-                    onChange={(e) => setWhitePlayerOption(e.target.value as PlayerOption)}
+                    onChange={(e) => setWhitePlayerOption(e.target.value as AgentType)}
                     style={selectStyle}
                 >
-                    <option value="human">Human</option>
-                    <option value="computer">Computer</option>
-                    <option value="mcts">Computer (MCTS)</option>
-                    <option value="exhaustive">Computer (Exhaustive)</option>
-                    {isNeuralAvailable && (
-                        <option value="neural">Computer (Neural)</option>
-                    )}
-                    <option value="random">Random Computer</option>
+                    {PlayerAgentRegistry.getAllAgentInfo()
+                        .filter(agentInfo => !agentInfo.requiresModel || isNeuralAvailable)
+                        .map(agentInfo => (
+                            <option
+                                key={agentInfo.id}
+                                value={agentInfo.id}
+                            >
+                                {agentInfo.name}
+                            </option>
+                        ))}
                 </select>
             </div>
 
@@ -198,17 +168,19 @@ const GameSetup: React.FC<GameSetupProps> = ({ onStartGame, currentRuleSet = DEF
                 <h3 style={{ marginBottom: '10px', color: 'var(--text-color, #333)' }}>Black Player</h3>
                 <select
                     value={blackPlayerOption}
-                    onChange={(e) => setBlackPlayerOption(e.target.value as PlayerOption)}
+                    onChange={(e) => setBlackPlayerOption(e.target.value as AgentType)}
                     style={selectStyle}
                 >
-                    <option value="human">Human</option>
-                    <option value="computer">Computer</option>
-                    <option value="mcts">Computer (MCTS)</option>
-                    <option value="exhaustive">Computer (Exhaustive)</option>
-                    {isNeuralAvailable && (
-                        <option value="neural">Computer (Neural)</option>
-                    )}
-                    <option value="random">Random Computer</option>
+                    {PlayerAgentRegistry.getAllAgentInfo()
+                        .filter(agentInfo => !agentInfo.requiresModel || isNeuralAvailable)
+                        .map(agentInfo => (
+                            <option
+                                key={agentInfo.id}
+                                value={agentInfo.id}
+                            >
+                                {agentInfo.name}
+                            </option>
+                        ))}
                 </select>
             </div>
 

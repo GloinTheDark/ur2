@@ -11,7 +11,7 @@ import LoggingControl from './LoggingControl'
 import type { UserPreferencesData } from './UserPreferences'
 import PlayerHome from './PlayerHome'
 import GameLayout from './GameLayout'
-import type { PlayerType } from './player-agents'
+import type { PlayerType, AgentType } from './player-agents'
 import type { GameSettings as GameSettingsType } from './GameState'
 import { BoardUtils, BOARD_COLUMNS, BOARD_ROWS, TOTAL_SQUARES } from './BoardLayout'
 import { getRuleSetByName } from './RuleSets'
@@ -61,7 +61,7 @@ function App() {
   const winner = gameState.checkWinCondition();
 
   // Handle game setup completion
-  const handleGameSetup = async (whitePlayer: PlayerType, blackPlayer: PlayerType, whiteAgentType: 'computer' | 'mcts' | 'random' | 'exhaustive' | 'neural' | null, blackAgentType: 'computer' | 'mcts' | 'random' | 'exhaustive' | 'neural' | null) => {
+  const handleGameSetup = async (whitePlayer: PlayerType, blackPlayer: PlayerType, whiteAgentType: AgentType | null, blackAgentType: AgentType | null) => {
     setShowGameSetup(false); // Close the setup modal
 
     // Start the game directly - no intermediate welcome screen
@@ -130,7 +130,7 @@ function App() {
   // Calculate stacking offset and direction based on board orientation
   const getStackingOffset = (stackIndex: number, orientation: 0 | 1 | 2 | 3) => {
     const baseOffset = stackIndex * 5;
-    
+
     switch (orientation) {
       case 0: // 0° - stack upward (negative Y)
         return { top: `calc(50% - ${baseOffset}px)`, left: '50%' };

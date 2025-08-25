@@ -8,8 +8,7 @@ import { getPathPair, getPath } from './GamePaths';
 import { getRuleSetByName, DEFAULT_RULE_SET } from './RuleSets';
 import type { RuleSet } from './RuleSet';
 import { BurglersOfUrRuleSet } from './rulesets/BurglersOfUrRuleSet';
-import { HumanPlayerAgent, ComputerPlayerAgent, MCTSPlayerAgent, RandomPlayerAgent, ExhaustiveSearchPlayerAgent, NeuralNetworkPlayerAgent, getModelPathForRuleset } from './player-agents';
-import type { PlayerAgent, PlayerType } from './player-agents';
+import type { PlayerAgent, PlayerType, AgentType } from './player-agents';
 import { AppLog } from './AppSettings';
 
 // Board square constants
@@ -41,8 +40,8 @@ export interface Move {
 export interface PlayerConfiguration {
     white: PlayerType;
     black: PlayerType;
-    whiteAgentType?: 'computer' | 'mcts' | 'random' | 'exhaustive' | 'neural';
-    blackAgentType?: 'computer' | 'mcts' | 'random' | 'exhaustive' | 'neural';
+    whiteAgentType?: AgentType;
+    blackAgentType?: AgentType;
 }
 
 export interface GameSettings {
@@ -439,35 +438,9 @@ export class GameState {
         this.handleGameStateChange();
     }
 
-    private async createPlayerAgent(color: 'white' | 'black', type: PlayerType, agentType?: 'computer' | 'mcts' | 'random' | 'exhaustive' | 'neural'): Promise<PlayerAgent> {
-        switch (type) {
-            case 'human':
-                return new HumanPlayerAgent(color);
-            case 'computer':
-                switch (agentType) {
-                    case 'random':
-                        return new RandomPlayerAgent(color);
-                    case 'mcts':
-                        return new MCTSPlayerAgent(color);
-                    case 'exhaustive':
-                        return new ExhaustiveSearchPlayerAgent(color, this);
-                    case 'neural':
-                        // Find the appropriate model for the current ruleset
-                        try {
-                            const modelPath = await this.findNeuralModelForCurrentRuleset();
-                            return new NeuralNetworkPlayerAgent(color, modelPath);
-                        } catch (error) {
-                            // No model available for this ruleset, fall back to computer agent
-                            AppLog.playerAgent(`Neural agent requested but no model available for ${this.settings.currentRuleSet}: ${error}. Falling back to computer agent.`);
-                            return new ComputerPlayerAgent(color);
-                        }
-                    case 'computer':
-                    default:
-                        return new ComputerPlayerAgent(color);
-                }
-            default:
-                throw new Error(`Unknown player type: ${type}`);
-        }
+    private async createPlayerAgent(color: 'white' | 'black', type: PlayerType, agentType?: AgentType): Promise<PlayerAgent> {
+        const { PlayerAgentRegistry } = await import('./player-agents');
+        return PlayerAgentRegistry.createPlayerAgentWithFallback(color, type, agentType, this);
     }
 
     private cleanupPlayers(): void {
@@ -482,13 +455,6 @@ export class GameState {
             this.blackPlayer.cleanup();
             this.blackPlayer = null;
         }
-    }
-
-    /**
-     * Find the appropriate neural network model for the current ruleset
-     */
-    private async findNeuralModelForCurrentRuleset(): Promise<string> {
-        return await getModelPathForRuleset(this.settings.currentRuleSet);
     }
 
     getCurrentPlayerAgent(): PlayerAgent | null {
