@@ -61,8 +61,11 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
             state.currentPlayer === player &&
             positions[selectedPiece] === 0);
 
+        // Determine piece type based on flipIndex
+        const shouldShowSpots = gameState.shouldPieceShowSpots(0);
+
         return {
-            type: 'blank' as const,
+            type: shouldShowSpots ? 'spots' as const : 'blank' as const,
             isEligible,
             isSelected,
             onClick: isEligible ? () => {

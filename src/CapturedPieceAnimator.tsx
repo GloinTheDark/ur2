@@ -1,7 +1,9 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { GameState } from './GameState';
 import whiteBlank from './assets/WhiteBlank.svg';
+import whiteSpots from './assets/WhiteSpots.svg';
 import blackBlank from './assets/BlackBlank.svg';
+import blackSpots from './assets/BlackSpots.svg';
 import { PIECE_SIZE, STACK_OFFSET, PIECE_ANIMATION_Z_INDEX } from './UIConstants';
 
 interface CapturedPieceAnimatorProps {
@@ -102,9 +104,15 @@ const CapturedPieceAnimator: React.FC<CapturedPieceAnimatorProps> = ({
     const currentX = startPosition.x + (endPosition.x - startPosition.x) * progress;
     const currentY = startPosition.y + (endPosition.y - startPosition.y) * progress;
 
-    // Captured pieces are always blank when they return home
+    // Captured pieces should respect flipIndex - when going back to start (position 0)
     const getPieceImage = () => {
-        return player === 'white' ? whiteBlank : blackBlank;
+        const shouldShowSpots = gameState.shouldPieceShowSpots(0); // Position 0 (start/home)
+        
+        if (player === 'white') {
+            return shouldShowSpots ? whiteSpots : whiteBlank;
+        } else {
+            return shouldShowSpots ? blackSpots : blackBlank;
+        }
     };
 
     // Render all pieces in the stack

@@ -31,7 +31,7 @@ export const BELL_PATH: GamePath = {
     name: "Bell Path",
     description: "Classic path first proposed by R. C. Bell, later popularized by Irving Finkel",
     whitePath: [0, 4, 3, 2, 1, 9, 10, 11, 12, 13, 14, 15, 16, 8, 7, 25],
-    flipIndex: 1, // Pieces flip when entering the board (moving from start to first square)
+    flipIndex: 0, // Pieces show spots from the start (including start position)
     overlayImage: "/src/assets/RCBellPath.svg"
 };
 
@@ -52,7 +52,7 @@ export const MASTERS_PATH: GamePath = {
     name: "Masters Path",
     description: "Balanced path for competitive and fast-paced games",
     whitePath: [0, 4, 3, 2, 1, 9, 10, 11, 12, 13, 14, 15, 23, 24, 16, 8, 7, 25],
-    flipIndex: 1, // Pieces flip when entering the board (moving from start to first square)
+    flipIndex: 0, // Pieces show spots from the start (including start position)
     overlayImage: "/src/assets/JMastersPath.svg"
 };
 
