@@ -243,8 +243,7 @@ export async function isNeuralModelAvailableForRuleset(rulesetName: string): Pro
     }
 
     getPlayerName(): string {
-        const modelName = this.model?.model_name || this.model?.ruleset || 'unknown';
-        return `Neural Network AI (${this.color}) - ${modelName}`;
+        return `Neural Net AI`;
     }
 
     cleanup(): void {

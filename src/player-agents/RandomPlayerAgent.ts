@@ -85,7 +85,7 @@ export class RandomPlayerAgent implements PlayerAgent {
     }
 
     getPlayerName(): string {
-        return 'Computer (Random)';
+        return 'Random AI';
     }
 
     private delay(ms: number): Promise<void> {

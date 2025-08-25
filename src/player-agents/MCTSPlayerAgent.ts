@@ -115,7 +115,7 @@ export class MCTSPlayerAgent implements PlayerAgent {
     }
 
     getPlayerName(): string {
-        return 'Computer (MCTS)';
+        return 'Monte Carlo AI';
     }
 
     private async selectMCTSMove(gameState: GameState): Promise<Move> {

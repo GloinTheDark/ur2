@@ -36,7 +36,7 @@ export class ExhaustiveSearchPlayerAgent implements PlayerAgent {
     }
 
     getPlayerName(): string {
-        return `Exhaustive Search AI (${this.color})`;
+        return `Exhaustive Search AI`;
     }
 
     cleanup(): void {

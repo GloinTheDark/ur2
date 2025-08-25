@@ -113,7 +113,7 @@ export class ComputerPlayerAgent implements PlayerAgent {
     }
 
     getPlayerName(): string {
-        return 'Computer';
+        return 'Basic AI';
     }
 
     private async selectBestMove(gameState: GameState): Promise<Move> {
