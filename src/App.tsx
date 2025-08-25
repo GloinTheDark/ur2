@@ -25,7 +25,7 @@ import marketSquare from './assets/MarketSquare.svg'
 import templeSquare from './assets/TempleSquare.svg'
 import houseSquare from './assets/HouseSquare.svg'
 import treasurySquare from './assets/TreasurySquare.svg'
-import goToSquare from './assets/GoTo.svg'
+import redX from './assets/RedX.svg'
 import whiteBlank from './assets/WhiteBlank.svg'
 import whiteSpots from './assets/WhiteSpots.svg'
 import blackBlank from './assets/BlackBlank.svg'
@@ -798,32 +798,60 @@ function App() {
                     />
                   )}
                   {isDestinationSquare && (
-                    <img
-                      src={goToSquare}
-                      alt="Go To Square"
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        zIndex: 10,
-                        cursor: 'pointer'
-                      }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (state.selectedPiece !== null) {
-                          const legalMoves = gameState.getLegalMoves();
-                          const moveToMake = legalMoves.find(move =>
-                            move.movingPieceIndex === state.selectedPiece! &&
-                            move.destinationSquare === squareNumber
-                          );
-                          if (moveToMake) {
-                            gameState.startLegalMove(moveToMake);
-                          }
-                        }
-                      }}
-                    />
+                    (() => {
+                      // Find the move for this destination to check if it's a capture
+                      const legalMoves = gameState.getLegalMoves();
+                      const moveToMake = legalMoves.find(move =>
+                        move.movingPieceIndex === state.selectedPiece! &&
+                        move.destinationSquare === squareNumber
+                      );
+                      const isCapture = moveToMake?.capture || false;
+
+                      return (
+                        <div
+                          style={{
+                            position: 'absolute',
+                            top: '50%',
+                            left: '50%',
+                            width: `${PIECE_SIZE}px`,
+                            height: `${PIECE_SIZE}px`,
+                            transform: 'translate(-50%, -50%)',
+                            zIndex: 10,
+                            cursor: 'pointer',
+                            pointerEvents: 'auto',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            ...(isCapture ? {
+                              // Red X for captures - no specific styling needed for image
+                            } : {
+                              // Green circle for normal moves
+                              borderRadius: '50%',
+                              backgroundColor: 'rgba(100, 255, 100, 0.7)',
+                              border: '2px solid rgba(50, 200, 50, 0.9)'
+                            })
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (state.selectedPiece !== null && moveToMake) {
+                              gameState.startLegalMove(moveToMake);
+                            }
+                          }}
+                        >
+                          {isCapture && (
+                            <img
+                              src={redX}
+                              alt="Capture Move"
+                              style={{
+                                width: `${PIECE_SIZE}px`,
+                                height: `${PIECE_SIZE}px`,
+                                opacity: 0.7
+                              }}
+                            />
+                          )}
+                        </div>
+                      );
+                    })()
                   )}
 
                   {/* Display pieces on this square */}

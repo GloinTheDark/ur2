@@ -6,11 +6,12 @@
    id="Layer_1"
    x="0px"
    y="0px"
-   viewBox="0 0 48 48"
-   style="enable-background:new 0 0 48 48;"
+   viewBox="0 0 35.999996 35.999996"
    xml:space="preserve"
    sodipodi:docname="GoTo.svg"
    inkscape:version="1.4 (86a8ad7, 2024-10-11)"
+   width="35.999996"
+   height="35.999996"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns="http://www.w3.org/2000/svg"
@@ -29,8 +30,8 @@
    inkscape:deskcolor="#d1d1d1"
    showgrid="true"
    inkscape:zoom="36.104167"
-   inkscape:cx="23.723024"
-   inkscape:cy="23.986151"
+   inkscape:cx="15.496826"
+   inkscape:cy="17.975764"
    inkscape:window-width="3840"
    inkscape:window-height="2036"
    inkscape:window-x="-12"
@@ -39,8 +40,8 @@
    inkscape:current-layer="Layer_1"><inkscape:grid
      id="grid5"
      units="px"
-     originx="0"
-     originy="0"
+     originx="-8.2500019"
+     originy="-6.0000019"
      spacingx="1"
      spacingy="1"
      empcolor="#0099e5"
@@ -61,8 +62,9 @@
 
 <metadata
    id="metadata5"><rdf:RDF><cc:Work
-       rdf:about=""><dc:title>BlackBlank</dc:title></cc:Work></rdf:RDF></metadata><path
-   style="fill:#00ff66;fill-opacity:0.83433735;stroke:#000000;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:round;stroke-opacity:1"
-   d="m 24,34.5 22,-14 H 36 V 1.5 H 12 v 19 H 2 Z"
-   id="path5"
-   sodipodi:nodetypes="cccccccc" /></svg>
+       rdf:about=""><dc:title>BlackBlank</dc:title></cc:Work></rdf:RDF></metadata><circle
+   style="fill:#03ff03;fill-opacity:1;stroke:#12b612;stroke-width:2.14925;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke fill markers"
+   id="path1"
+   cx="17.999998"
+   cy="17.999998"
+   r="16.925373" /></svg>

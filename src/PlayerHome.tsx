@@ -1,10 +1,10 @@
 import React from 'react';
 import type { GameState } from './GameState';
 import { BurglersOfUrRuleSet } from './rulesets/BurglersOfUrRuleSet';
-import { HOME_SQUARE_SIZE } from './UIConstants';
-import goToSquare from './assets/GoTo.svg';
+import { HOME_SQUARE_SIZE, PIECE_SIZE, STACK_OFFSET } from './UIConstants';
 import templeSquare from './assets/TempleSquare.svg';
 import houseSquare from './assets/HouseSquare.svg';
+import redX from './assets/RedX.svg';
 import PlayerDiceRoller from './PlayerDiceRoller';
 import PieceStack from './components/PieceStack';
 
@@ -230,7 +230,7 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
                         <div
                             style={{
                                 position: 'absolute',
-                                top: '20px', // Position above the stack
+                                bottom: `${completedCount * STACK_OFFSET + (HOME_SQUARE_SIZE - PIECE_SIZE / 2) + 3}px`, // Position at piece level in stack
                                 left: '50%',
                                 transform: 'translateX(-50%)',
                                 width: HOME_SQUARE_SIZE,
@@ -252,15 +252,48 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
                                 }
                             }}
                         >
-                            <img
-                                src={goToSquare}
-                                alt="Complete to Home"
-                                style={{
-                                    width: '100%',
-                                    height: '100%',
-                                    borderRadius: '4px'
-                                }}
-                            />
+                            {(() => {
+                                // Find the move for this destination to check if it's a capture
+                                const legalMoves = gameState.getLegalMoves();
+                                const moveToMake = legalMoves.find(move =>
+                                    move.movingPieceIndex === selectedPiece &&
+                                    move.destinationSquare === 25
+                                );
+                                const isCapture = moveToMake?.capture || false;
+
+                                return (
+                                    <div
+                                        style={{
+                                            width: `${PIECE_SIZE}px`,
+                                            height: `${PIECE_SIZE}px`,
+                                            margin: 'auto',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            ...(isCapture ? {
+                                                // Red X for captures - no specific styling needed for image
+                                            } : {
+                                                // Green circle for normal moves
+                                                borderRadius: '50%',
+                                                backgroundColor: 'rgba(100, 255, 100, 0.7)',
+                                                border: '2px solid rgba(50, 200, 50, 0.9)'
+                                            })
+                                        }}
+                                    >
+                                        {isCapture && (
+                                            <img
+                                                src={redX}
+                                                alt="Capture Move"
+                                                style={{
+                                                    width: `${PIECE_SIZE}px`,
+                                                    height: `${PIECE_SIZE}px`,
+                                                    opacity: 0.7
+                                                }}
+                                            />
+                                        )}
+                                    </div>
+                                );
+                            })()}
                         </div>
                     )}
                 </div>
