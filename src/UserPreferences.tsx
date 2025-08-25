@@ -3,6 +3,7 @@ import React, { useState, useRef } from 'react';
 export interface UserPreferencesData {
     diceAnimations: boolean;
     pieceAnimations: boolean;
+    boardOrientation: 0 | 1 | 2 | 3;
 }
 
 interface UserPreferencesProps {
@@ -227,6 +228,75 @@ const UserPreferences: React.FC<UserPreferencesProps> = ({
                                 </div>
                                 <div>
                                     Disable for faster gameplay or accessibility preferences.
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Board Orientation Settings */}
+                        <div>
+                            <h3 style={{
+                                marginBottom: '16px',
+                                color: 'var(--text-color, #666)',
+                                fontSize: '1.2rem',
+                                fontWeight: 'bold'
+                            }}>
+                                Board Orientation
+                            </h3>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                {[
+                                    { value: 0, label: '🡹 Standard', description: 'Default layout' },
+                                    { value: 1, label: '🡽 90° Clockwise', description: 'Rotated right' },
+                                    { value: 2, label: '🡻 180°', description: 'Upside down' },
+                                    { value: 3, label: '🡼 270° Clockwise', description: 'Rotated left' }
+                                ].map((option) => (
+                                    <label key={option.value} style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '12px',
+                                        fontSize: '1rem',
+                                        color: 'var(--text-color, #333)',
+                                        cursor: 'pointer',
+                                        padding: '8px',
+                                        borderRadius: '6px',
+                                        backgroundColor: preferences.boardOrientation === option.value ? 'var(--selected-bg, #e3f2fd)' : 'transparent',
+                                        border: preferences.boardOrientation === option.value ? '2px solid var(--selected-border, #2196f3)' : '2px solid transparent'
+                                    }}>
+                                        <input
+                                            type="radio"
+                                            name="boardOrientation"
+                                            value={option.value}
+                                            checked={preferences.boardOrientation === option.value}
+                                            onChange={() => onPreferencesChange({ boardOrientation: option.value as 0 | 1 | 2 | 3 })}
+                                            style={{
+                                                transform: 'scale(1.3)',
+                                                cursor: 'pointer'
+                                            }}
+                                        />
+                                        <div>
+                                            <div style={{ fontWeight: 'bold' }}>{option.label}</div>
+                                            <div style={{ fontSize: '0.9rem', color: 'var(--text-color, #666)' }}>
+                                                {option.description}
+                                            </div>
+                                        </div>
+                                    </label>
+                                ))}
+                            </div>
+
+                            <div style={{
+                                marginTop: '16px',
+                                fontSize: '0.9rem',
+                                color: 'var(--text-color, #666)',
+                                backgroundColor: 'var(--info-bg, #f8f9fa)',
+                                padding: '12px',
+                                borderRadius: '6px',
+                                border: '1px solid var(--border-color, #e9ecef)'
+                            }}>
+                                <div style={{ marginBottom: '4px' }}>
+                                    🔄 <strong>Tip:</strong> Change the board orientation to match your preferred viewing angle.
+                                </div>
+                                <div>
+                                    This setting applies immediately and works with all game features.
                                 </div>
                             </div>
                         </div>

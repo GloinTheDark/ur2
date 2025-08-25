@@ -49,6 +49,7 @@ export interface GameSettings {
     diceAnimations: boolean;
     pieceAnimations: boolean;
     currentRuleSet: string;
+    boardOrientation: 0 | 1 | 2 | 3;
 }
 
 export interface GameStateData {
@@ -382,6 +383,10 @@ export class GameState {
         return { ...this.settings };
     }
 
+    getBoardOrientation(): 0 | 1 | 2 | 3 {
+        return this.settings.boardOrientation;
+    }
+
     // Game initialization
     startNewGame(): void {
         this.data = this.createInitialState();
@@ -668,6 +673,7 @@ export class GameState {
                     diceAnimations: true,
                     pieceAnimations: true,
                     currentRuleSet: DEFAULT_RULE_SET.name,
+                    boardOrientation: 0,
                     ...validSettings
                 };
             } catch {
@@ -681,7 +687,8 @@ export class GameState {
         return {
             diceAnimations: true,
             pieceAnimations: true,
-            currentRuleSet: DEFAULT_RULE_SET.name
+            currentRuleSet: DEFAULT_RULE_SET.name,
+            boardOrientation: 0
         };
     }
 

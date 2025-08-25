@@ -91,7 +91,40 @@ function App() {
     if (newPreferences.pieceAnimations !== undefined) {
       settingsUpdate.pieceAnimations = newPreferences.pieceAnimations;
     }
+    if (newPreferences.boardOrientation !== undefined) {
+      settingsUpdate.boardOrientation = newPreferences.boardOrientation;
+    }
     gameState.updateAndSaveSettings(settingsUpdate);
+  };
+
+  // Board orientation transform and container sizing functions
+  const getBoardTransform = (orientation: 0 | 1 | 2 | 3): string => {
+    const rotations = {
+      0: 'rotate(0deg)',
+      1: 'rotate(90deg)',
+      2: 'rotate(180deg)',
+      3: 'rotate(270deg)'
+    };
+    return rotations[orientation];
+  };
+
+  const getBoardContainerSize = (orientation: 0 | 1 | 2 | 3) => {
+    // Calculate board dimensions including gaps
+    const boardWidth = BOARD_COLUMNS * SQUARE_SIZE + (BOARD_COLUMNS - 1) * BOARD_GAP;
+    const boardHeight = BOARD_ROWS * SQUARE_SIZE + (BOARD_ROWS - 1) * BOARD_GAP;
+
+    // For 90° and 270° rotations, swap width and height
+    if (orientation === 1 || orientation === 3) {
+      return {
+        width: boardHeight,
+        height: boardWidth
+      };
+    }
+
+    return {
+      width: boardWidth,
+      height: boardHeight
+    };
   };
 
   return (
@@ -539,7 +572,8 @@ function App() {
         onClose={() => setShowPreferences(false)}
         preferences={{
           diceAnimations: settings.diceAnimations,
-          pieceAnimations: settings.pieceAnimations
+          pieceAnimations: settings.pieceAnimations,
+          boardOrientation: settings.boardOrientation
         }}
         onPreferencesChange={savePreferences}
       />
@@ -618,13 +652,24 @@ function App() {
         }
       >
         {/* Main Game Board */}
-        <div style={{ position: 'relative' }}>
+        <div style={{
+          position: 'relative',
+          transform: getBoardTransform(gameState.getBoardOrientation()),
+          transformOrigin: 'center',
+          transition: 'transform 0.3s ease',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          pointerEvents: 'none',
+          ...getBoardContainerSize(gameState.getBoardOrientation())
+        }}>
           <div className="gameboard" style={{
             display: 'grid',
             gridTemplateColumns: `repeat(${BOARD_COLUMNS}, ${SQUARE_SIZE}px)`,
             gridTemplateRows: `repeat(${BOARD_ROWS}, ${SQUARE_SIZE}px)`,
             gap: `${BOARD_GAP}px`,
-            justifyContent: 'center'
+            justifyContent: 'center',
+            pointerEvents: 'auto'
           }}>
             {Array.from({ length: TOTAL_SQUARES }).map((_, idx) => {
               const squareNumber = idx + 1;
@@ -838,14 +883,16 @@ function App() {
                 alt="Path Overlay"
                 style={{
                   position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  width: '100%',
-                  height: '100%',
+                  top: '50%',
+                  left: '50%',
+                  width: `${BOARD_COLUMNS * SQUARE_SIZE + (BOARD_COLUMNS - 1) * BOARD_GAP}px`,
+                  height: `${BOARD_ROWS * SQUARE_SIZE + (BOARD_ROWS - 1) * BOARD_GAP}px`,
+                  transform: `translate(-50%, -50%) ${state.currentPlayer === 'black' ? 'scaleY(-1)' : ''}`,
+                  transformOrigin: 'center',
                   pointerEvents: 'none',
                   zIndex: 5,
                   opacity: 0.7,
-                  transform: state.currentPlayer === 'black' ? 'scaleY(-1)' : 'none'
+                  transition: 'transform 0.3s ease'
                 }}
               />
             );
