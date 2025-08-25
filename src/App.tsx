@@ -127,6 +127,22 @@ function App() {
     };
   };
 
+  // Calculate stacking offset and direction based on board orientation
+  const getStackingOffset = (stackIndex: number, orientation: 0 | 1 | 2 | 3) => {
+    const baseOffset = stackIndex * 5;
+    
+    switch (orientation) {
+      case 0: // 0° - stack upward (negative Y)
+        return { top: `calc(50% - ${baseOffset}px)`, left: '50%' };
+      case 1: // 90° CW - stack leftward (negative X)
+        return { top: '50%', left: `calc(50% - ${baseOffset}px)` };
+      case 2: // 180° - stack downward (positive Y)
+        return { top: `calc(50% + ${baseOffset}px)`, left: '50%' };
+      case 3: // 270° CW - stack rightward (positive X)
+        return { top: '50%', left: `calc(50% + ${baseOffset}px)` };
+    }
+  };
+
   return (
     <div className="app" style={{
       display: 'flex',
@@ -821,8 +837,8 @@ function App() {
                           const isEligible = state.gameStarted && !winner && state.currentPlayer === player && !gameState.isAnimating() && state.eligiblePieces.includes(pieceIndex);
                           const isSelected = state.selectedPiece !== null && state.currentPlayer === player && state.selectedPiece === pieceIndex;
 
-                          // Calculate stacking offset (5px higher per stack level, 1 zIndex higher)
-                          const stackOffset = stackIndex * 5;
+                          // Calculate stacking offset based on board orientation
+                          const stackingOffset = getStackingOffset(stackIndex, gameState.getBoardOrientation());
                           const stackZIndex = 2 + stackIndex;
 
                           return (
@@ -843,8 +859,8 @@ function App() {
                                 isEligible={isEligible}
                                 isSelected={isSelected}
                                 size={HIGHLIGHT_CIRCLE_SIZE}
-                                top={`calc(50% - ${stackOffset}px)`}
-                                left="50%"
+                                top={stackingOffset.top}
+                                left={stackingOffset.left}
                                 transform="translate(-50%, -50%)"
                                 zIndex={stackZIndex}
                               />
@@ -855,8 +871,8 @@ function App() {
                                   width: `${PIECE_SIZE}px`,
                                   height: `${PIECE_SIZE}px`,
                                   position: 'absolute',
-                                  top: `calc(50% - ${stackOffset}px)`,
-                                  left: '50%',
+                                  top: stackingOffset.top,
+                                  left: stackingOffset.left,
                                   transform: 'translate(-50%, -50%)',
                                   zIndex: stackZIndex
                                 }}
