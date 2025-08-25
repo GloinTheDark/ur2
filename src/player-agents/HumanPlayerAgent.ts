@@ -22,7 +22,7 @@ export class HumanPlayerAgent implements PlayerAgent {
     }
 
     getPlayerName(): string {
-        return this.color.charAt(0).toUpperCase() + this.color.slice(1);
+        return 'Local Human Player';
     }
 
     cleanup(): void {
