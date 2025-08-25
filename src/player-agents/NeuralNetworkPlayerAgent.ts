@@ -206,10 +206,10 @@ export async function isNeuralModelAvailableForRuleset(rulesetName: string): Pro
         if (!this.model) return false;
 
         // Check if model ruleset matches game ruleset (case-insensitive)
-        const currentRuleset = gameState.getCurrentRuleSet().name.toLowerCase();
+        const currentRuleset = gameState.getCurrentRuleSet().id.toLowerCase();
         const modelRuleset = this.model.ruleset.toLowerCase();
         if (modelRuleset !== currentRuleset) {
-            AppLog.playerAgent(`NeuralNetwork: Warning - Model ruleset '${this.model.ruleset}' doesn't match current ruleset '${gameState.getCurrentRuleSet().name}'`);
+            AppLog.playerAgent(`NeuralNetwork: Warning - Model ruleset '${this.model.ruleset}' doesn't match current ruleset '${gameState.getCurrentRuleSet().id}'`);
             // Allow this for now, but log warning
         }
 
@@ -319,6 +319,16 @@ export async function isNeuralModelAvailableForRuleset(rulesetName: string): Pro
         if (!this.validateModelForGameState(gameState)) {
             AppLog.playerAgent('NeuralNetwork: Model validation failed, falling back to random move selection');
             return null; // This will trigger the fallback to random move
+        }
+
+        // If there's only one legal move, no need to evaluate - just return it
+        if (legalMoves.length === 1) {
+            AppLog.ai('NeuralNetwork: Only one legal move available, skipping evaluation');
+            return {
+                move: legalMoves[0],
+                score: 1.0, // Arbitrary positive score since it's the only option
+                reasons: ['Only legal move available']
+            };
         }
 
         const startTime = performance.now();
