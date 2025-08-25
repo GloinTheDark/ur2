@@ -198,9 +198,6 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
                 filter: 'var(--dark-mode-filter, none)'
             }}>
                 {playerName || (isWhite ? "White's Home" : "Black's Home")}
-                <span style={{ fontSize: '0.8rem', fontWeight: 'normal', marginLeft: '8px' }}>
-                    (Completed: {completedCount}/{gameState.getCurrentRuleSet().getPiecesToWin()})
-                </span>
             </h3>
             <div style={{
                 display: 'flex',
@@ -221,7 +218,10 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
                     <PieceStack
                         pieces={finishedStackPieces}
                         player={player}
-                        label="Finish"
+                        label={ruleset.getPiecesToWin() < ruleset.piecesPerPlayer
+                            ? `Finish ${completedCount}/${ruleset.getPiecesToWin()}`
+                            : "Finish"
+                        }
                         fixedCapacity={ruleset.getPiecesToWin()}
                     />
 

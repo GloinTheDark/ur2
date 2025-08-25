@@ -19,6 +19,7 @@ import { getPath } from './GamePaths'
 import { AppSettingsManager } from './AppSettings'
 import { PIECE_SIZE, HIGHLIGHT_CIRCLE_SIZE, SQUARE_SIZE, BOARD_GAP, BOARD_SQUARE_BORDER } from './UIConstants'
 import PieceHighlight from './components/PieceHighlight'
+import { RulesWindow } from './components/rules/RulesWindow'
 import rosetteSquare from './assets/RosetteSquare.svg'
 import gateSquare from './assets/GateSquare.svg'
 import marketSquare from './assets/MarketSquare.svg'
@@ -42,6 +43,7 @@ function App() {
   const [showPreferences, setShowPreferences] = useState<boolean>(false);
   const [showQuitConfirm, setShowQuitConfirm] = useState<boolean>(false);
   const [showLoggingControl, setShowLoggingControl] = useState<boolean>(false);
+  const [showRules, setShowRules] = useState<boolean>(false);
   const dualDiceRollerRef = useRef<DualDiceRollerRef>(null);
 
   // Debug mode - use centralized AppSettings
@@ -249,6 +251,33 @@ function App() {
             }}
           >
             ⚙️ Preferences
+          </button>
+
+          {/* Rules Button - always available */}
+          <button
+            onClick={() => setShowRules(true)}
+            style={{
+              padding: '8px 16px',
+              fontSize: '14px',
+              fontWeight: 'bold',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              backgroundColor: '#4CAF50',
+              color: '#fff',
+              border: 'none',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
+              transition: 'all 0.2s ease'
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.transform = 'translateY(-1px)';
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.4)';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.3)';
+            }}
+          >
+            📖 Rules
           </button>
 
           {/* Quit Game Button - only during game */}
@@ -615,6 +644,15 @@ function App() {
         isOpen={showLoggingControl}
         onClose={() => setShowLoggingControl(false)}
       />
+
+      {/* Rules Window */}
+      {showRules && (
+        <RulesWindow
+          rulesDescription={getRuleSetByName(settings.currentRuleSet).getRulesDescription()}
+          rulesetName={getRuleSetByName(settings.currentRuleSet).name}
+          onClose={() => setShowRules(false)}
+        />
+      )}
 
       {winner && (
         <div style={{

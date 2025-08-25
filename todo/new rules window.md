@@ -121,7 +121,7 @@ interface RulesExampleProps {
 - **Special**: Key special squares summary
 
 #### 🛤️ Board Overview
-- Simple path diagram
+- Simple path diagram (without numbered squares)
 - Starting and finishing areas marked
 - Special squares highlighted
 

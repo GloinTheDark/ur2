@@ -1,6 +1,7 @@
 // Base class for all rule sets in the Royal Game of Ur
 import type { PathType } from './GamePaths';
 import type { GameState } from './GameState';
+import type { RulesDescription } from './types/RulesDescription';
 
 export abstract class RuleSet {
     abstract readonly name: string;
@@ -19,6 +20,9 @@ export abstract class RuleSet {
 
     // Path type (the main thing that varies by ruleset)
     abstract readonly pathType: PathType;
+
+    // Rules description for the rules window
+    abstract getRulesDescription(): RulesDescription;
 
     // Bear off mechanics
     getExactRollNeededToBearOff(): boolean {
