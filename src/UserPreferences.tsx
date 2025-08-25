@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import BoardImage from './assets/Board.png';
 
 export interface UserPreferencesData {
     diceAnimations: boolean;
@@ -243,43 +244,47 @@ const UserPreferences: React.FC<UserPreferencesProps> = ({
                                 Board Orientation
                             </h3>
 
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            <div style={{
+                                display: 'grid',
+                                gridTemplateColumns: '1fr 1fr',
+                                gap: '12px',
+                                maxWidth: '200px'
+                            }}>
                                 {[
-                                    { value: 0, label: '🡹 Standard', description: 'Default layout' },
-                                    { value: 1, label: '🡽 90° Clockwise', description: 'Rotated right' },
-                                    { value: 2, label: '🡻 180°', description: 'Upside down' },
-                                    { value: 3, label: '🡼 270° Clockwise', description: 'Rotated left' }
+                                    { value: 0, rotation: 0 },
+                                    { value: 1, rotation: 90 },
+                                    { value: 2, rotation: 180 },
+                                    { value: 3, rotation: 270 }
                                 ].map((option) => (
-                                    <label key={option.value} style={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '12px',
-                                        fontSize: '1rem',
-                                        color: 'var(--text-color, #333)',
-                                        cursor: 'pointer',
-                                        padding: '8px',
-                                        borderRadius: '6px',
-                                        backgroundColor: preferences.boardOrientation === option.value ? 'var(--selected-bg, #e3f2fd)' : 'transparent',
-                                        border: preferences.boardOrientation === option.value ? '2px solid var(--selected-border, #2196f3)' : '2px solid transparent'
-                                    }}>
-                                        <input
-                                            type="radio"
-                                            name="boardOrientation"
-                                            value={option.value}
-                                            checked={preferences.boardOrientation === option.value}
-                                            onChange={() => onPreferencesChange({ boardOrientation: option.value as 0 | 1 | 2 | 3 })}
+                                    <button
+                                        key={option.value}
+                                        onClick={() => onPreferencesChange({ boardOrientation: option.value as 0 | 1 | 2 | 3 })}
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            cursor: 'pointer',
+                                            padding: '16px',
+                                            borderRadius: '8px',
+                                            backgroundColor: preferences.boardOrientation === option.value ? 'var(--selected-bg, #e3f2fd)' : 'transparent',
+                                            border: preferences.boardOrientation === option.value ? '2px solid var(--selected-border, #2196f3)' : '2px solid var(--border-color, #ddd)',
+                                            transition: 'all 0.2s ease',
+                                            aspectRatio: '1',
+                                            minHeight: '80px'
+                                        }}
+                                    >
+                                        <img
+                                            src={BoardImage}
+                                            alt={`Board orientation ${option.rotation}°`}
                                             style={{
-                                                transform: 'scale(1.3)',
-                                                cursor: 'pointer'
+                                                width: '50px',
+                                                height: '30px',
+                                                objectFit: 'contain',
+                                                transform: `rotate(${option.rotation}deg)`,
+                                                transition: 'transform 0.2s ease'
                                             }}
                                         />
-                                        <div>
-                                            <div style={{ fontWeight: 'bold' }}>{option.label}</div>
-                                            <div style={{ fontSize: '0.9rem', color: 'var(--text-color, #666)' }}>
-                                                {option.description}
-                                            </div>
-                                        </div>
-                                    </label>
+                                    </button>
                                 ))}
                             </div>
 
