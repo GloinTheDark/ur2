@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { GameState, type Move } from './GameState';
+import { GameState } from './GameState';
 import { SQUARE_SIZE } from './UIConstants';
 
 interface AnimatedWaypointVisualizerProps {
