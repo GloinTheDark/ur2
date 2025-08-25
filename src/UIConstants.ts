@@ -6,9 +6,10 @@
  */
 
 // Board dimensions
-export const SQUARE_SIZE = 48; // Size in pixels for board squares
+export const SQUARE_SIZE = 54; // Size in pixels for board squares
 export const HOME_SQUARE_SIZE = 40; // Size in pixels for home area squares
 export const BOARD_GAP = 4; // Gap between board squares in pixels
+export const BOARD_SQUARE_BORDER = 4; // Border size for board squares in pixels
 
 // Game piece and square styling constants
 export const PIECE_SIZE = 36; // Size in pixels for game pieces

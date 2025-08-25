@@ -17,7 +17,7 @@ import { BoardUtils, BOARD_COLUMNS, BOARD_ROWS, TOTAL_SQUARES } from './BoardLay
 import { getRuleSetByName } from './RuleSets'
 import { getPath } from './GamePaths'
 import { AppSettingsManager } from './AppSettings'
-import { PIECE_SIZE, HIGHLIGHT_CIRCLE_SIZE, SQUARE_SIZE, BOARD_GAP } from './UIConstants'
+import { PIECE_SIZE, HIGHLIGHT_CIRCLE_SIZE, SQUARE_SIZE, BOARD_GAP, BOARD_SQUARE_BORDER } from './UIConstants'
 import PieceHighlight from './components/PieceHighlight'
 import rosetteSquare from './assets/RosetteSquare.svg'
 import gateSquare from './assets/GateSquare.svg'
@@ -711,7 +711,7 @@ function App() {
                   style={{
                     width: SQUARE_SIZE,
                     height: SQUARE_SIZE,
-                    border: isBlackedOut ? 'none' : '3px solid #33f',
+                    border: isBlackedOut ? 'none' : `${BOARD_SQUARE_BORDER}px solid #33f`,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',

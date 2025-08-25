@@ -2,7 +2,7 @@ import React, { useRef, useCallback } from 'react';
 import { GameState } from './GameState';
 import PieceAnimator from './PieceAnimator';
 import CapturedPieceAnimator from './CapturedPieceAnimator';
-import { SQUARE_SIZE, BOARD_GAP, HOME_SQUARE_SIZE, STACK_OFFSET } from './UIConstants';
+import { SQUARE_SIZE, BOARD_GAP, HOME_SQUARE_SIZE, STACK_OFFSET, BOARD_SQUARE_BORDER } from './UIConstants';
 import { BOARD_COLUMNS, BOARD_ROWS } from './BoardLayout';
 
 interface GameLayoutProps {
@@ -92,8 +92,8 @@ const GameLayout: React.FC<GameLayoutProps> = ({
         const row = Math.floor(squareIndex / BOARD_COLUMNS);
 
         // Calculate position within the unrotated board coordinate system
-        const squareX = col * (SQUARE_SIZE + BOARD_GAP) + SQUARE_SIZE / 2;
-        const squareY = row * (SQUARE_SIZE + BOARD_GAP) + SQUARE_SIZE / 2;
+        const squareX = col * (SQUARE_SIZE + BOARD_GAP) + SQUARE_SIZE / 2 + BOARD_SQUARE_BORDER;
+        const squareY = row * (SQUARE_SIZE + BOARD_GAP) + SQUARE_SIZE / 2 + BOARD_SQUARE_BORDER;
 
         // Get the board center relative to container
         const boardCenterX = boardRect.left - containerRect.left + boardRect.width / 2;
