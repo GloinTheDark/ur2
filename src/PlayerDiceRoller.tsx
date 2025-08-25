@@ -111,14 +111,21 @@ const PlayerDiceRoller = forwardRef<PlayerDiceRollerRef, PlayerDiceRollerProps>(
     const showHouseBonus = isCurrentPlayer && state.houseBonusApplied;
     const showTempleBlessing = isCurrentPlayer && state.templeBlessingApplied;
 
+    // Check if we're in a horizontal orientation (1 or 3) for two-row layout
+    const boardOrientation = gameState.getBoardOrientation();
+    const useVerticalLayout = boardOrientation === 1 || boardOrientation === 3;
+
     return (
         <div
             style={{
                 display: 'flex',
+                flexDirection: useVerticalLayout ? 'column' : 'row',
                 alignItems: 'center',
-                gap: '8px',
+                gap: useVerticalLayout ? '4px' : '8px',
                 opacity: displayOpacity,
-                transition: 'opacity 0.3s ease'
+                transition: 'opacity 0.3s ease',
+                height: useVerticalLayout ? '80px' : 'auto', // Fixed height for vertical layout
+                justifyContent: useVerticalLayout ? 'flex-start' : 'flex-start'
             }}
         >
             {/* Dice display */}
@@ -134,7 +141,15 @@ const PlayerDiceRoller = forwardRef<PlayerDiceRollerRef, PlayerDiceRollerProps>(
                         }}
                     />
                 ))}
+            </div>
 
+            {/* Bonus indicators and total - second row in vertical layout */}
+            <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                justifyContent: 'center'
+            }}>
                 {/* Temple blessing indicator */}
                 {showTempleBlessing && (
                     <img
@@ -142,8 +157,7 @@ const PlayerDiceRoller = forwardRef<PlayerDiceRollerRef, PlayerDiceRollerProps>(
                         alt="Temple Blessing"
                         title="Temple Blessing: Reroll if total is 0"
                         style={{
-                            height: '30px',
-                            marginLeft: '4px'
+                            height: '30px'
                         }}
                     />
                 )}
@@ -155,24 +169,23 @@ const PlayerDiceRoller = forwardRef<PlayerDiceRollerRef, PlayerDiceRollerProps>(
                         alt="House Bonus"
                         title="House Bonus: +1 to dice roll"
                         style={{
-                            height: '30px',
-                            marginLeft: '4px'
+                            height: '30px'
                         }}
                     />
                 )}
-            </div>
 
-            {/* Total display */}
-            {isCurrentPlayer && state.diceTotal > 0 && (
-                <div style={{
-                    fontSize: '1.5rem',
-                    fontWeight: 'bold',
-                    color: '#646cff',
-                    marginLeft: '4px'
-                }}>
-                    = {state.diceTotal}
-                </div>
-            )}
+                {/* Total display */}
+                {isCurrentPlayer && state.diceTotal > 0 && (
+                    <div style={{
+                        fontSize: '1.5rem',
+                        fontWeight: 'bold',
+                        color: '#646cff',
+                        marginLeft: '4px'
+                    }}>
+                        = {state.diceTotal}
+                    </div>
+                )}
+            </div>
         </div>
     );
 });
