@@ -2,7 +2,7 @@ import React, { useRef, useCallback } from 'react';
 import { GameState } from './GameState';
 import PieceAnimator from './PieceAnimator';
 import CapturedPieceAnimator from './CapturedPieceAnimator';
-import { SQUARE_SIZE, BOARD_GAP, HOME_SQUARE_SIZE } from './UIConstants';
+import { SQUARE_SIZE, BOARD_GAP, HOME_SQUARE_SIZE, STACK_OFFSET } from './UIConstants';
 import { BOARD_COLUMNS } from './BoardLayout';
 
 interface GameLayoutProps {
@@ -61,51 +61,55 @@ const GameLayout: React.FC<GameLayoutProps> = ({
             return null;
         }
 
-        const homeRect = homeRef.current.getBoundingClientRect();
         const containerRect = containerRef.current.getBoundingClientRect();
 
-        // Try to find the actual grid element within the home container
-        const gridElement = homeRef.current.querySelector('div[style*="display: grid"]') as HTMLElement;
-        let gridRect = homeRect;
+        // Find the specific stack container we need
+        let targetStackContainer: HTMLElement | null = null;
 
-        if (gridElement) {
-            gridRect = gridElement.getBoundingClientRect();
+        if (isMovingToFinish) {
+            // Find the finished stack (should be the second PieceStack component or the right one)
+            const stacks = homeRef.current.querySelectorAll('div > div[style*="position: relative"][style*="width"]');
+            targetStackContainer = stacks[1] as HTMLElement; // Second stack is finished
+        } else {
+            // Find the starting stack (should be the first PieceStack component or the left one)
+            const stacks = homeRef.current.querySelectorAll('div > div[style*="position: relative"][style*="width"]');
+            targetStackContainer = stacks[0] as HTMLElement; // First stack is starting
         }
 
-        // Get game state to determine piece type and target zone
+        if (!targetStackContainer) {
+            console.warn(`Could not find ${isMovingToFinish ? 'finished' : 'starting'} stack container`);
+            // Fallback: try to find any stack containers
+            const allStacks = homeRef.current.querySelectorAll('[style*="position: relative"]');
+            console.log('Available stack containers:', allStacks.length);
+            return null;
+        }
+
+        const stackRect = targetStackContainer.getBoundingClientRect();
+
+        // Get game state to determine piece counts for stack positioning
         const state = gameState.state;
         const positions = player === 'white' ? state.whitePiecePositions : state.blackPiecePositions;
 
-        // Determine target slot based on piece type
-        let targetSlot = 0;
+        // Calculate piece counts
+        const completionIndex = gameState.getEndOfPath();
+        const completedCount = positions.filter((pos) => pos === completionIndex).length;
+        const startingCount = positions.filter((pos) => pos === 0).length;
 
+        // Center on the stack horizontally (like the destination marker does)
+        const targetX = stackRect.left - containerRect.left + (stackRect.width / 2);
+
+        // Calculate Y position: top of stack minus stack height offset
+        let targetY: number;
         if (isMovingToFinish) {
-            // Get completion index
-            const completionIndex = gameState.getEndOfPath();
-            const existingCompletedCount = positions.filter((pos) => {
-                return pos === completionIndex;
-            }).length;
-
-            targetSlot = existingCompletedCount; // Next available leftmost slot
+            // Position at the top of the finished stack
+            targetY = stackRect.bottom - containerRect.top - (HOME_SQUARE_SIZE / 2) - (completedCount * STACK_OFFSET);
         } else {
-            // used for moving pieces from start and moving captured pieces back to start
-            const existingBlankCount = positions.filter((pos) => {
-                return pos === 0;
-            }).length;
-
-            targetSlot = gameState.getPiecesPerPlayer() - existingBlankCount - 1; // Rightmost empty slot
+            // Position at the top of the starting stack
+            targetY = stackRect.bottom - containerRect.top - (HOME_SQUARE_SIZE / 2) - (startingCount * STACK_OFFSET);
         }
 
-        // Calculate position within the home grid
-        const slotWidth = HOME_SQUARE_SIZE;
-
-        const containerX = gridRect.left - containerRect.left + (targetSlot * slotWidth) + (slotWidth / 2);
-        const containerY = gridRect.top - containerRect.top + (HOME_SQUARE_SIZE / 2);
-
-        return { x: containerX, y: containerY };
-    }, [gameState]);
-
-    return (
+        return { x: targetX, y: targetY };
+    }, [gameState]); return (
         <div
             ref={containerRef}
             style={{

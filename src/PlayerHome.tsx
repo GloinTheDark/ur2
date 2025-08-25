@@ -1,15 +1,12 @@
 import React from 'react';
 import type { GameState } from './GameState';
 import { BurglersOfUrRuleSet } from './rulesets/BurglersOfUrRuleSet';
-import { HOME_SQUARE_SIZE, PIECE_SIZE, HIGHLIGHT_CIRCLE_SIZE } from './UIConstants';
-import whiteBlank from './assets/WhiteBlank.svg';
-import whiteSpots from './assets/WhiteSpots.svg';
-import blackBlank from './assets/BlackBlank.svg';
-import blackSpots from './assets/BlackSpots.svg';
+import { HOME_SQUARE_SIZE } from './UIConstants';
 import goToSquare from './assets/GoTo.svg';
 import templeSquare from './assets/TempleSquare.svg';
 import houseSquare from './assets/HouseSquare.svg';
 import PlayerDiceRoller from './PlayerDiceRoller';
+import PieceStack from './components/PieceStack';
 
 interface PlayerHomeProps {
     player: 'white' | 'black';
@@ -23,11 +20,10 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
     const state = gameState.state;
     const winner = gameState.checkWinCondition();
     const playerName = gameState.getPlayerName(player);
+    const ruleset = gameState.getCurrentRuleSet();
 
     const isWhite = player === 'white';
     const positions = isWhite ? state.whitePiecePositions : state.blackPiecePositions;
-    const blankIcon = isWhite ? whiteBlank : blackBlank;
-    const spotsIcon = isWhite ? whiteSpots : blackSpots;
 
     // Get player path to determine completion index
     const completionIndex = gameState.getEndOfPath();
@@ -50,15 +46,41 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
     const selectedPiece = state.selectedPiece;
     const canCompleteToHome = selectedPiece !== null &&
         state.currentPlayer === player &&
-        gameState.getDestinationSquares().includes(25); // BOARD_FINISH means completion
+        gameState.getDestinationSquares().includes(25);
 
-    const homeStyle = isWhite ? {
-        backgroundColor: '#ccc',
-        borderColor: '#aaa'
-    } : {
-        backgroundColor: '#777',
-        borderColor: '#555'
-    };
+    // Build starting pieces stack data
+    const startingStackPieces = Array.from({ length: blankPiecesInHome }, (_, index) => {
+        const isTopPiece = index === blankPiecesInHome - 1; // Only top piece is interactable
+        const isEligible = isTopPiece &&
+            eligibleBlankPieces.length > 0 &&
+            state.gameStarted && !winner &&
+            state.currentPlayer === player &&
+            !(state.isPieceAnimating || state.isCapturedPieceAnimating);
+
+        const isSelected = isTopPiece && !!(selectedPiece !== null &&
+            state.currentPlayer === player &&
+            positions[selectedPiece] === 0);
+
+        return {
+            type: 'blank' as const,
+            isEligible,
+            isSelected,
+            onClick: isEligible ? () => {
+                const firstEligible = eligibleBlankPieces[0];
+                if (firstEligible !== undefined) {
+                    gameState.selectPiece(firstEligible);
+                }
+            } : undefined
+        };
+    });
+
+    // Build finished pieces stack data
+    const finishedStackPieces = Array.from({ length: completedCount }, () => ({
+        type: 'spots' as const
+    }));
+
+    // Check if finished stack can be a destination
+    const canCompleteToFinishedStack = canCompleteToHome; // BOARD_FINISH means completion
 
     const titleColor = isWhite ?
         'var(--text-color, #666)' :
@@ -179,167 +201,65 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
             </h3>
             <div style={{
                 display: 'flex',
-                alignItems: 'center',
+                alignItems: 'flex-end', // Align stacks at bottom
                 justifyContent: 'center',
-                gap: '12px'
+                gap: '24px' // Space between the two stacks
             }}>
-                <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: `repeat(${gameState.getPiecesPerPlayer()}, ${HOME_SQUARE_SIZE}px)`,
-                    gridTemplateRows: `repeat(1, ${HOME_SQUARE_SIZE}px)`,
-                    gap: '0px',
-                    justifyContent: 'center',
-                    padding: '4px',
-                    backgroundColor: homeStyle.backgroundColor,
-                    borderRadius: '8px',
-                    border: `2px solid ${homeStyle.borderColor}`,
-                    width: 'fit-content'
-                }}>
-                    {Array.from({ length: gameState.getPiecesPerPlayer() }).map((_, slotIndex) => {
-                        // Determine what goes in this slot
-                        let slotContent = null;
-                        let clickHandler = null;
-                        let isEligible = false;
-                        let isSelected = false;
-                        let isDestination = false;
+                {/* Starting Pieces Stack */}
+                <PieceStack
+                    pieces={startingStackPieces}
+                    player={player}
+                    label="Starting"
+                    fixedCapacity={ruleset.piecesPerPlayer}
+                />
 
-                        if (slotIndex < completedCount) {
-                            // Left side: completed pieces (spots)
-                            slotContent = spotsIcon;
-                        } else if (slotIndex >= gameState.getPiecesPerPlayer() - blankPiecesInHome) {
-                            // Right side: blank pieces
-                            slotContent = blankIcon;
+                {/* Finished Pieces Stack */}
+                <div style={{ position: 'relative' }}>
+                    <PieceStack
+                        pieces={finishedStackPieces}
+                        player={player}
+                        label="Finished"
+                        fixedCapacity={ruleset.getPiecesToWin()}
+                    />
 
-                            // Only the leftmost blank piece (first slot with blank pieces) should be eligible
-                            const isLeftmostBlankSlot = slotIndex === gameState.getPiecesPerPlayer() - blankPiecesInHome;
-
-                            // Check if this is the leftmost blank piece and it's eligible to move
-                            isEligible = isLeftmostBlankSlot &&
-                                eligibleBlankPieces.length > 0 &&
-                                state.gameStarted && !winner &&
-                                state.currentPlayer === player &&
-                                !(state.isPieceAnimating || state.isCapturedPieceAnimating);
-
-                            // Check if this leftmost blank piece is selected
-                            isSelected = isLeftmostBlankSlot && !!(selectedPiece !== null &&
-                                state.currentPlayer === player &&
-                                positions[selectedPiece] === 0);
-
-                            if (isEligible) {
-                                clickHandler = () => {
-                                    // Find the first eligible blank piece and select it
-                                    const firstEligible = eligibleBlankPieces[0];
-                                    if (firstEligible !== undefined) {
-                                        gameState.selectPiece(firstEligible);
+                    {/* Completion destination indicator */}
+                    {canCompleteToFinishedStack && (
+                        <div
+                            style={{
+                                position: 'absolute',
+                                top: '20px', // Position above the stack
+                                left: '50%',
+                                transform: 'translateX(-50%)',
+                                width: HOME_SQUARE_SIZE,
+                                height: HOME_SQUARE_SIZE,
+                                cursor: 'pointer',
+                                zIndex: 10
+                            }}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                if (selectedPiece !== null) {
+                                    const legalMoves = gameState.getLegalMoves();
+                                    const moveToMake = legalMoves.find(move =>
+                                        move.movingPieceIndex === selectedPiece &&
+                                        move.destinationSquare === 25
+                                    );
+                                    if (moveToMake) {
+                                        gameState.startLegalMove(moveToMake);
                                     }
-                                };
-                            }
-                        } else {
-                            // Middle: empty slots
-                            // Check if this can be a destination for completing pieces
-                            // Only the leftmost empty slot should show the destination marker
-                            const isLeftmostEmptySlot = slotIndex === completedCount;
-
-                            if (canCompleteToHome && isLeftmostEmptySlot) {
-                                isDestination = true;
-                                clickHandler = () => {
-                                    if (selectedPiece !== null) {
-                                        const legalMoves = gameState.getLegalMoves();
-                                        const moveToMake = legalMoves.find(move =>
-                                            move.movingPieceIndex === selectedPiece &&
-                                            move.destinationSquare === 25
-                                        );
-                                        if (moveToMake) {
-                                            gameState.startLegalMove(moveToMake);
-                                        }
-                                    }
-                                };
-                            }
-                        }
-
-                        return (
-                            <div
-                                key={`${player}-slot-${slotIndex}`}
+                                }
+                            }}
+                        >
+                            <img
+                                src={goToSquare}
+                                alt="Complete to Home"
                                 style={{
-                                    width: HOME_SQUARE_SIZE,
-                                    height: HOME_SQUARE_SIZE,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    fontWeight: 500,
-                                    position: 'relative',
-                                    cursor: (isEligible || isDestination) ? 'pointer' : 'default'
+                                    width: '100%',
+                                    height: '100%',
+                                    borderRadius: '4px'
                                 }}
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (clickHandler) {
-                                        clickHandler();
-                                    }
-                                }}
-                            >
-                                {/* Selected piece circle */}
-                                {slotContent && isSelected && (
-                                    <div
-                                        className="selected-circle"
-                                        style={{
-                                            position: 'absolute',
-                                            width: `${HIGHLIGHT_CIRCLE_SIZE}px`,
-                                            height: `${HIGHLIGHT_CIRCLE_SIZE}px`,
-                                            borderRadius: '50%',
-                                            zIndex: 1
-                                        }}
-                                    />
-                                )}
-
-                                {/* Highlight circle for eligible pieces */}
-                                {slotContent && isEligible && !isSelected && (
-                                    <div
-                                        className="highlight-circle"
-                                        style={{
-                                            position: 'absolute',
-                                            width: `${HIGHLIGHT_CIRCLE_SIZE}px`,
-                                            height: `${HIGHLIGHT_CIRCLE_SIZE}px`,
-                                            borderRadius: '50%',
-                                            zIndex: 1
-                                        }}
-                                    />
-                                )}
-
-                                {/* Piece image */}
-                                {slotContent && (
-                                    <img
-                                        src={slotContent}
-                                        alt={`${isWhite ? 'White' : 'Black'} piece`}
-                                        style={{
-                                            width: `${PIECE_SIZE}px`,
-                                            height: `${PIECE_SIZE}px`,
-                                            borderRadius: 4,
-                                            position: 'relative',
-                                            zIndex: 2
-                                        }}
-                                    />
-                                )}
-
-                                {/* GoTo indicator for completion destination */}
-                                {isDestination && (
-                                    <img
-                                        src={goToSquare}
-                                        alt="Go To Home"
-                                        style={{
-                                            width: '100%',
-                                            height: '100%',
-                                            position: 'absolute',
-                                            top: 0,
-                                            left: 0,
-                                            borderRadius: 4,
-                                            zIndex: 3,
-                                            cursor: 'pointer'
-                                        }}
-                                    />
-                                )}
-                            </div>
-                        );
-                    })}
+                            />
+                        </div>
+                    )}
                 </div>
 
                 {/* Status icons for Burglers ruleset */}
