@@ -1,19 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { RulesQuickReference } from './RulesQuickReference';
 import { RulesDetailedSection } from './RulesDetailedSection';
-import type { RulesDescription } from '../../types/RulesDescription';
+import type { RuleSet } from '../../RuleSet';
 import './RulesWindow.css';
 
 interface RulesWindowProps {
-    rulesDescription: RulesDescription;
-    rulesetName: string;
+    ruleset: RuleSet;
     onClose: () => void;
     initialPosition?: { x: number; y: number };
 }
 
 export const RulesWindow: React.FC<RulesWindowProps> = ({
-    rulesDescription,
-    rulesetName,
+    ruleset,
     onClose,
     initialPosition = { x: 100, y: 100 }
 }) => {
@@ -21,6 +19,11 @@ export const RulesWindow: React.FC<RulesWindowProps> = ({
     const [isDragging, setIsDragging] = useState(false);
     const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
     const windowRef = useRef<HTMLDivElement>(null);
+
+    // Extract data from ruleset
+    const rulesDescription = ruleset.getRulesDescription();
+    const rulesetName = ruleset.name;
+    const pathType = ruleset.pathType;
 
     // Load saved position from localStorage
     useEffect(() => {
@@ -124,12 +127,13 @@ export const RulesWindow: React.FC<RulesWindowProps> = ({
             {/* Content */}
             <div className="rules-window-content">
                 {/* Ruleset Name Header */}
-                <h1 className="rules-ruleset-name">Rule Set: {rulesetName}</h1>
+                <div className="rules-ruleset-name">Rule Set: {rulesetName}</div>
 
                 {/* Quick Reference Section */}
                 <RulesQuickReference
                     quickReference={rulesDescription.quickReference}
                     boardOverview={rulesDescription.boardOverview}
+                    pathType={pathType}
                 />
 
                 {/* Separator */}

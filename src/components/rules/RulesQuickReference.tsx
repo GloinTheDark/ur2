@@ -1,14 +1,18 @@
 import React from 'react';
+import { PathDiagram } from './PathDiagram';
 import type { RulesDescription } from '../../types/RulesDescription';
+import type { PathType } from '../../GamePaths';
 
 interface RulesQuickReferenceProps {
     quickReference: RulesDescription['quickReference'];
     boardOverview: RulesDescription['boardOverview'];
+    pathType: PathType;
 }
 
 export const RulesQuickReference: React.FC<RulesQuickReferenceProps> = ({
     quickReference,
-    boardOverview
+    boardOverview,
+    pathType
 }) => {
     return (
         <div className="rules-quick-reference">
@@ -56,6 +60,20 @@ export const RulesQuickReference: React.FC<RulesQuickReferenceProps> = ({
                         </span>
                     </div>
                 )}
+            </div>
+
+            {/* Visual Path Diagrams */}
+            <div className="path-diagrams">
+                <PathDiagram
+                    pathType={pathType}
+                    playerColor="white"
+                    title="Path for White Pieces"
+                />
+                <PathDiagram
+                    pathType={pathType}
+                    playerColor="black"
+                    title="Path for Black Pieces"
+                />
             </div>
         </div>
     );

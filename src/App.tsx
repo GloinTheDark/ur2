@@ -648,8 +648,7 @@ function App() {
       {/* Rules Window */}
       {showRules && (
         <RulesWindow
-          rulesDescription={getRuleSetByName(settings.currentRuleSet).getRulesDescription()}
-          rulesetName={getRuleSetByName(settings.currentRuleSet).name}
+          ruleset={getRuleSetByName(settings.currentRuleSet)}
           onClose={() => setShowRules(false)}
         />
       )}
