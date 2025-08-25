@@ -587,7 +587,7 @@ export class GameState {
             const currentPlayerAgent = this.getCurrentPlayerAgent();
             if (!currentPlayerAgent) return;
 
-            // Don't trigger AI actions during animations
+            // Don't trigger AI actions during any animations to prevent cloning issues
             if (this.isAnimating()) {
                 return;
             }

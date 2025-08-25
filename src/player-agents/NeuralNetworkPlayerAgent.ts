@@ -268,7 +268,7 @@ export async function isNeuralModelAvailableForRuleset(rulesetName: string): Pro
         await PlayerAgentUtils.delay(AI_DELAYS.ROLL_DICE);
 
         AppLog.playerAgent(`NeuralNetwork: Rolling dice for ${this.color}`);
-        gameState.rollDice();
+        gameState.startDiceRoll();
     }
 
     async onMoveRequired(gameState: GameState): Promise<void> {

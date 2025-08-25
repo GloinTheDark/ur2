@@ -132,7 +132,7 @@ const GameLayout: React.FC<GameLayoutProps> = ({
             </div>
 
             {/* Piece Animators */}
-            {gameState.gameSettings.pieceAnimations && gameState.isAnimating() && (
+            {gameState.gameSettings.pieceAnimations && gameState.isPieceAnimating() && (
                 <PieceAnimator
                     gameState={gameState}
                     getSquarePosition={getSquarePosition}

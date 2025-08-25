@@ -34,7 +34,9 @@ const PieceAnimator: React.FC<PieceAnimatorProps> = ({
         const animationData = gameState.getAnimationData();
         const move = gameState.getCurrentMove();
         if (!move) {
-            throw new Error("No current move available for animation");
+            // No current move available - this can happen during race conditions
+            // Simply don't start an animation
+            return;
         }
 
         if (animationData && !animationState) {
