@@ -7,8 +7,16 @@ import { RandomPlayerAgent } from './RandomPlayerAgent';
 import { MCTSPlayerAgent } from './MCTSPlayerAgent';
 import { ExhaustiveSearchPlayerAgent } from './ExhaustiveSearchPlayerAgent';
 import { NeuralNetworkPlayerAgent, getModelPathForRuleset, isNeuralModelAvailableForRuleset } from './NeuralNetworkPlayerAgent';
+import { RemotePlayerAgent } from './RemotePlayerAgent';
 
-export type AgentType = 'human' | 'computer' | 'random' | 'mcts' | 'exhaustive' | 'neural';
+export type AgentType = 'human' | 'computer' | 'random' | 'mcts' | 'exhaustive' | 'neural' | 'remote';
+
+// Session information for remote players
+export interface RemotePlayerSessionInfo {
+    playerId: string;
+    sessionId: string;
+    gameService: any; // Will be properly typed when OnlineGameService is implemented
+}
 
 export interface PlayerAgentInfo {
     id: AgentType;
@@ -64,6 +72,12 @@ export class PlayerAgentRegistry {
                     return false;
                 }
             }
+        }],
+        ['remote', {
+            id: 'remote',
+            name: 'Remote Player',
+            description: 'Human player connected over the network',
+            isAvailable: async () => true // Available when multiplayer is enabled
         }]
     ]);
 
@@ -130,7 +144,8 @@ export class PlayerAgentRegistry {
     static async createPlayerAgent(
         color: 'white' | 'black',
         agentType: AgentType,
-        gameState?: GameState
+        gameState?: GameState,
+        sessionInfo?: RemotePlayerSessionInfo
     ): Promise<PlayerAgent> {
         const agentInfo = this.agents.get(agentType);
         if (!agentInfo) {
@@ -176,6 +191,17 @@ export class PlayerAgentRegistry {
                     AppLog.playerAgent(`Neural agent requested but no model available for current ruleset: ${error}. Cannot create neural agent.`);
                     throw new Error(`Neural network model not available: ${error}`);
                 }
+
+            case 'remote':
+                if (!sessionInfo) {
+                    throw new Error('RemotePlayerAgent requires session information');
+                }
+                return new RemotePlayerAgent(
+                    color,
+                    sessionInfo.playerId,
+                    sessionInfo.sessionId,
+                    sessionInfo.gameService
+                );
 
             default:
                 throw new Error(`Unhandled agent type: ${agentType}`);

@@ -15,107 +15,183 @@ This document outlines the comprehensive plan for implementing online multiplaye
 
 ### **1.1 Game Session Management**
 
-#### Remote Player Agent Architecture
+#### Extended PlayerAgent Architecture
 ```typescript
-// Core abstraction for remote player interactions
-export interface RemotePlayerAgent {
-    playerId: string;
-    sessionId: string;
-    isConnected: boolean;
-    lastSeen: Date;
+// Extended PlayerType to include remote players
+export type PlayerType = 'human' | 'computer' | 'remote';
+
+// Enhanced PlayerAgent interface for multiplayer support
+export interface PlayerAgent {
+    readonly playerType: PlayerType;
+    readonly color: 'white' | 'black';
     
-    // Core game actions
-    rollDice(): Promise<number[]>;
-    selectPiece(pieceIndex: number): Promise<void>;
-    movePiece(fromPosition: number, toPosition: number): Promise<void>;
-    passTurn(): Promise<void>;
-    forfeitGame(): Promise<void>;
+    // Existing methods
+    onTurnStart(gameState: GameState): Promise<void>;
+    onMoveRequired(gameState: GameState): Promise<void>;
+    getPlayerName(): string;
+    cleanup(): void;
     
-    // Communication
-    sendMessage(message: string): Promise<void>;
-    requestDraw(): Promise<void>;
-    acceptDraw(): Promise<void>;
+    // New multiplayer properties (optional for backward compatibility)
+    readonly playerId?: string;
+    readonly sessionId?: string;
+    readonly isConnected?: boolean;
+    readonly lastSeen?: Date;
     
-    // Status management
-    setStatus(status: PlayerStatus): Promise<void>;
-    heartbeat(): Promise<void>;
+    // New multiplayer methods (optional for backward compatibility)
+    sendMessage?(message: string): Promise<void>;
+    requestDraw?(): Promise<void>;
+    acceptDraw?(): Promise<void>;
+    setStatus?(status: PlayerStatus): Promise<void>;
+    heartbeat?(): Promise<void>;
     
-    // Event listeners
-    onMove: (move: GameMove) => void;
-    onStatusChange: (status: PlayerStatus) => void;
-    onMessage: (message: string) => void;
-    onDisconnect: () => void;
-    onReconnect: () => void;
+    // Event handlers for remote player interactions
+    onOpponentMove?(move: GameMove): void;
+    onStatusChange?(status: PlayerStatus): void;
+    onMessage?(message: string): void;
+    onDisconnect?(): void;
+    onReconnect?(): void;
 }
 
 // Player status tracking
 export type PlayerStatus = 'active' | 'thinking' | 'disconnected' | 'idle' | 'forfeited';
 
-// Remote player implementation using Firebase
-export class FirebaseRemotePlayerAgent implements RemotePlayerAgent {
+// Remote player implementation extending existing PlayerAgent
+export class RemotePlayerAgent implements PlayerAgent {
+    readonly playerType: PlayerType = 'remote';
+    readonly color: 'white' | 'black';
+    readonly playerId: string;
+    readonly sessionId: string;
+    isConnected: boolean = true;
+    lastSeen: Date = new Date();
+    
     private gameService: OnlineGameService;
     private unsubscribers: (() => void)[] = [];
+    private currentGameState?: GameState;
     
     constructor(
-        public playerId: string,
-        public sessionId: string,
+        color: 'white' | 'black',
+        playerId: string,
+        sessionId: string,
         gameService: OnlineGameService
     ) {
+        this.color = color;
+        this.playerId = playerId;
+        this.sessionId = sessionId;
         this.gameService = gameService;
         this.setupListeners();
     }
     
-    async rollDice(): Promise<number[]> {
+    // Implement existing PlayerAgent interface
+    async onTurnStart(gameState: GameState): Promise<void> {
+        // Store current game state for remote move submission
+        this.currentGameState = gameState;
+        
+        // For remote players, this handles dice rolling
+        if (this.isLocalPlayer()) {
+            // Local player - use existing game logic
+            gameState.startDiceRoll();
+        } else {
+            // Remote player - wait for their dice roll via listener
+            await this.setStatus('active');
+        }
+    }
+    
+    async onMoveRequired(gameState: GameState): Promise<void> {
+        // Store current game state
+        this.currentGameState = gameState;
+        
+        if (this.isLocalPlayer()) {
+            // Local player - this will be handled by UI interaction
+            // No action needed here, UI will call game methods directly
+        } else {
+            // Remote player - wait for their move via listener
+            await this.setStatus('thinking');
+        }
+    }
+    
+    getPlayerName(): string {
+        return this.isLocalPlayer() ? 'You' : 'Remote Player';
+    }
+    
+    cleanup(): void {
+        this.unsubscribers.forEach(unsubscribe => unsubscribe());
+        this.unsubscribers = [];
+    }
+    
+    // New remote player methods
+    async sendMessage(message: string): Promise<void> {
+        await this.gameService.sendMessage(this.sessionId, this.playerId, message);
+    }
+    
+    async requestDraw(): Promise<void> {
+        await this.gameService.requestDraw(this.sessionId, this.playerId);
+    }
+    
+    async acceptDraw(): Promise<void> {
+        await this.gameService.acceptDraw(this.sessionId, this.playerId);
+    }
+    
+    async setStatus(status: PlayerStatus): Promise<void> {
+        await this.gameService.updatePlayerStatus(this.sessionId, this.playerId, status);
+    }
+    
+    async heartbeat(): Promise<void> {
+        this.lastSeen = new Date();
+        await this.gameService.updatePlayerHeartbeat(this.sessionId, this.playerId);
+    }
+    
+    // Event handlers (set by game components)
+    onOpponentMove?: (move: GameMove) => void;
+    onStatusChange?: (status: PlayerStatus) => void;
+    onMessage?: (message: string) => void;
+    onDisconnect?: () => void;
+    onReconnect?: () => void;
+    
+    // Remote move submission methods (called by local game state)
+    async submitDiceRoll(diceResult: number[]): Promise<void> {
+        if (!this.currentGameState) return;
+        
         const move: GameMove = {
             sessionId: this.sessionId,
             playerId: this.playerId,
             moveType: 'dice-roll',
-            moveData: { action: 'roll-dice' },
+            moveData: { diceResult },
             timestamp: new Date(),
-            turnNumber: await this.getCurrentTurnNumber(),
-            resultingState: await this.calculateResultingState('dice-roll')
-        };
-        
-        await this.gameService.submitMove(this.sessionId, move);
-        return move.resultingState.diceRolls;
-    }
-    
-    async selectPiece(pieceIndex: number): Promise<void> {
-        const move: GameMove = {
-            sessionId: this.sessionId,
-            playerId: this.playerId,
-            moveType: 'piece-selection',
-            moveData: { pieceIndex },
-            timestamp: new Date(),
-            turnNumber: await this.getCurrentTurnNumber(),
-            resultingState: await this.calculateResultingState('piece-selection', { pieceIndex })
+            turnNumber: this.currentGameState.state.turnCount,
+            resultingState: this.createGameStateSnapshot()
         };
         
         await this.gameService.submitMove(this.sessionId, move);
     }
     
-    async movePiece(fromPosition: number, toPosition: number): Promise<void> {
+    async submitPieceMove(fromPosition: number, toPosition: number): Promise<void> {
+        if (!this.currentGameState) return;
+        
         const move: GameMove = {
             sessionId: this.sessionId,
             playerId: this.playerId,
             moveType: 'piece-move',
             moveData: { fromPosition, toPosition },
             timestamp: new Date(),
-            turnNumber: await this.getCurrentTurnNumber(),
-            resultingState: await this.calculateResultingState('piece-move', { fromPosition, toPosition })
+            turnNumber: this.currentGameState.state.turnCount,
+            resultingState: this.createGameStateSnapshot()
         };
         
         await this.gameService.submitMove(this.sessionId, move);
     }
     
-    // Additional methods...
+    private isLocalPlayer(): boolean {
+        // This would be set based on the current user's ID
+        return this.playerId === getCurrentUserId();
+    }
+    
     private setupListeners(): void {
         // Subscribe to opponent moves
         const moveUnsubscriber = this.gameService.subscribeToMoves(
             this.sessionId,
             (move) => {
-                if (move.playerId !== this.playerId) {
-                    this.onMove(move);
+                if (move.playerId !== this.playerId && this.onOpponentMove) {
+                    this.onOpponentMove(move);
                 }
             }
         );
@@ -124,16 +200,41 @@ export class FirebaseRemotePlayerAgent implements RemotePlayerAgent {
         const statusUnsubscriber = this.gameService.subscribeToPlayerStatus(
             this.sessionId,
             this.playerId,
-            (status) => this.onStatusChange(status)
+            (status) => {
+                if (this.onStatusChange) {
+                    this.onStatusChange(status);
+                }
+            }
         );
         
         this.unsubscribers.push(moveUnsubscriber, statusUnsubscriber);
     }
     
-    cleanup(): void {
-        this.unsubscribers.forEach(unsubscribe => unsubscribe());
-        this.unsubscribers = [];
+    private createGameStateSnapshot(): GameStateSnapshot {
+        if (!this.currentGameState) {
+            throw new Error('No current game state available');
+        }
+        
+        return {
+            currentPlayer: this.currentGameState.state.currentPlayer,
+            whitePiecePositions: [...this.currentGameState.state.whitePiecePositions],
+            blackPiecePositions: [...this.currentGameState.state.blackPiecePositions],
+            gamePhase: this.currentGameState.state.gamePhase,
+            turnCount: this.currentGameState.state.turnCount,
+            diceRolls: [...this.currentGameState.state.diceRolls],
+            diceTotal: this.currentGameState.state.diceTotal,
+            selectedPiece: this.currentGameState.state.selectedPiece,
+            eligiblePieces: [...this.currentGameState.state.eligiblePieces],
+            legalMoves: [...this.currentGameState.state.legalMoves],
+            isExtraTurn: this.currentGameState.state.isExtraTurn
+        };
     }
+}
+
+// Helper function to get current user ID (would be implemented in auth context)
+function getCurrentUserId(): string {
+    // This would get the current user's ID from the auth context
+    throw new Error('getCurrentUserId not implemented');
 }
 ```
 
@@ -270,12 +371,59 @@ export interface MatchmakingOptions {
 #### Core Game Service
 ```typescript
 export class OnlineGameService {
-    // Remote Player Agent factory
-    createRemotePlayerAgent(playerId: string, sessionId: string): RemotePlayerAgent {
-        return new FirebaseRemotePlayerAgent(playerId, sessionId, this);
+    // Enhanced PlayerAgent factory for multiplayer
+    createRemotePlayerAgent(
+        color: 'white' | 'black',
+        playerId: string, 
+        sessionId: string
+    ): RemotePlayerAgent {
+        return new RemotePlayerAgent(color, playerId, sessionId, this);
     }
     
-    // Enhanced move subscription for RemotePlayerAgent
+    // Message and communication methods
+    async sendMessage(sessionId: string, playerId: string, message: string): Promise<void> {
+        await addDoc(collection(db, 'games', sessionId, 'messages'), {
+            playerId,
+            message,
+            timestamp: serverTimestamp()
+        });
+    }
+    
+    async requestDraw(sessionId: string, playerId: string): Promise<void> {
+        await updateDoc(doc(db, 'games', sessionId), {
+            drawRequest: {
+                requestedBy: playerId,
+                requestedAt: serverTimestamp(),
+                status: 'pending'
+            }
+        });
+    }
+    
+    async acceptDraw(sessionId: string, playerId: string): Promise<void> {
+        await updateDoc(doc(db, 'games', sessionId), {
+            'drawRequest.status': 'accepted',
+            'drawRequest.acceptedBy': playerId,
+            'drawRequest.acceptedAt': serverTimestamp(),
+            status: 'completed',
+            winner: 'draw'
+        });
+    }
+    
+    async updatePlayerStatus(sessionId: string, playerId: string, status: PlayerStatus): Promise<void> {
+        await updateDoc(doc(db, 'games', sessionId, 'players', playerId), {
+            status,
+            lastStatusUpdate: serverTimestamp()
+        });
+    }
+    
+    async updatePlayerHeartbeat(sessionId: string, playerId: string): Promise<void> {
+        await updateDoc(doc(db, 'games', sessionId, 'players', playerId), {
+            lastSeen: serverTimestamp(),
+            isConnected: true
+        });
+    }
+    
+    // Enhanced move subscription for PlayerAgent
     subscribeToMoves(sessionId: string, callback: (move: GameMove) => void) {
         return onSnapshot(
             query(
@@ -372,7 +520,7 @@ export class OnlineGameService {
 
 #### Core Components
 ```typescript
-// Main multiplayer game interface with RemotePlayerAgent integration
+// Main multiplayer game interface with extended PlayerAgent integration
 const MultiplayerGameView: React.FC = () => {
     // State management
     const [gameSession, setGameSession] = useState<GameSession | null>(null);
@@ -381,95 +529,145 @@ const MultiplayerGameView: React.FC = () => {
     const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('connected');
     const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
     
-    // Remote Player Agent for opponent interactions
-    const [opponentAgent, setOpponentAgent] = useState<RemotePlayerAgent | null>(null);
-    const [localPlayerAgent, setLocalPlayerAgent] = useState<RemotePlayerAgent | null>(null);
+    // Enhanced PlayerAgent integration for multiplayer
+    const [whitePlayerAgent, setWhitePlayerAgent] = useState<PlayerAgent | null>(null);
+    const [blackPlayerAgent, setBlackPlayerAgent] = useState<PlayerAgent | null>(null);
+    const [localPlayerColor, setLocalPlayerColor] = useState<'white' | 'black' | null>(null);
     
     useEffect(() => {
         if (gameSession && user) {
-            // Create agent for local player
-            const localAgent = onlineGameService.createRemotePlayerAgent(user.uid, gameSession.id);
-            setLocalPlayerAgent(localAgent);
+            // Determine local player color
+            const isHost = gameSession.hostId === user.uid;
+            const myColor = isHost ? 'white' : 'black';
+            setLocalPlayerColor(myColor);
             
-            // Create agent for opponent
-            const opponentId = gameSession.hostId === user.uid ? gameSession.guestId : gameSession.hostId;
-            if (opponentId) {
-                const opponent = onlineGameService.createRemotePlayerAgent(opponentId, gameSession.id);
-                
-                // Set up opponent event listeners
-                opponent.onMove = (move: GameMove) => {
-                    // Handle opponent's move
+            // Create remote player agents for both players
+            const whiteAgent = onlineGameService.createRemotePlayerAgent(
+                'white',
+                gameSession.hostId,
+                gameSession.id
+            );
+            
+            const blackAgent = gameSession.guestId ? 
+                onlineGameService.createRemotePlayerAgent(
+                    'black',
+                    gameSession.guestId,
+                    gameSession.id
+                ) : null;
+            
+            // Set up event handlers for remote players
+            const setupPlayerEventHandlers = (agent: RemotePlayerAgent) => {
+                agent.onOpponentMove = (move: GameMove) => {
                     handleOpponentMove(move);
                 };
                 
-                opponent.onStatusChange = (status: PlayerStatus) => {
-                    // Update opponent status in UI
-                    setOpponentStatus(status);
+                agent.onStatusChange = (status: PlayerStatus) => {
+                    updatePlayerStatus(agent.playerId, status);
                 };
                 
-                opponent.onDisconnect = () => {
-                    setConnectionStatus('opponent-disconnected');
+                agent.onDisconnect = () => {
+                    if (agent.playerId !== user.uid) {
+                        setConnectionStatus('opponent-disconnected');
+                    }
                 };
                 
-                opponent.onReconnect = () => {
+                agent.onReconnect = () => {
                     setConnectionStatus('connected');
                 };
                 
-                setOpponentAgent(opponent);
+                agent.onMessage = (message: string) => {
+                    showInGameMessage(agent.playerId, message);
+                };
+            };
+            
+            setupPlayerEventHandlers(whiteAgent);
+            if (blackAgent) {
+                setupPlayerEventHandlers(blackAgent);
             }
+            
+            setWhitePlayerAgent(whiteAgent);
+            setBlackPlayerAgent(blackAgent);
         }
         
         return () => {
             // Cleanup agents on unmount
-            localPlayerAgent?.cleanup();
-            opponentAgent?.cleanup();
+            whitePlayerAgent?.cleanup();
+            blackPlayerAgent?.cleanup();
         };
     }, [gameSession, user]);
     
-    // Game action handlers using RemotePlayerAgent
+    // Game action handlers using extended PlayerAgent
     const handleDiceRoll = async () => {
-        if (localPlayerAgent && isMyTurn) {
+        const currentAgent = getCurrentPlayerAgent();
+        if (currentAgent && isMyTurn && currentAgent.playerType === 'remote') {
             try {
-                const diceResult = await localPlayerAgent.rollDice();
-                // Update local UI optimistically
-                updateLocalGameState({ diceRolls: diceResult });
+                // Let the game state handle the dice roll, then submit to remote
+                gameState.startDiceRoll();
+                
+                // Submit the result to remote players
+                const remoteAgent = currentAgent as RemotePlayerAgent;
+                await remoteAgent.submitDiceRoll(gameState.state.diceRolls);
             } catch (error) {
-                console.error('Failed to roll dice:', error);
-                // Handle error and revert optimistic update
+                console.error('Failed to submit dice roll:', error);
+                // Handle error and show user feedback
             }
         }
     };
     
     const handlePieceMove = async (fromPosition: number, toPosition: number) => {
-        if (localPlayerAgent && isMyTurn) {
+        const currentAgent = getCurrentPlayerAgent();
+        if (currentAgent && isMyTurn && currentAgent.playerType === 'remote') {
             try {
-                await localPlayerAgent.movePiece(fromPosition, toPosition);
-                // Update local UI optimistically
-                updateLocalGameState({ 
-                    pieceMove: { from: fromPosition, to: toPosition }
-                });
+                // Execute the move locally first
+                gameState.selectPiece(gameState.findPieceAtPosition(fromPosition));
+                gameState.movePiece(toPosition);
+                
+                // Submit to remote players
+                const remoteAgent = currentAgent as RemotePlayerAgent;
+                await remoteAgent.submitPieceMove(fromPosition, toPosition);
             } catch (error) {
-                console.error('Failed to move piece:', error);
-                // Handle error and revert optimistic update
+                console.error('Failed to submit piece move:', error);
+                // Handle error and revert local state
             }
         }
     };
     
+    const getCurrentPlayerAgent = (): PlayerAgent | null => {
+        if (!gameState) return null;
+        return gameState.state.currentPlayer === 'white' ? whitePlayerAgent : blackPlayerAgent;
+    };
+    
+    const getMyPlayerAgent = (): PlayerAgent | null => {
+        if (!localPlayerColor) return null;
+        return localPlayerColor === 'white' ? whitePlayerAgent : blackPlayerAgent;
+    };
+    
     const handleOpponentMove = (move: GameMove) => {
-        // Synchronize game state with opponent's move
-        updateGameStateFromMove(move);
+        // Apply opponent's move to local game state
+        applyRemoteMoveToGameState(move);
         
         // Update turn indicator
-        setIsMyTurn(move.resultingState.currentPlayer === getLocalPlayerColor());
+        setIsMyTurn(gameState.state.currentPlayer === localPlayerColor);
         
         // Show move animation or feedback
         animateOpponentMove(move);
     };
     
-    // Real-time subscriptions
-    // Game state synchronization
-    // Turn management
-    // Connection monitoring
+    const applyRemoteMoveToGameState = (move: GameMove) => {
+        // Synchronize game state with remote move
+        switch (move.moveType) {
+            case 'dice-roll':
+                gameState.setDiceRolls(move.moveData.diceResult);
+                break;
+            case 'piece-move':
+                gameState.applyMoveFromRemote(move.moveData.fromPosition, move.moveData.toPosition);
+                break;
+            // Handle other move types...
+        }
+    };
+    
+    // Integration with existing game state and PlayerManager
+    // The PlayerManager can now handle RemotePlayerAgent alongside other agent types
 };
 ```
 
@@ -607,25 +805,27 @@ export interface RatingChange {
 - Implement security rules for games, moves, and lobbies
 - Set up cloud functions for game management
 
-✅ **Core Services & RemotePlayerAgent**
-- Build OnlineGameService with real-time listeners
-- Implement RemotePlayerAgent interface and FirebaseRemotePlayerAgent
-- Create agent factory methods and lifecycle management
-- Add move submission and validation pipeline through agents
+✅ **Core Services & Extended PlayerAgent**
+- Extend existing PlayerAgent interface for multiplayer support
+- Implement RemotePlayerAgent as a new PlayerAgent type
+- Add 'remote' to AgentType in PlayerAgentRegistry
+- Create factory methods for remote player creation with session info
+- Add multiplayer methods to OnlineGameService (messaging, status, heartbeat)
 
 ✅ **Basic Integration**
-- Connect existing GameState with RemotePlayerAgent architecture
-- Add network layer abstraction through player agents
+- Connect existing GameState with extended PlayerAgent architecture
+- Add network layer abstraction through RemotePlayerAgent
+- Integrate RemotePlayerAgent with existing PlayerManager
 - Implement basic turn management with agent-based communication
 
 ### **Week 3-4: Core Gameplay** 🎮
 **Priority: High**
 
-✅ **RemotePlayerAgent Integration**
-- Integrate RemotePlayerAgent with existing game components
+✅ **Extended PlayerAgent Integration**
+- Integrate RemotePlayerAgent with existing game components and PlayerManager
 - Implement agent-based move handling and state synchronization
-- Add opponent agent management and event handling
-- Real-time game state updates through agent communication
+- Add remote player management alongside existing agent types (human, computer, etc.)
+- Real-time game state updates through enhanced PlayerAgent communication
 
 ✅ **Connection Management**
 - Heartbeat system for connection monitoring through agents
@@ -695,42 +895,156 @@ export interface RatingChange {
 
 #### **🎮 Game Integration**
 ```typescript
-// Example: Existing GameState integration with RemotePlayerAgent
-class EnhancedGameState extends GameState {
-    private localPlayerAgent?: RemotePlayerAgent;
-    private opponentAgent?: RemotePlayerAgent;
+// Example: Enhanced PlayerAgentRegistry for multiplayer support
+export class PlayerAgentRegistry {
+    // Add 'remote' to AgentType
+    // export type AgentType = 'human' | 'computer' | 'random' | 'mcts' | 'exhaustive' | 'neural' | 'remote';
     
-    // Override move methods to use RemotePlayerAgent
-    async rollDice(): Promise<number[]> {
-        if (this.isOnlineGame && this.localPlayerAgent) {
-            return await this.localPlayerAgent.rollDice();
-        } else {
-            // Fall back to local game logic
-            return super.rollDice();
-        }
-    }
-    
-    async movePiece(fromPosition: number, toPosition: number): Promise<void> {
-        if (this.isOnlineGame && this.localPlayerAgent) {
-            await this.localPlayerAgent.movePiece(fromPosition, toPosition);
-        } else {
-            // Fall back to local game logic
-            super.movePiece(fromPosition, toPosition);
-        }
-    }
-    
-    // Agent event handlers
-    setupAgentEventHandlers(): void {
-        if (this.opponentAgent) {
-            this.opponentAgent.onMove = (move) => {
-                this.applyRemoteMove(move);
-                this.notifyStateChange();
-            };
+    static async createPlayerAgent(
+        color: 'white' | 'black',
+        agentType: AgentType,
+        gameState?: GameState,
+        sessionInfo?: { playerId: string; sessionId: string; gameService: OnlineGameService }
+    ): Promise<PlayerAgent> {
+        switch (agentType) {
+            case 'remote':
+                if (!sessionInfo) {
+                    throw new Error('RemotePlayerAgent requires session information');
+                }
+                return new RemotePlayerAgent(
+                    color,
+                    sessionInfo.playerId,
+                    sessionInfo.sessionId,
+                    sessionInfo.gameService
+                );
             
-            this.opponentAgent.onStatusChange = (status) => {
-                this.updateOpponentStatus(status);
-            };
+            case 'human':
+                return new HumanPlayerAgent(color);
+            
+            case 'computer':
+                return new ComputerPlayerAgent(color);
+            
+            // ... other cases remain the same
         }
+    }
+}
+
+// Enhanced GameState integration with remote players
+class EnhancedGameState extends GameState {
+    private playerAgents: Map<'white' | 'black', PlayerAgent> = new Map();
+    private onlineGameService?: OnlineGameService;
+    private sessionId?: string;
+    
+    // Set up multiplayer integration
+    setupMultiplayerAgents(
+        whitePlayerId: string,
+        blackPlayerId: string,
+        sessionId: string,
+        gameService: OnlineGameService
+    ) {
+        this.onlineGameService = gameService;
+        this.sessionId = sessionId;
+        
+        // Create remote player agents that work with existing PlayerAgent interface
+        const whiteAgent = new RemotePlayerAgent('white', whitePlayerId, sessionId, gameService);
+        const blackAgent = new RemotePlayerAgent('black', blackPlayerId, sessionId, gameService);
+        
+        this.playerAgents.set('white', whiteAgent);
+        this.playerAgents.set('black', blackAgent);
+        
+        // Set up agent event handlers
+        this.setupAgentEventHandlers();
+    }
+    
+    // Enhanced move methods that work with both local and remote players
+    override async startDiceRoll(): Promise<void> {
+        const currentAgent = this.playerAgents.get(this.state.currentPlayer);
+        
+        if (currentAgent?.playerType === 'remote') {
+            // For remote players, handle through the agent
+            await currentAgent.onTurnStart(this);
+            
+            // If this is the local player, submit the move remotely
+            const remoteAgent = currentAgent as RemotePlayerAgent;
+            if (remoteAgent.playerId === getCurrentUserId()) {
+                // Execute local dice roll first
+                super.startDiceRoll();
+                // Then submit to remote
+                await remoteAgent.submitDiceRoll(this.state.diceRolls);
+            }
+        } else {
+            // For local players (human, computer, etc.), use existing logic
+            super.startDiceRoll();
+        }
+    }
+    
+    override async movePiece(targetPosition: number): Promise<void> {
+        const currentAgent = this.playerAgents.get(this.state.currentPlayer);
+        
+        if (currentAgent?.playerType === 'remote') {
+            const remoteAgent = currentAgent as RemotePlayerAgent;
+            
+            // If this is the local player, submit the move remotely
+            if (remoteAgent.playerId === getCurrentUserId()) {
+                const fromPosition = this.getCurrentPiecePosition();
+                
+                // Execute local move first
+                super.movePiece(targetPosition);
+                
+                // Then submit to remote
+                await remoteAgent.submitPieceMove(fromPosition, targetPosition);
+            }
+        } else {
+            // For local players, use existing logic
+            super.movePiece(targetPosition);
+        }
+    }
+    
+    // Handle remote moves from other players
+    applyRemoteMove(move: GameMove): void {
+        switch (move.moveType) {
+            case 'dice-roll':
+                this.setDiceRolls(move.moveData.diceResult);
+                break;
+            case 'piece-move':
+                this.setSelectedPiece(this.findPieceAtPosition(move.moveData.fromPosition));
+                super.movePiece(move.moveData.toPosition);
+                break;
+        }
+        
+        // Sync game state with remote state
+        this.syncWithRemoteState(move.resultingState);
+    }
+    
+    private setupAgentEventHandlers(): void {
+        this.playerAgents.forEach((agent) => {
+            if (agent.playerType === 'remote') {
+                const remoteAgent = agent as RemotePlayerAgent;
+                
+                remoteAgent.onOpponentMove = (move) => {
+                    // Only apply moves from other players
+                    if (move.playerId !== getCurrentUserId()) {
+                        this.applyRemoteMove(move);
+                        this.notifyStateChange();
+                    }
+                };
+                
+                remoteAgent.onStatusChange = (status) => {
+                    this.updatePlayerStatus(remoteAgent.color, status);
+                };
+            }
+        });
+    }
+    
+    private getCurrentPiecePosition(): number {
+        // Get the position of the currently selected piece
+        if (this.state.selectedPiece === null) return -1;
+        
+        const positions = this.state.currentPlayer === 'white' 
+            ? this.state.whitePiecePositions 
+            : this.state.blackPiecePositions;
+            
+        return positions[this.state.selectedPiece];
     }
 }
 ```
