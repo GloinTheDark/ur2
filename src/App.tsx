@@ -24,7 +24,6 @@ import { AuthProvider } from './contexts/AuthContext'
 import AuthModal from './components/auth/AuthModal'
 import UserProfile from './components/auth/UserProfile'
 import AuthButton from './components/auth/AuthButton'
-import ContentFilterDemo from './components/ContentFilterDemo'
 import rosetteSquare from './assets/RosetteSquare.svg'
 import gateSquare from './assets/GateSquare.svg'
 import marketSquare from './assets/MarketSquare.svg'
@@ -1018,9 +1017,6 @@ function App() {
           isOpen={showUserProfile}
           onClose={() => setShowUserProfile(false)}
         />
-
-        {/* Content Filter Demo (for testing) */}
-        {isDebugMode && <ContentFilterDemo />}
       </div>
     </AuthProvider>
   )
