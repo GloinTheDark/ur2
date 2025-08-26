@@ -834,62 +834,6 @@ function App() {
                       }}
                     />
                   )}
-                  {isDestinationSquare && (
-                    (() => {
-                      // Find the move for this destination to check if it's a capture
-                      const legalMoves = gameState.getLegalMoves();
-                      const moveToMake = legalMoves.find(move =>
-                        move.movingPieceIndex === state.selectedPiece! &&
-                        move.destinationSquare === squareNumber
-                      );
-                      const isCapture = moveToMake?.capture || false;
-
-                      return (
-                        <div
-                          style={{
-                            position: 'absolute',
-                            top: '50%',
-                            left: '50%',
-                            width: `${PIECE_SIZE}px`,
-                            height: `${PIECE_SIZE}px`,
-                            transform: 'translate(-50%, -50%)',
-                            zIndex: 10,
-                            cursor: 'pointer',
-                            pointerEvents: 'auto',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            ...(isCapture ? {
-                              // Red X for captures - no specific styling needed for image
-                            } : {
-                              // Green circle for normal moves
-                              borderRadius: '50%',
-                              backgroundColor: 'rgba(100, 255, 100, 0.7)',
-                              border: '2px solid rgba(50, 200, 50, 0.9)'
-                            })
-                          }}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (state.selectedPiece !== null && moveToMake) {
-                              gameState.startLegalMove(moveToMake);
-                            }
-                          }}
-                        >
-                          {isCapture && (
-                            <img
-                              src={redX}
-                              alt="Capture Move"
-                              style={{
-                                width: `${PIECE_SIZE}px`,
-                                height: `${PIECE_SIZE}px`,
-                                opacity: 0.7
-                              }}
-                            />
-                          )}
-                        </div>
-                      );
-                    })()
-                  )}
 
                   {/* Display pieces on this square */}
                   {(whitePiecesOnSquare.length > 0 || blackPiecesOnSquare.length > 0) && (
@@ -948,6 +892,68 @@ function App() {
                       )}
                     </>
                   )}
+                  {isDestinationSquare && (
+                    (() => {
+                      // Find the move for this destination to check if it's a capture
+                      const legalMoves = gameState.getLegalMoves();
+                      const moveToMake = legalMoves.find(move =>
+                        move.movingPieceIndex === state.selectedPiece! &&
+                        move.destinationSquare === squareNumber
+                      );
+                      const isCapture = moveToMake?.capture || false;
+
+                      // count the number of pieces on this square
+                      const piecesOnSquare = gameState.getPiecesOnSquare(squareNumber, 'white').length + gameState.getPiecesOnSquare(squareNumber, 'black').length;
+                      const stackingOffset = getStackingOffset(piecesOnSquare, gameState.getBoardOrientation());
+
+                      return (
+                        <div
+                          // offset div by stackingOffset
+                          style={{
+                            position: 'absolute',
+                            top: stackingOffset.top,
+                            left: stackingOffset.left,
+                            width: `${PIECE_SIZE}px`,
+                            height: `${PIECE_SIZE}px`,
+                            transform: 'translate(-50%, -50%)',
+                            zIndex: 10,
+                            cursor: 'pointer',
+                            pointerEvents: 'auto',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            ...(isCapture ? {
+                              // Red X for captures - no specific styling needed for image
+                            } : {
+                              // Green circle for normal moves
+                              borderRadius: '50%',
+                              backgroundColor: 'rgba(100, 255, 100, 0.7)',
+                              border: '2px solid rgba(50, 200, 50, 0.9)'
+                            })
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (state.selectedPiece !== null && moveToMake) {
+                              gameState.startLegalMove(moveToMake);
+                            }
+                          }}
+                        >
+                          {isCapture && (
+                            <img
+                              src={redX}
+                              alt="Capture Move"
+                              style={{
+                                width: `${PIECE_SIZE}px`,
+                                height: `${PIECE_SIZE}px`,
+                                opacity: 0.7
+                              }}
+                            />
+                          )}
+                        </div>
+                      );
+                    })()
+                  )}
+
                 </div>
               );
             })}
