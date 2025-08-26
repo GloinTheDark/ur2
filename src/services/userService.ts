@@ -42,7 +42,7 @@ export class UserService {
 
             if (userSnap.exists()) {
                 // User exists, update last login and optionally display name
-                const updateData: Partial<UserProfile> = {
+                const updateData: any = {
                     lastLogin: now
                 };
 
@@ -54,12 +54,23 @@ export class UserService {
 
                 // Return updated profile
                 const updatedSnap = await getDoc(userRef);
-                return {
+                const data = updatedSnap.data() || {};
+
+                // Create a clean profile object without undefined values
+                const profile: UserProfile = {
                     uid: user.uid,
-                    ...updatedSnap.data(),
-                    createdAt: updatedSnap.data()?.createdAt?.toDate?.() || now,
-                    lastLogin: now
-                } as UserProfile;
+                    displayName: data.displayName || user.displayName || 'User',
+                    createdAt: data.createdAt?.toDate?.() || now,
+                    lastLogin: now,
+                    isAnonymous: data.isAnonymous || user.isAnonymous
+                };
+
+                // Only add email if it exists and is not undefined
+                if (data.email && data.email !== undefined) {
+                    profile.email = data.email;
+                }
+
+                return profile;
             } else {
                 // User doesn't exist, create new profile
                 let safeName = displayName || user.displayName || (user.isAnonymous ? 'Guest' : user.email?.split('@')[0] || 'User');
@@ -71,21 +82,36 @@ export class UserService {
                 }
                 safeName = cleanDisplayName(safeName);
 
+                // Prepare data for Firestore - exclude undefined values
+                const firestoreData: any = {
+                    uid: user.uid,
+                    displayName: safeName,
+                    createdAt: serverTimestamp(),
+                    lastLogin: serverTimestamp(),
+                    updatedAt: serverTimestamp(),
+                    isAnonymous: user.isAnonymous
+                };
+
+                // Only include email if it exists (anonymous users don't have email)
+                if (user.email) {
+                    firestoreData.email = user.email;
+                }
+
+                await setDoc(userRef, firestoreData);
+
+                // Return a clean profile object
                 const newProfile: UserProfile = {
                     uid: user.uid,
                     displayName: safeName,
-                    email: user.email || undefined,
                     createdAt: now,
                     lastLogin: now,
                     isAnonymous: user.isAnonymous
                 };
 
-                await setDoc(userRef, {
-                    ...newProfile,
-                    createdAt: serverTimestamp(),
-                    lastLogin: serverTimestamp(),
-                    updatedAt: serverTimestamp()
-                });
+                // Only add email to return object if it exists
+                if (user.email) {
+                    newProfile.email = user.email;
+                }
 
                 return newProfile;
             }
