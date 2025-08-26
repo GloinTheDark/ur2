@@ -904,7 +904,7 @@ function App() {
 
                       // count the number of pieces on this square
                       const piecesOnSquare = gameState.getPiecesOnSquare(squareNumber, 'white').length + gameState.getPiecesOnSquare(squareNumber, 'black').length;
-                      const stackingOffset = getStackingOffset(piecesOnSquare, gameState.getBoardOrientation());
+                      const stackingOffset = getStackingOffset(isCapture ? piecesOnSquare - 1 : piecesOnSquare, gameState.getBoardOrientation());
 
                       return (
                         <div
