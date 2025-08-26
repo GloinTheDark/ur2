@@ -7,6 +7,7 @@ import houseSquare from './assets/HouseSquare.svg';
 import redX from './assets/RedX.svg';
 import PlayerDiceRoller from './PlayerDiceRoller';
 import PieceStack from './components/PieceStack';
+import { useAuth } from './contexts/AuthContext';
 
 interface PlayerHomeProps {
     player: 'white' | 'black';
@@ -19,10 +20,38 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
 }) => {
     const state = gameState.state;
     const winner = gameState.checkWinCondition();
-    const playerName = gameState.getPlayerName(player);
+    const gamePlayerName = gameState.getPlayerName(player);
     const ruleset = gameState.getCurrentRuleSet();
 
+    // Get authentication context for user names
+    const { isAuthenticated, userDisplayName, isAnonymous } = useAuth();
+
+    // Determine player color first (needed for display name logic)
     const isWhite = player === 'white';
+
+    // Determine the display name for this player
+    const getPlayerDisplayName = (): string => {
+        // If the game has a custom player name set, use it
+        if (gamePlayerName && gamePlayerName !== 'White' && gamePlayerName !== 'Black') {
+            return gamePlayerName;
+        }
+
+        // For authenticated users, use their display name for both players for now
+        // TODO: In multiplayer, this would be different for each player
+        if (isAuthenticated && !isAnonymous) {
+            return userDisplayName;
+        }
+
+        // For guest users, show "Guest" instead of color
+        if (isAuthenticated && isAnonymous) {
+            return `Guest (${isWhite ? 'White' : 'Black'})`;
+        }
+
+        // Fallback to color names
+        return isWhite ? 'White' : 'Black';
+    };
+
+    const playerDisplayName = getPlayerDisplayName();
     const positions = isWhite ? state.whitePiecePositions : state.blackPiecePositions;
 
     // Get player path to determine completion index
@@ -197,7 +226,7 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
                 color: titleColor,
                 filter: 'var(--dark-mode-filter, none)'
             }}>
-                {playerName || (isWhite ? "White" : "Black")}
+                {playerDisplayName}
             </h3>
             <div style={{
                 display: 'flex',

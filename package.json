@@ -13,6 +13,7 @@
     "rebuild-all": "npm run clean && npm run build && npm run copy-to-docs"
   },
   "dependencies": {
+    "firebase": "^12.1.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },
