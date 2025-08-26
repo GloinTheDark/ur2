@@ -190,14 +190,14 @@ const PlayerHome: React.FC<PlayerHomeProps> = ({
     };
 
     return (
-        <div style={{ marginTop: isWhite ? '24px' : '16px' }}>
+        <div style={{ marginTop: '16px', minWidth: '200px' }}>
             <h3 style={{
                 textAlign: 'center',
                 margin: '0 0 8px 0',
                 color: titleColor,
                 filter: 'var(--dark-mode-filter, none)'
             }}>
-                {playerName || (isWhite ? "White's Home" : "Black's Home")}
+                {playerName || (isWhite ? "White" : "Black")}
             </h3>
             <div style={{
                 display: 'flex',
