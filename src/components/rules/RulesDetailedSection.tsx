@@ -1,16 +1,19 @@
 import React, { useState } from 'react';
 import { RulesExample } from './RulesExample';
-import type { RulesDescription } from '../../types/RulesDescription';
+import type { RuleSet } from '../../RuleSet';
 
 interface RulesDetailedSectionProps {
-    detailedRules: RulesDescription['detailedRules'];
-    examples: RulesDescription['examples'];
+    ruleset: RuleSet;
 }
 
 export const RulesDetailedSection: React.FC<RulesDetailedSectionProps> = ({
-    detailedRules,
-    examples
+    ruleset
 }) => {
+    // Extract data from ruleset
+    const rulesDescription = ruleset.getRulesDescription();
+    const detailedRules = rulesDescription.detailedRules;
+    const examples = rulesDescription.examples;
+
     const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
 
     const toggleSection = (sectionId: string) => {

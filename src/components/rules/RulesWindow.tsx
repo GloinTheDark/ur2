@@ -20,10 +20,8 @@ export const RulesWindow: React.FC<RulesWindowProps> = ({
     const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
     const windowRef = useRef<HTMLDivElement>(null);
 
-    // Extract data from ruleset
-    const rulesDescription = ruleset.getRulesDescription();
+    // Extract ruleset name for display
     const rulesetName = ruleset.name;
-    const pathType = ruleset.pathType;
 
     // Load saved position from localStorage
     useEffect(() => {
@@ -131,9 +129,7 @@ export const RulesWindow: React.FC<RulesWindowProps> = ({
 
                 {/* Quick Reference Section */}
                 <RulesQuickReference
-                    quickReference={rulesDescription.quickReference}
-                    boardOverview={rulesDescription.boardOverview}
-                    pathType={pathType}
+                    ruleset={ruleset}
                 />
 
                 {/* Separator */}
@@ -141,8 +137,7 @@ export const RulesWindow: React.FC<RulesWindowProps> = ({
 
                 {/* Detailed Rules Section */}
                 <RulesDetailedSection
-                    detailedRules={rulesDescription.detailedRules}
-                    examples={rulesDescription.examples}
+                    ruleset={ruleset}
                 />
             </div>
         </div>

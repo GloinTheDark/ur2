@@ -1,24 +1,30 @@
 import React from 'react';
 import { PathDiagram } from './PathDiagram';
-import type { RulesDescription } from '../../types/RulesDescription';
-import type { PathType } from '../../GamePaths';
+import type { RuleSet } from '../../RuleSet';
 
 interface RulesQuickReferenceProps {
-    quickReference: RulesDescription['quickReference'];
-    boardOverview: RulesDescription['boardOverview'];
-    pathType: PathType;
+    ruleset: RuleSet;
 }
 
 export const RulesQuickReference: React.FC<RulesQuickReferenceProps> = ({
-    quickReference,
-    boardOverview,
-    pathType
+    ruleset
 }) => {
+    // Extract data from ruleset
+    const rulesDescription = ruleset.getRulesDescription();
+    const quickReference = rulesDescription.quickReference;
+    const boardOverview = rulesDescription.boardOverview;
+    const pathType = ruleset.pathType;
+
     return (
         <div className="rules-quick-reference">
             <h3 className="rules-section-title">🎯 Quick Reference</h3>
 
             <div className="quick-reference-grid">
+                <div className="quick-reference-item">
+                    <span className="quick-reference-label">Equipment:</span>
+                    <span className="quick-reference-value">Each player starts with {ruleset.piecesPerPlayer} pieces and {ruleset.diceCount} dice</span>
+                </div>
+
                 <div className="quick-reference-item">
                     <span className="quick-reference-label">Goal:</span>
                     <span className="quick-reference-value">{quickReference.goal}</span>
